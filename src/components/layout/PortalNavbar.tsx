@@ -1,7 +1,7 @@
 "use client";
 
-import { signOut } from "next-auth/react";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 
 interface Props {
   fullname: string;
@@ -10,21 +10,28 @@ interface Props {
 
 export default function PortalNavbar({ fullname, email }: Props) {
   return (
-    <header className="border-b border-gray-800 bg-gray-950/80 backdrop-blur sticky top-0 z-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-        <Link href="/portal/dashboard" className="flex items-center gap-2 text-amber-400 font-bold text-lg">
-          <span className="text-2xl">◈</span>
-          <span>ControlVentas</span>
+    <header
+      className="border-b sticky top-0 z-10"
+      style={{ borderColor: "var(--border)", background: "rgba(245,242,238,0.92)", backdropFilter: "blur(6px)" }}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+        <Link
+          href="/portal/dashboard"
+          className="text-lg sm:text-2xl uppercase font-bold"
+          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.2em" }}
+        >
+          ControlVentas
         </Link>
 
         <div className="flex items-center gap-4">
           <div className="hidden sm:block text-right">
-            <p className="text-sm font-medium text-gray-200 leading-none">{fullname}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{email}</p>
+            <p className="text-sm leading-none" style={{ color: "var(--foreground)" }}>{fullname}</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--subtle)" }}>{email}</p>
           </div>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="text-xs text-gray-500 hover:text-red-400 border border-gray-700 hover:border-red-400/30 px-3 py-1.5 rounded-lg transition"
+            className="text-xs uppercase border px-3 py-1.5 hover:opacity-65 transition-opacity"
+            style={{ letterSpacing: "0.12em", borderColor: "#1a1a1a", color: "#1a1a1a" }}
           >
             Salir
           </button>

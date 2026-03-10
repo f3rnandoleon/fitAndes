@@ -1,14 +1,13 @@
-
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { redirect } from "next/navigation";
-import Link from "next/link";
 
 async function getMisPedidos(userId: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/mis-pedidos`,
-    { headers: { "x-user-id": userId }, next: { revalidate: 0 } }
-  );
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mis-pedidos`, {
+    headers: { "x-user-id": userId },
+    next: { revalidate: 0 },
+  });
   return res.ok ? await res.json() : [];
 }
 
@@ -18,50 +17,70 @@ export default async function PedidosPage() {
 
   const pedidos = await getMisPedidos(session.user.id);
 
-  const estadoColor: Record<string, string> = {
-    PAGADA: "text-green-400 bg-green-400/10 border-green-400/20",
-    PENDIENTE: "text-amber-400 bg-amber-400/10 border-amber-400/20",
-    CANCELADA: "text-red-400 bg-red-400/10 border-red-400/20",
+  const estadoColor: Record<string, React.CSSProperties> = {
+    PAGADA: { color: "var(--success)", background: "#e7efe9", borderColor: "#c5d8c9" },
+    PENDIENTE: { color: "#6a4f21", background: "#efe5d5", borderColor: "#cfbc98" },
+    CANCELADA: { color: "var(--danger)", background: "#f3e3e0", borderColor: "#d9b2ac" },
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold text-white">Mis pedidos</h1>
-        <p className="text-gray-400 text-sm mt-1">{pedidos.length} pedido{pedidos.length !== 1 ? "s" : ""} en total</p>
+        <p className="text-xs uppercase mb-2" style={{ letterSpacing: "0.22em", color: "var(--subtle)" }}>
+          Historial
+        </p>
+        <h1 className="text-4xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
+          Mis pedidos
+        </h1>
+        <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
+          {pedidos.length} pedido{pedidos.length !== 1 ? "s" : ""} en total
+        </p>
       </div>
 
       {pedidos.length === 0 ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-16 text-center text-gray-500">
+        <div className="border p-16 text-center" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
           <p className="text-4xl mb-3">◈</p>
-          <p className="text-base font-medium text-gray-400">No tienes pedidos aún</p>
-          <Link href="/catalogo" className="mt-4 inline-block bg-amber-400 hover:bg-amber-300 text-gray-950 font-bold rounded-lg px-5 py-2.5 text-sm transition">
-            Ver catálogo
+          <p className="text-base" style={{ color: "var(--muted)" }}>
+            No tienes pedidos aun
+          </p>
+          <Link
+            href="/catalogo"
+            className="mt-4 inline-block text-xs uppercase text-white px-5 py-2.5 hover:opacity-85 transition-opacity"
+            style={{ letterSpacing: "0.16em", background: "#1a1a1a" }}
+          >
+            Ver catalogo
           </Link>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {pedidos.map((pedido: any) => (
             <Link key={pedido._id} href={`/portal/pedidos/${pedido._id}`}>
-              <div className="bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl px-5 py-4 transition">
+              <div className="border px-5 py-4 transition-opacity hover:opacity-85" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-gray-100">{pedido.numeroVenta}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{pedido.numeroVenta}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--subtle)" }}>
                       {new Date(pedido.createdAt).toLocaleDateString("es-BO", {
-                        day: "2-digit", month: "long", year: "numeric",
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
                       })}
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-xs text-gray-500">
-                      {pedido.items?.length ?? 0} ítem{pedido.items?.length !== 1 ? "s" : ""}
+                    <span className="text-xs" style={{ color: "var(--subtle)" }}>
+                      {pedido.items?.length ?? 0} item{pedido.items?.length !== 1 ? "s" : ""}
                     </span>
-                    <span className={`text-xs px-2.5 py-1 rounded-full border ${estadoColor[pedido.estado] ?? "text-gray-400 bg-gray-800 border-gray-700"}`}>
+                    <span
+                      className="text-xs px-2.5 py-1 border"
+                      style={estadoColor[pedido.estado] ?? { color: "var(--muted)", background: "#ece7e0", borderColor: "var(--border)" }}
+                    >
                       {pedido.estado}
                     </span>
-                    <p className="text-sm font-bold text-amber-400">Bs. {pedido.total?.toFixed(2)}</p>
-                    <span className="text-gray-600 text-xs">→</span>
+                    <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                      Bs. {pedido.total?.toFixed(2)}
+                    </p>
+                    <span className="text-xs" style={{ color: "var(--subtle)" }}>{"\u2192"}</span>
                   </div>
                 </div>
               </div>
