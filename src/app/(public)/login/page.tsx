@@ -21,6 +21,7 @@ export default function LoginPage() {
       password: form.password,
       redirect: false,
     });
+      console.log(res)
 
     setLoading(false);
 
@@ -29,7 +30,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/portal/dashboard");
+    router.push("/dashboard");
   };
 
   return (

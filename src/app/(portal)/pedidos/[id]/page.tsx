@@ -29,7 +29,7 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-8 max-w-2xl">
       <div className="flex items-center gap-2 text-sm" style={{ color: "var(--subtle)" }}>
-        <Link href="/portal/pedidos" className="hover:opacity-60 transition-opacity" style={{ color: "var(--muted)" }}>
+        <Link href="/pedidos" className="hover:opacity-60 transition-opacity" style={{ color: "var(--muted)" }}>
           Mis pedidos
         </Link>
         <span>/</span>
@@ -110,7 +110,7 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
         </div>
       </div>
 
-      <Link href="/portal/pedidos" className="text-sm hover:opacity-60 transition-opacity inline-block" style={{ color: "var(--muted)" }}>
+      <Link href="/pedidos" className="text-sm hover:opacity-60 transition-opacity inline-block" style={{ color: "var(--muted)" }}>
         Volver a mis pedidos
       </Link>
     </div>

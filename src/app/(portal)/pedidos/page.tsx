@@ -54,7 +54,7 @@ export default async function PedidosPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {pedidos.map((pedido: any) => (
-            <Link key={pedido._id} href={`/portal/pedidos/${pedido._id}`}>
+            <Link key={pedido._id} href={`/pedidos/${pedido._id}`}>
               <div className="border px-5 py-4 transition-opacity hover:opacity-85" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div>

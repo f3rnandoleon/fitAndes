@@ -2,6 +2,43 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+type AppRole = "ADMIN" | "VENDEDOR" | "CLIENTE";
+type LoginResponse = {
+  user?: {
+    id?: string;
+    email?: string;
+    fullname?: string;
+    role?: AppRole;
+  };
+};
+
+async function loginWithCentralApi(email: string, password: string) {
+  if (!API_URL) return null;
+
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+  });
+  if (!res.ok) return null;
+
+  const data = (await res.json()) as LoginResponse;
+  const user = data.user;
+  if (!user) return null;
+
+  if (!user.id || !user.email || !user.fullname || !user.role) return null;
+
+  return {
+    id: user.id,
+    email: user.email,
+    fullname: user.fullname,
+    role: user.role,
+  };
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -15,24 +52,14 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         try {
-          const res = await fetch(`${API_URL}/auth/signin`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
-          });
-
-          const user = await res.json();
-
-          if (!res.ok || !user) return null;
+          const user = await loginWithCentralApi(credentials.email, credentials.password);
+          if (!user) return null;
 
           // Solo clientes pueden acceder al portal
           if (user.role !== "CLIENTE") return null;
 
           return {
-            id: user.id ?? user._id,
+            id: user.id,
             email: user.email,
             fullname: user.fullname,
             role: user.role,

@@ -50,7 +50,7 @@ export default async function DashboardPage() {
           <h2 className="text-2xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
             Pedidos recientes
           </h2>
-          <Link href="/portal/pedidos" className="text-xs uppercase hover:opacity-60 transition-opacity" style={{ letterSpacing: "0.16em" }}>
+          <Link href="/pedidos" className="text-xs uppercase hover:opacity-60 transition-opacity" style={{ letterSpacing: "0.16em" }}>
             Ver todos
           </Link>
         </div>
@@ -101,7 +101,7 @@ function PedidoRow({ pedido }: { pedido: any }) {
   };
 
   return (
-    <Link href={`/portal/pedidos/${pedido._id}`}>
+    <Link href={`/pedidos/${pedido._id}`}>
       <div className="flex items-center justify-between border px-5 py-4 transition-opacity hover:opacity-85" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
         <div>
           <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{pedido.numeroVenta}</p>

@@ -13,8 +13,8 @@ export default async function PortalLayout({ children }: { children: React.React
       <PortalNavbar fullname={session.user.fullname} email={session.user.email} />
       <div className="flex flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 gap-8">
         <aside className="hidden md:flex flex-col gap-1 w-56 shrink-0">
-          <SidebarLink href="/portal/dashboard" icon="⬡" label="Dashboard" />
-          <SidebarLink href="/portal/pedidos" icon="📦" label="Mis pedidos" />
+          <SidebarLink href="/dashboard" icon="⬡" label="Dashboard" />
+          <SidebarLink href="/pedidos" icon="📦" label="Mis pedidos" />
           <SidebarLink href="/catalogo" icon="◈" label="Catalogo" />
         </aside>
         <main className="flex-1 min-w-0">{children}</main>
