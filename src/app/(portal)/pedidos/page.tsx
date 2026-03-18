@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth-options";
+import type { Pedido } from "@/types/pedidos";
 
-async function getMisPedidos(userId: string) {
+async function getMisPedidos(userId: string): Promise<Pedido[]> {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mis-pedidos`, {
     headers: { "x-user-id": userId },
     next: { revalidate: 0 },
   });
-  return res.ok ? await res.json() : [];
+
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  return Array.isArray(data) ? (data as Pedido[]) : [];
 }
 
 export default async function PedidosPage() {
@@ -53,7 +58,7 @@ export default async function PedidosPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {pedidos.map((pedido: any) => (
+          {pedidos.map((pedido) => (
             <Link key={pedido._id} href={`/pedidos/${pedido._id}`}>
               <div className="border px-5 py-4 transition-opacity hover:opacity-85" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
                 <div className="flex items-center justify-between flex-wrap gap-3">
@@ -78,7 +83,7 @@ export default async function PedidosPage() {
                       {pedido.estado}
                     </span>
                     <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                      Bs. {pedido.total?.toFixed(2)}
+                      Bs. {(pedido.total ?? 0).toFixed(2)}
                     </p>
                     <span className="text-xs" style={{ color: "var(--subtle)" }}>{"\u2192"}</span>
                   </div>
@@ -91,3 +96,4 @@ export default async function PedidosPage() {
     </div>
   );
 }
+

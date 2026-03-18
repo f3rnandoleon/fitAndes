@@ -1,5 +1,6 @@
 import Link from "next/link";
-
+import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
+import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
 const API_URL =
   process.env.API_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
@@ -40,17 +41,6 @@ function totalStock(producto: ProductoPublico): number {
   return (producto.variantes ?? []).reduce((acc, item) => acc + normalizarNumero(item.stock), 0);
 }
 
-function primeraImagen(producto: ProductoPublico): string | null {
-  const imagenVariante = (producto.variantes ?? [])
-    .flatMap((v) => [...(v.imagenes ?? []), v.imagen].filter(Boolean) as string[])
-    .find(Boolean);
-
-  if (imagenVariante) return imagenVariante;
-
-  const imagenProducto = (producto.imagenes ?? []).find(Boolean);
-  return imagenProducto ?? null;
-}
-
 function formatearPrecio(precio: number): string {
   return `Bs. ${new Intl.NumberFormat("es-BO", {
     minimumFractionDigits: 2,
@@ -74,6 +64,7 @@ async function getProductosPublicos(): Promise<ProductoPublico[]> {
   try {
     const res = await fetch(`${API_URL}/productos/publicos`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!res.ok) return [];
@@ -212,7 +203,7 @@ export default async function HomePage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {recienLlegados.map((item) => {
-                const imagen = primeraImagen(item);
+                const imagenes = imagenesDeProducto(item);
                 const badge = esNuevo(item.createdAt) ? "NUEVO" : "DISPONIBLE";
 
                 return (
@@ -225,11 +216,12 @@ export default async function HomePage() {
                         {badge}
                       </div>
 
-                      {imagen ? (
-                        <img
-                          src={imagen}
+                      {imagenes.length > 0 ? (
+                        <CarruselImagenes
+                          imagenes={imagenes}
                           alt={item.nombre}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          imgClassName="group-hover:scale-105 transition-transform duration-500"
+                          duracionMs={2600}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -340,7 +332,7 @@ export default async function HomePage() {
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {seleccion.map((item) => {
-                const imagen = primeraImagen(item);
+                const imagenes = imagenesDeProducto(item);
                 const descuento = normalizarNumero(item.descuento);
                 const tag = descuento > 0 ? null : esNuevo(item.createdAt) ? "NUEVO" : null;
 
@@ -358,11 +350,12 @@ export default async function HomePage() {
                         </div>
                       )}
 
-                      {imagen ? (
-                        <img
-                          src={imagen}
+                      {imagenes.length > 0 ? (
+                        <CarruselImagenes
+                          imagenes={imagenes}
                           alt={item.nombre}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          imgClassName="group-hover:scale-105 transition-transform duration-500"
+                          duracionMs={2600}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -461,3 +454,7 @@ export default async function HomePage() {
     </main>
   );
 }
+
+
+
+

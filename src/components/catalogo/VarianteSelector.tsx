@@ -1,24 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Variante {
   color: string;
   talla: string;
   stock: number;
+  imagen?: string;
+  imagenes?: string[];
 }
 interface Props {
   variantes: Variante[];
   colores: string[];
   tallas: string[];
+  onVarianteChange?: (variante: Variante | null) => void;
 }
 
-export default function VarianteSelector({ variantes, colores, tallas }: Props) {
-  const [colorSel, setColorSel] = useState<string>(colores[0] ?? "");
-  const [tallaSel, setTallaSel] = useState<string>("");
+export default function VarianteSelector({ variantes, colores, tallas, onVarianteChange }: Props) {
+  const primeraVariante = variantes[0];
+  const [colorSel, setColorSel] = useState<string>(primeraVariante?.color ?? colores[0] ?? "");
+  const [tallaSel, setTallaSel] = useState<string>(primeraVariante?.talla ?? "");
 
   const varianteActual = variantes.find((v) => v.color === colorSel && v.talla === tallaSel);
   const tallasDisponibles = tallas.filter((t) => variantes.some((v) => v.color === colorSel && v.talla === t));
+
+  useEffect(() => {
+    const tallaValida = variantes.some((v) => v.color === colorSel && v.talla === tallaSel);
+    if (!tallaValida) {
+      const siguienteTalla = variantes.find((v) => v.color === colorSel)?.talla ?? "";
+      if (siguienteTalla !== tallaSel) {
+        setTallaSel(siguienteTalla);
+        return;
+      }
+    }
+
+    onVarianteChange?.(variantes.find((v) => v.color === colorSel && v.talla === tallaSel) ?? null);
+  }, [colorSel, tallaSel, variantes, onVarianteChange]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -30,10 +47,7 @@ export default function VarianteSelector({ variantes, colores, tallas }: Props) 
           {colores.map((c) => (
             <button
               key={c}
-              onClick={() => {
-                setColorSel(c);
-                setTallaSel("");
-              }}
+              onClick={() => setColorSel(c)}
               className="px-3 py-1.5 text-sm border transition"
               style={
                 colorSel === c

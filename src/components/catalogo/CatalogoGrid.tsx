@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
+import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
 
 interface Variante {
   color: string;
   talla: string;
   stock: number;
   imagen?: string;
+  imagenes?: string[];
 }
 
 interface Producto {
@@ -15,6 +18,8 @@ interface Producto {
   nombre: string;
   modelo: string;
   precioVenta: number;
+  imagen?: string;
+  imagenes?: string[];
   variantes: Variante[];
 }
 
@@ -78,7 +83,7 @@ export default function CatalogoGrid({ productos }: { productos: Producto[] }) {
 }
 
 function ProductoCard({ producto }: { producto: Producto }) {
-  const imagen = producto.variantes.find((v) => v.imagen)?.imagen;
+  const imagenes = imagenesDeProducto(producto);
   const totalStock = producto.variantes.reduce((sum, v) => sum + v.stock, 0);
   const tallas = Array.from(new Set(producto.variantes.map((v) => v.talla)));
   const colores = Array.from(new Set(producto.variantes.map((v) => v.color)));
@@ -90,11 +95,12 @@ function ProductoCard({ producto }: { producto: Producto }) {
         style={{ background: "var(--surface)", borderColor: "var(--border)" }}
       >
         <div className="relative h-52 overflow-hidden" style={{ background: "var(--surface-soft)" }}>
-          {imagen ? (
-            <img
-              src={imagen}
+          {imagenes.length > 0 ? (
+            <CarruselImagenes
+              imagenes={imagenes}
               alt={producto.nombre}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              imgClassName="group-hover:scale-105 transition-transform duration-500"
+              duracionMs={2600}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center" style={{ color: "#9c8f82" }}>

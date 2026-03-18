@@ -2,16 +2,41 @@ import Link from "next/link";
 import { Suspense } from "react";
 import CatalogoGrid from "@/components/catalogo/CatalogoGrid";
 
+interface VarianteCatalogo {
+  color: string;
+  talla: string;
+  stock: number;
+  imagen?: string;
+  imagenes?: string[];
+}
+
+interface ProductoCatalogo {
+  _id: string;
+  nombre: string;
+  modelo: string;
+  precioVenta: number;
+  imagen?: string;
+  imagenes?: string[];
+  variantes: VarianteCatalogo[];
+}
+
 export const metadata = {
   title: "Catalogo | ControlVentas",
   description: "Explora nuestros productos disponibles.",
 };
 
 export default async function CatalogoPage() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/publicos`, {
-    next: { revalidate: 60 },
-  });
-  const productos = res.ok ? await res.json() : [];
+  let productos: ProductoCatalogo[] = [];
+
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/publicos`, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(10000),
+    });
+    productos = res.ok ? ((await res.json()) as ProductoCatalogo[]) : [];
+  } catch {
+    productos = [];
+  }
 
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">

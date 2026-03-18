@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import PortalNavbar from "@/components/layout/PortalNavbar";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth-options";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -35,3 +35,4 @@ function SidebarLink({ href, icon, label }: { href: string; icon: string; label:
     </Link>
   );
 }
+

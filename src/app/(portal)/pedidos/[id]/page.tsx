@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth-options";
+import type { Pedido } from "@/types/pedidos";
 
-async function getPedido(pedidoId: string, userId: string) {
+async function getPedido(pedidoId: string, userId: string): Promise<Pedido | null> {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mis-pedidos/${pedidoId}`, {
     headers: { "x-user-id": userId },
     next: { revalidate: 0 },
   });
+
   if (res.status === 404) return null;
-  return res.ok ? await res.json() : null;
+  if (!res.ok) return null;
+
+  return (await res.json()) as Pedido;
 }
 
 export default async function PedidoDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,6 +23,10 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
   const { id } = await params;
   const pedido = await getPedido(id, session.user.id);
   if (!pedido) notFound();
+
+  const descuento = pedido.descuento ?? 0;
+  const subtotal = pedido.subtotal ?? 0;
+  const total = pedido.total ?? 0;
 
   const estadoColor: Record<string, React.CSSProperties> = {
     PAGADA: { color: "var(--success)", background: "#e7efe9", borderColor: "#c5d8c9" },
@@ -66,14 +74,14 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
           </p>
         </div>
         <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-          {pedido.items?.map((item: any, i: number) => (
-            <div key={i} className="px-5 py-4 flex items-center justify-between gap-4">
+          {pedido.items?.map((item, index) => (
+            <div key={item._id ?? `${item.nombre ?? "producto"}-${index}`} className="px-5 py-4 flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
                   {item.nombre ?? "Producto"}
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: "var(--subtle)" }}>
-                  {item.color} - {item.talla} - x{item.cantidad}
+                  {item.color ?? "-"} - {item.talla ?? "-"} - x{item.cantidad}
                 </p>
               </div>
               <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
@@ -90,22 +98,22 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
         </p>
         <div className="flex justify-between text-sm" style={{ color: "var(--muted)" }}>
           <span>Subtotal</span>
-          <span>Bs. {pedido.subtotal?.toFixed(2)}</span>
+          <span>Bs. {subtotal.toFixed(2)}</span>
         </div>
-        {pedido.descuento > 0 && (
+        {descuento > 0 && (
           <div className="flex justify-between text-sm" style={{ color: "var(--success)" }}>
             <span>Descuento</span>
-            <span>- Bs. {pedido.descuento?.toFixed(2)}</span>
+            <span>- Bs. {descuento.toFixed(2)}</span>
           </div>
         )}
         <div className="flex justify-between text-sm" style={{ color: "var(--muted)" }}>
           <span>Metodo de pago</span>
-          <span>{pedido.metodoPago}</span>
+          <span>{pedido.metodoPago ?? "-"}</span>
         </div>
         <div className="flex justify-between text-base pt-3 border-t" style={{ borderColor: "var(--border)" }}>
           <span style={{ color: "var(--foreground)" }}>Total</span>
           <span style={{ color: "var(--foreground)", fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            Bs. {pedido.total?.toFixed(2)}
+            Bs. {total.toFixed(2)}
           </span>
         </div>
       </div>
@@ -116,3 +124,4 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
     </div>
   );
 }
+
