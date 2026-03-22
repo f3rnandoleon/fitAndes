@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import PortalNavbar from "@/components/layout/PortalNavbar";
+import SiteHeader from "@/components/layout/SiteHeader";
 import { authOptions } from "@/lib/auth-options";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
@@ -9,30 +9,28 @@ export default async function PortalLayout({ children }: { children: React.React
   if (!session || session.user.role !== "CLIENTE") redirect("/login");
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex flex-col">
-      <PortalNavbar fullname={session.user.fullname} email={session.user.email} />
-      <div className="flex flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 gap-8">
-        <aside className="hidden md:flex flex-col gap-1 w-56 shrink-0">
-          <SidebarLink href="/dashboard" icon="⬡" label="Dashboard" />
-          <SidebarLink href="/pedidos" icon="📦" label="Mis pedidos" />
-          <SidebarLink href="/catalogo" icon="◈" label="Catalogo" />
+    <div className="min-h-screen bg-[#fbf9f5] text-[#111111] flex flex-col">
+      <SiteHeader authenticated fullname={session.user.fullname} email={session.user.email} />
+      <div className="max-w-[1240px] mx-auto w-full px-4 sm:px-6 py-8 lg:py-10 grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-8 lg:gap-12">
+        <aside className="flex lg:flex-col gap-3 lg:gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
+          <SidebarLink href="/dashboard" label="Dashboard" />
+          <SidebarLink href="/pedidos" label="Mis pedidos" />
+          <SidebarLink href="/catalogo" label="Catalogo" />
         </aside>
-        <main className="flex-1 min-w-0">{children}</main>
+        <main className="min-w-0">{children}</main>
       </div>
     </div>
   );
 }
 
-function SidebarLink({ href, icon, label }: { href: string; icon: string; label: string }) {
+function SidebarLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 px-3 py-2.5 text-sm border transition-colors hover:bg-[var(--surface)]"
-      style={{ borderColor: "var(--border)", color: "var(--muted)" }}
+      className="shrink-0 border px-4 py-3 text-xs uppercase transition-colors hover:bg-white"
+      style={{ borderColor: "#ece6dc", letterSpacing: "0.16em", color: "#5f564e", background: "rgba(255,255,255,0.72)" }}
     >
-      <span>{icon}</span>
-      <span>{label}</span>
+      {label}
     </Link>
   );
 }
-

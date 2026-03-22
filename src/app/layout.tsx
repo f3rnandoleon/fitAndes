@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import AppProviders from "@/components/providers/AppProviders";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ControlVentas",
-  description: "Catalogo y portal de clientes de ControlVentas.",
+  title: "FitAndes",
+  description: "Catalogo y portal de clientes de FitAndes.",
 };
 
 export default function RootLayout({
@@ -14,8 +15,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="antialiased">
-        {children}
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );
 }
+

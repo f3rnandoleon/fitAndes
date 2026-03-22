@@ -27,7 +27,7 @@ export default async function DashboardPage() {
   const totalPedidos = pedidos.length;
 
   return (
-    <div className="space-y-8">
+    <div id="perfil" className="space-y-8">
       <div>
         <p className="text-xs uppercase mb-2" style={{ letterSpacing: "0.22em", color: "var(--subtle)" }}>
           Panel de cliente

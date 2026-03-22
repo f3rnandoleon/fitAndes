@@ -28,7 +28,7 @@ interface ProductoPublico {
 }
 
 export const metadata = {
-  title: "ControlVentas - Nueva Coleccion",
+  title: "FitAndes - Nueva Coleccion",
   description: "Piezas atemporales confeccionadas con los materiales mas nobles. Disenadas para perdurar.",
 };
 
@@ -102,55 +102,8 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen" style={{ background: "#f5f2ee", color: "#1a1a1a", fontFamily: "system-ui, sans-serif" }}>
-      <nav className="sticky top-0 z-20 border-b" style={{ background: "#f5f2ee", borderColor: "#e0dbd4" }}>
-        <div className="max-w-7xl mx-auto px-6 py-4 grid grid-cols-3 items-center">
-          <div className="flex items-center gap-8">
-            {[
-              { label: "Coleccion", href: "#coleccion" },
-              { label: "Catalogo", href: "/catalogo" },
-              { label: "Novedades", href: "#novedades" },
-            ].map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="text-xs uppercase opacity-80 hover:opacity-40 transition-opacity"
-                style={{ letterSpacing: "0.15em", color: "#1a1a1a" }}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-
-          <div className="flex justify-center">
-            <Link
-              href="/"
-              className="text-2xl uppercase font-bold"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.25em", color: "#1a1a1a" }}
-            >
-              ControlVentas
-            </Link>
-          </div>
-
-          <div className="flex items-center justify-end gap-5">
-            <Link
-              href="/login"
-              className="text-xs uppercase opacity-80 hover:opacity-40 transition-opacity"
-              style={{ letterSpacing: "0.15em", color: "#1a1a1a" }}
-            >
-              Ingresar
-            </Link>
-            <Link
-              href="/registro"
-              className="text-xs uppercase px-4 py-2 border hover:opacity-60 transition-opacity"
-              style={{ letterSpacing: "0.15em", border: "1px solid #1a1a1a", color: "#1a1a1a" }}
-            >
-              Registro
-            </Link>
-          </div>
-        </div>
-      </nav>
-
       <section
+        id="inicio"
         className="relative flex items-end overflow-hidden"
         style={{ minHeight: "88vh", background: "linear-gradient(135deg, #b8b0a5 0%, #cdc8c0 40%, #ddd9d3 100%)" }}
       >
@@ -192,7 +145,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="novedades" className="py-24 px-6" style={{ background: "#f5f2ee" }}>
+      <section id="nuevo" className="py-24 px-6" style={{ background: "#f5f2ee" }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-xs uppercase mb-3" style={{ letterSpacing: "0.25em", color: "#9c8f82" }}>
@@ -317,7 +270,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="coleccion" className="py-24 px-6" style={{ background: "#f5f2ee" }}>
+      <section id="seleccion" className="py-24 px-6" style={{ background: "#f5f2ee" }}>
         <div className="max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-10">
             <h2 className="text-3xl font-normal" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
@@ -403,7 +356,7 @@ export default async function HomePage() {
               className="text-xl font-bold uppercase mb-4"
               style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.3em" }}
             >
-              ControlVentas
+              FitAndes
             </p>
             <p className="text-xs leading-relaxed" style={{ color: "#9c8f82" }}>
               Moda de alta calidad con un compromiso inquebrantable por el diseno atemporal.
@@ -454,13 +407,15 @@ export default async function HomePage() {
 
         <div className="border-t px-6 py-5 text-center" style={{ borderColor: "#2e2e2e" }}>
           <p className="text-xs" style={{ color: "#6b6058" }}>
-            {`© ${new Date().getFullYear()} ControlVentas. Todos los derechos reservados.`}
+            {`© ${new Date().getFullYear()} FitAndes. Todos los derechos reservados.`}
           </p>
         </div>
       </footer>
     </main>
   );
 }
+
+
 
 
 

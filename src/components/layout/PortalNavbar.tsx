@@ -20,7 +20,7 @@ export default function PortalNavbar({ fullname, email }: Props) {
           className="text-lg sm:text-2xl uppercase font-bold"
           style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.2em" }}
         >
-          ControlVentas
+          FitAndes
         </Link>
 
         <div className="flex items-center gap-4">
@@ -40,3 +40,4 @@ export default function PortalNavbar({ fullname, email }: Props) {
     </header>
   );
 }
+

@@ -97,7 +97,7 @@ export default function RegistroPage() {
             color: "#1a1a1a",
           }}
         >
-          ControlVentas
+          FitAndes
         </Link>
 
         <div className="z-10">
@@ -150,7 +150,7 @@ export default function RegistroPage() {
               color: "#1a1a1a",
             }}
           >
-            ControlVentas
+            FitAndes
           </Link>
 
           <div className="mb-8">
@@ -267,3 +267,4 @@ export default function RegistroPage() {
     </div>
   );
 }
+

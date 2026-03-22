@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
+import { useReservationCart } from "@/components/providers/ReservationCartProvider";
 import VarianteSelector from "@/components/catalogo/VarianteSelector";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 
@@ -15,6 +16,7 @@ interface Variante {
 }
 
 interface Producto {
+  _id?: string;
   nombre: string;
   modelo: string;
   precioVenta: number;
@@ -31,9 +33,37 @@ interface Props {
 }
 
 export default function ProductoDetalleCliente({ producto, colores, tallas }: Props) {
+  const { addItem } = useReservationCart();
   const [varianteSeleccionada, setVarianteSeleccionada] = useState<Variante | null>(producto.variantes[0] ?? null);
+  const [mensaje, setMensaje] = useState("");
   const imagenes = imagenesDeVariante(varianteSeleccionada);
   const imagenesActivas = imagenes.length > 0 ? imagenes : imagenesDeProducto(producto);
+  const stockActual = varianteSeleccionada?.stock ?? 0;
+
+  function reservarSeleccion() {
+    if (!varianteSeleccionada || stockActual <= 0) {
+      setMensaje("Selecciona una variante disponible para reservar.");
+      return;
+    }
+
+    const imagen = imagenesActivas[0] ?? null;
+    const id = `${producto._id ?? producto.sku ?? producto.nombre}-${varianteSeleccionada.color}-${varianteSeleccionada.talla}`;
+
+    addItem({
+      id,
+      productoId: producto._id,
+      nombre: producto.nombre,
+      modelo: producto.modelo,
+      imagen,
+      color: varianteSeleccionada.color,
+      talla: varianteSeleccionada.talla,
+      cantidad: 1,
+      precio: producto.precioVenta,
+      stockDisponible: stockActual,
+    });
+
+    setMensaje("Producto agregado a tu reserva.");
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -82,12 +112,22 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
           onVarianteChange={setVarianteSeleccionada}
         />
 
-        <Link
-          href="/login"
-          className="inline-flex items-center justify-center text-xs uppercase text-white py-3.5 px-6 transition-opacity hover:opacity-85"
+        <button
+          type="button"
+          onClick={reservarSeleccion}
+          disabled={!varianteSeleccionada || stockActual <= 0}
+          className="inline-flex items-center justify-center text-xs uppercase text-white py-3.5 px-6 transition-opacity disabled:opacity-45 disabled:cursor-not-allowed hover:opacity-85"
           style={{ background: "#1a1a1a", letterSpacing: "0.18em" }}
         >
-          Inicia sesion para pedir
+          Agregar a reserva
+        </button>
+        {mensaje && (
+          <p className="text-sm" style={{ color: "#6b6058" }}>
+            {mensaje}
+          </p>
+        )}
+        <Link href="/login" className="text-sm hover:opacity-60 transition-opacity" style={{ color: "var(--muted)" }}>
+          Inicia sesion para guardar tu reserva y seguir tus pedidos
         </Link>
         <Link href="/catalogo" className="text-sm hover:opacity-60 transition-opacity text-center" style={{ color: "var(--muted)" }}>
           Volver al catalogo
