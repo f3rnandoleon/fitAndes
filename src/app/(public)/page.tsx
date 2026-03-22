@@ -1,6 +1,7 @@
 import Link from "next/link";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
+import imagen from "../../../public/banner-main.png"
 const API_URL =
   process.env.API_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
@@ -105,9 +106,9 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-6 py-4 grid grid-cols-3 items-center">
           <div className="flex items-center gap-8">
             {[
-              { label: "Coleccion", href: "#" },
+              { label: "Coleccion", href: "#coleccion" },
               { label: "Catalogo", href: "/catalogo" },
-              { label: "Novedades", href: "#" },
+              { label: "Novedades", href: "#novedades" },
             ].map((item) => (
               <Link
                 key={item.label}
@@ -154,6 +155,12 @@ export default async function HomePage() {
         style={{ minHeight: "88vh", background: "linear-gradient(135deg, #b8b0a5 0%, #cdc8c0 40%, #ddd9d3 100%)" }}
       >
         <div className="relative z-10 px-16 pb-20 max-w-xl">
+          <img
+            src={imagen.src}
+            alt="Nueva Coleccion"
+            style={{ minHeight: "88vh"}}
+            className="absolute bottom-0 left-0 min-w-screen h-full object-cover object-center opacity-40 pointer-events-none"
+          />
           <p className="text-xs uppercase mb-5 opacity-70 text-white" style={{ letterSpacing: "0.25em" }}>
             Nueva Coleccion 2026
           </p>
@@ -185,7 +192,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="py-24 px-6" style={{ background: "#f5f2ee" }}>
+      <section id="novedades" className="py-24 px-6" style={{ background: "#f5f2ee" }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-xs uppercase mb-3" style={{ letterSpacing: "0.25em", color: "#9c8f82" }}>
@@ -310,7 +317,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="py-24 px-6" style={{ background: "#f5f2ee" }}>
+      <section id="coleccion" className="py-24 px-6" style={{ background: "#f5f2ee" }}>
         <div className="max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-10">
             <h2 className="text-3xl font-normal" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
