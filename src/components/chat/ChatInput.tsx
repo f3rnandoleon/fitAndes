@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Image from "next/image";
 import { useId, useRef, useState, type ChangeEvent } from "react";
 import type { ChatAttachment, ChatAttachmentPreview } from "@/lib/chat/types";
 
@@ -75,7 +76,9 @@ export default function ChatInput({ disabled = false, onSubmit }: Props) {
     <div className="border-t px-4 py-4" style={{ borderColor: "#ece6dc", background: "#fbf9f5" }}>
       {attachment ? (
         <div className="mb-3 flex items-center gap-3 rounded-2xl border bg-white px-3 py-2" style={{ borderColor: "#ece6dc" }}>
-          {attachment.previewUrl ? <img src={attachment.previewUrl} alt={attachment.name ?? "Adjunto"} className="h-14 w-14 rounded-xl object-cover" /> : null}
+          {attachment.previewUrl ? (
+            <Image src={attachment.previewUrl} alt={attachment.name ?? "Adjunto"} width={56} height={56} unoptimized className="h-14 w-14 rounded-xl object-cover" />
+          ) : null}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm" style={{ color: "#1a1a1a" }}>
               {attachment.name ?? "Imagen adjunta"}
@@ -137,4 +140,7 @@ export default function ChatInput({ disabled = false, onSubmit }: Props) {
     </div>
   );
 }
+
+
+
 

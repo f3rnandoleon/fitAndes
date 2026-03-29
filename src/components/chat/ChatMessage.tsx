@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Image from "next/image";
 import QuickActions from "@/components/chat/QuickActions";
 import ProductCardMessage from "@/components/chat/ProductCardMessage";
 import type { ChatAction, ProductCardData, TranscriptMessage } from "@/lib/chat/types";
@@ -31,7 +32,15 @@ export default function ChatMessage({ message, onAction, onSuggestion, onAddToCa
           <div className="flex flex-wrap gap-2">
             {message.attachments.map((attachment) =>
               attachment.previewUrl ? (
-                <img key={attachment.previewUrl} src={attachment.previewUrl} alt={attachment.name ?? "Adjunto"} className="h-24 w-24 rounded-2xl object-cover" />
+                <Image
+                  key={attachment.previewUrl}
+                  src={attachment.previewUrl}
+                  alt={attachment.name ?? "Adjunto"}
+                  width={96}
+                  height={96}
+                  unoptimized
+                  className="h-24 w-24 rounded-2xl object-cover"
+                />
               ) : null,
             )}
           </div>
@@ -87,4 +96,7 @@ export default function ChatMessage({ message, onAction, onSuggestion, onAddToCa
     </div>
   );
 }
+
+
+
 

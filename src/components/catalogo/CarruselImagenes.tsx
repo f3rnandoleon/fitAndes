@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -62,8 +63,8 @@ export default function CarruselImagenes({
         }}
       >
         {imagenes.map((imagen, index) => (
-          <div key={`${imagen}-${index}`} className="h-full shrink-0" style={{ width: `${100 / imagenes.length}%` }}>
-            <img src={imagen} alt={alt} className={`h-full w-full object-cover ${imgClassName}`.trim()} />
+          <div key={`${imagen}-${index}`} className="relative h-full shrink-0" style={{ width: `${100 / imagenes.length}%` }}>
+            <Image src={imagen} alt={alt} fill unoptimized sizes="(max-width: 768px) 100vw, 50vw" className={`object-cover ${imgClassName}`.trim()} />
           </div>
         ))}
       </div>

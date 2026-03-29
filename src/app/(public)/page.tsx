@@ -1,6 +1,9 @@
+﻿import Image from "next/image";
 import Link from "next/link";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
+import { BiHistory,BiLogIn,BiDevices } from "react-icons/bi";
+import { GrSecure } from "react-icons/gr";
 import imagen from "../../../public/banner-main.png"
 const API_URL =
   process.env.API_URL ??
@@ -104,17 +107,20 @@ export default async function HomePage() {
     <main className="min-h-screen" style={{ background: "#f5f2ee", color: "#1a1a1a", fontFamily: "system-ui, sans-serif" }}>
       <section
         id="inicio"
-        className="relative flex items-end overflow-hidden"
+        className="relative flex  overflow-hidden"
         style={{ minHeight: "88vh", background: "linear-gradient(135deg, #b8b0a5 0%, #cdc8c0 40%, #ddd9d3 100%)" }}
       >
         <div className="relative z-10 px-16 pb-20 max-w-xl">
-          <img
-            src={imagen.src}
+          <Image
+            src={imagen}
             alt="Nueva Coleccion"
-            style={{ minHeight: "88vh"}}
+            priority
+            fill
+            sizes="100vw"
+            style={{ minHeight: "88vh" }}
             className="absolute bottom-0 left-0 min-w-screen h-full object-cover object-center opacity-40 pointer-events-none"
           />
-          <p className="text-xs uppercase mb-5 opacity-70 text-white" style={{ letterSpacing: "0.25em" }}>
+          <p className=" mt-20 text-xs uppercase mb-5 opacity-70 text-white" style={{ letterSpacing: "0.25em" }}>
             Nueva Coleccion 2026
           </p>
           <h1
@@ -251,10 +257,10 @@ export default async function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-md w-full">
             {[
-              { icon: "📦", title: "Historial de pedidos", desc: "Todas tus compras con detalle completo." },
-              { icon: "🔒", title: "Cuenta segura", desc: "Sesion protegida con JWT cifrado." },
-              { icon: "⚡", title: "Registro en segundos", desc: "Sin formularios largos. Acceso inmediato." },
-              { icon: "📱", title: "Cualquier dispositivo", desc: "Funciona igual en movil y desktop." },
+              { icon: <BiHistory />, title: "Historial de pedidos", desc: "Todas tus compras con detalle completo." },
+              { icon: <GrSecure />, title: "Cuenta segura", desc: "Sesion protegida con JWT cifrado." },
+              { icon: <BiLogIn />, title: "Registro en segundos", desc: "Sin formularios largos. Acceso inmediato." },
+              { icon: <BiDevices />, title: "Cualquier dispositivo", desc: "Funciona igual en movil y desktop." },
             ].map(({ icon, title, desc }) => (
               <div key={title} className="flex gap-3">
                 <span className="text-xl mt-0.5 shrink-0">{icon}</span>
@@ -407,13 +413,16 @@ export default async function HomePage() {
 
         <div className="border-t px-6 py-5 text-center" style={{ borderColor: "#2e2e2e" }}>
           <p className="text-xs" style={{ color: "#6b6058" }}>
-            {`© ${new Date().getFullYear()} FitAndes. Todos los derechos reservados.`}
+            {`@ ${new Date().getFullYear()} FitAndes. Todos los derechos reservados.`}
           </p>
         </div>
       </footer>
     </main>
   );
 }
+
+
+
 
 
 

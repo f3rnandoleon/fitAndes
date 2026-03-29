@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
@@ -120,8 +121,8 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
                         {items.map((item) => (
                           <div key={item.id} className="px-5 py-4 border-b" style={{ borderColor: "#f1ebe3" }}>
                             <div className="flex gap-3">
-                              <div className="h-20 w-16 shrink-0 overflow-hidden border" style={{ borderColor: "#ece6dc", background: "#f6f1ea" }}>
-                                {item.imagen ? <img src={item.imagen} alt={item.nombre} className="h-full w-full object-cover" /> : null}
+                              <div className="relative h-20 w-16 shrink-0 overflow-hidden border" style={{ borderColor: "#ece6dc", background: "#f6f1ea" }}>
+                                {item.imagen ? <Image src={item.imagen} alt={item.nombre} fill unoptimized sizes="64px" className="object-cover" /> : null}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm uppercase leading-snug" style={{ color: "#111111" }}>
@@ -286,3 +287,6 @@ function CartIcon() {
     </svg>
   );
 }
+
+
+

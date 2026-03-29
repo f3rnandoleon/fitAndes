@@ -230,6 +230,7 @@ Body:
 {
   "nombre": "Polera",
   "modelo": "Classic",
+  "categoria":"Poleras",
   "precioVenta": 120,
   "precioCosto": 80,
   "variantes": [
@@ -354,6 +355,7 @@ Respuestas:
   "_id": "productoId",
   "nombre": "Polera",
   "modelo": "Classic",
+  "categoria":"Chompa",
   "precioVenta": 120,
   "variante": {
     "color": "Negro",

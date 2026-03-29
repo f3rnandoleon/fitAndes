@@ -87,11 +87,16 @@ function colorStyle(color: string) {
 export default function CatalogoGrid({ productos }: { productos: Producto[] }) {
   const [busqueda, setBusqueda] = useState("");
   const [colorFiltro, setColorFiltro] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState("");
+  const [tallaFiltro, setTallaFiltro] = useState("");
   const [orden, setOrden] = useState<OrdenKey>("fecha");
   const [ordenAbierto, setOrdenAbierto] = useState(false);
 
   const colores = Array.from(new Set(productos.flatMap((producto) => producto.variantes.map((variante) => variante.color)))).sort();
-  const categorias = Array.from(new Set(productos.map((producto) => producto.categoria).filter(Boolean)));
+  const categorias = Array.from(new Set(productos.map((producto) => producto.categoria).filter(Boolean))).sort();
+  const tallas = Array.from(new Set(productos.flatMap((producto) => producto.variantes.map((variante) => variante.talla)))).sort(
+    (a, b) => a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }),
+  );
   const categoriaPrincipal = categorias.length === 1 ? categorias[0]?.toUpperCase() : productos[0]?.categoria?.toUpperCase() ?? "CATALOGO";
 
   const termino = busqueda.trim().toLowerCase();
@@ -103,7 +108,9 @@ export default function CatalogoGrid({ productos }: { productos: Producto[] }) {
       (producto.categoria ?? "").toLowerCase().includes(termino);
 
     const coincideColor = !colorFiltro || producto.variantes.some((variante) => variante.color === colorFiltro);
-    return coincideBusqueda && coincideColor;
+    const coincideCategoria = !categoriaFiltro || producto.categoria === categoriaFiltro;
+    const coincideTalla = !tallaFiltro || producto.variantes.some((variante) => variante.talla === tallaFiltro);
+    return coincideBusqueda && coincideColor && coincideCategoria && coincideTalla;
   });
 
   const productosVisibles = [...filtrados].sort((a, b) => {
@@ -142,7 +149,20 @@ export default function CatalogoGrid({ productos }: { productos: Producto[] }) {
         </div>
 
         <div className="border-t pt-8" style={{ borderColor: "#ece6dc" }}>
-          <p className="text-[11px] uppercase mb-8" style={{ letterSpacing: "0.18em", color: "#111111" }}>
+          <div>
+            <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.16em", color: "#111111" }}>
+              Buscar
+            </p>
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(event) => setBusqueda(event.target.value)}
+              placeholder="Nombre, modelo..."
+              className="w-full border px-4 py-3 text-sm focus:outline-none"
+              style={{ borderColor: "#ece6dc", background: "white" }}
+            />
+          </div>
+          <p className="text-[11px] uppercase mb-8 mt-8" style={{ letterSpacing: "0.18em", color: "#111111" }}>
             Filtrado por
           </p>
 
@@ -181,19 +201,73 @@ export default function CatalogoGrid({ productos }: { productos: Producto[] }) {
             )}
           </div>
 
-          <div>
+          <div className="mb-10">
             <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.16em", color: "#111111" }}>
-              Buscar
+              Categoria
             </p>
-            <input
-              type="text"
-              value={busqueda}
-              onChange={(event) => setBusqueda(event.target.value)}
-              placeholder="Nombre, modelo..."
+            <select
+              value={categoriaFiltro}
+              onChange={(event) => setCategoriaFiltro(event.target.value)}
               className="w-full border px-4 py-3 text-sm focus:outline-none"
               style={{ borderColor: "#ece6dc", background: "white" }}
-            />
+            >
+              <option value="">Todas</option>
+              {categorias.map((categoria) => (
+                <option key={categoria} value={categoria}>
+                  {categoria}
+                </option>
+              ))}
+            </select>
+            {categoriaFiltro && (
+              <button
+                type="button"
+                onClick={() => setCategoriaFiltro("")}
+                className="mt-4 text-[11px] uppercase transition-opacity hover:opacity-60"
+                style={{ letterSpacing: "0.16em", color: "#8f8478" }}
+              >
+                Limpiar categoria
+              </button>
+            )}
           </div>
+
+          <div className="mb-10">
+            <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.16em", color: "#111111" }}>
+              Talla
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {tallas.map((talla) => {
+                const activa = tallaFiltro === talla;
+                return (
+                  <button
+                    key={talla}
+                    type="button"
+                    onClick={() => setTallaFiltro((actual) => (actual === talla ? "" : talla))}
+                    className="min-w-10 border px-3 py-2 text-xs uppercase transition-colors hover:bg-[#f2eee8]"
+                    style={{
+                      letterSpacing: "0.12em",
+                      borderColor: activa ? "#111111" : "#ddd5cb",
+                      background: activa ? "#111111" : "white",
+                      color: activa ? "#ffffff" : "#5f564e",
+                    }}
+                  >
+                    {talla}
+                  </button>
+                );
+              })}
+            </div>
+            {tallaFiltro && (
+              <button
+                type="button"
+                onClick={() => setTallaFiltro("")}
+                className="mt-4 text-[11px] uppercase transition-opacity hover:opacity-60"
+                style={{ letterSpacing: "0.16em", color: "#8f8478" }}
+              >
+                Limpiar talla
+              </button>
+            )}
+          </div>
+
+          
         </div>
       </aside>
 
