@@ -237,6 +237,7 @@ Body:
       "color": "Negro",
       "talla": "M",
       "stock": 10,
+      "descripcion":"Algodon Licrado con figura de foku etc",
       "imagenes": [
         "https://res.cloudinary.com/.../image/upload/v1234567890/control-ventas/variantes/polera-negra-m-1.jpg",
         "https://res.cloudinary.com/.../image/upload/v1234567890/control-ventas/variantes/polera-negra-m-2.jpg"
@@ -257,6 +258,7 @@ Validaciones:
   - `color`: requerido, max 50
   - `talla`: requerido, max 20
   - `stock`: entero >= 0
+  - `descripcion`: requerido, max 50
   - `imagenes?`: arreglo de URLs validas de Cloudinary o valores `data:image/...` validos para migracion/compatibilidad
   - `imagen?`: campo legado aceptado por compatibilidad; se migra a `imagenes[]`
   - `codigoBarra?`, `qrCode?`
@@ -357,6 +359,7 @@ Respuestas:
     "color": "Negro",
     "talla": "M",
     "stock": 5,
+    "descripcion": "Algodon Licrado con figura de goku color negro etc",
     "imagen": "url-portada-opcional",
     "imagenes": [
       "url-1-opcional",
