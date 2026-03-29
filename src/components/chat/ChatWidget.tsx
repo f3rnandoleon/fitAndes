@@ -12,6 +12,8 @@ const SESSION_KEY = "fitandes-chat-session";
 const MEMORY_KEY = "fitandes-chat-memory";
 const HISTORY_KEY = "fitandes-chat-history";
 
+type WindowMode = "compact" | "wide" | "full";
+
 function createId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 }
@@ -41,6 +43,8 @@ export default function ChatWidget() {
   const [sessionId, setSessionId] = useState("");
   const [memory, setMemory] = useState(createInitialMemory(false));
   const [messages, setMessages] = useState<TranscriptMessage[]>([buildWelcomeMessage()]);
+  const [hintVisible, setHintVisible] = useState(true);
+  const [windowMode, setWindowMode] = useState<WindowMode>("compact");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -65,8 +69,17 @@ export default function ChatWidget() {
   }, [memory, messages, sessionId]);
 
   useEffect(() => {
-    if (open) setUnread(0);
+    if (open) {
+      setUnread(0);
+      setHintVisible(false);
+    }
   }, [open]);
+
+  useEffect(() => {
+    if (!hintVisible || open) return;
+    const timeout = window.setTimeout(() => setHintVisible(false), 10000);
+    return () => window.clearTimeout(timeout);
+  }, [hintVisible, open]);
 
   function pushAssistantMessage(message: Omit<TranscriptMessage, "id" | "role" | "createdAt">) {
     setMessages((current) => [
@@ -202,12 +215,36 @@ export default function ChatWidget() {
     });
   }
 
+  function cycleWindowSize() {
+    setWindowMode((current) => {
+      if (current === "compact") return "wide";
+      if (current === "wide") return "compact";
+      return "wide";
+    });
+  }
+
+  function toggleFullscreen() {
+    setWindowMode((current) => (current === "full" ? "wide" : "full"));
+  }
+
+  function clearChat() {
+    const initialMemory = createInitialMemory(memory.userAuthenticated);
+    setMessages([buildWelcomeMessage()]);
+    setMemory(initialMemory);
+    setUnread(0);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(MEMORY_KEY, JSON.stringify(initialMemory));
+      window.localStorage.setItem(HISTORY_KEY, JSON.stringify([buildWelcomeMessage()]));
+    }
+  }
+
   if (pathname === "/login" || pathname === "/registro") return null;
 
   return (
     <>
       <ChatWindow
         open={open}
+        mode={windowMode}
         loading={loading}
         messages={messages}
         onClose={() => setOpen(false)}
@@ -215,7 +252,17 @@ export default function ChatWidget() {
         onAction={handleAction}
         onSuggestion={(text) => void sendMessage({ message: text, displayText: text, attachments: [] })}
         onAddToCart={handleAddToCart}
+        onCycleSize={cycleWindowSize}
+        onToggleFullscreen={toggleFullscreen}
+        onClearChat={clearChat}
       />
+
+      {hintVisible && !open ? (
+        <div className="fixed bottom-20 right-24 z-50 max-w-[260px] rounded-[22px] border bg-white px-4 py-3 text-sm leading-relaxed shadow-[0_20px_45px_rgba(17,17,17,0.12)]" style={{ borderColor: "#ece6dc", color: "#5f564e" }}>
+          Consulta productos, tallas, similares o tus pedidos de forma comoda.
+          <span className="absolute -bottom-2 right-6 h-4 w-4 rotate-45 border-r border-b bg-white" style={{ borderColor: "#ece6dc" }} />
+        </div>
+      ) : null}
 
       <button
         type="button"
@@ -223,9 +270,7 @@ export default function ChatWidget() {
         className="fixed bottom-4 right-4 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-[#111111] text-white shadow-[0_20px_45px_rgba(17,17,17,0.25)] transition-transform hover:-translate-y-1"
         aria-label="Abrir asistente de FitAndes"
       >
-        <span className="text-xs uppercase" style={{ letterSpacing: "0.16em" }}>
-          Chat
-        </span>
+        <MessageIcon />
         {unread > 0 ? (
           <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-[#d04d37] px-1 text-[10px] font-semibold text-white">
             {unread}
@@ -245,3 +290,12 @@ function safeParse(raw: string | null): unknown {
   }
 }
 
+function MessageIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M7 18l-3 2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7Z" />
+      <path d="M8 9h8" />
+      <path d="M8 13h5" />
+    </svg>
+  );
+}
