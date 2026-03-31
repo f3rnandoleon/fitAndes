@@ -40,7 +40,10 @@ export async function POST(request: Request) {
       message,
       memory,
       attachments,
-      userId: session?.user?.id ?? null,
+      auth: {
+        userId: session?.user?.id ?? null,
+        accessToken: session?.accessToken ?? null,
+      },
     });
 
     return NextResponse.json(response);
@@ -57,4 +60,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

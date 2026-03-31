@@ -1,12 +1,31 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
+import { buildCentralApiHeaders } from "@/lib/central-api";
 import type { Pedido } from "@/types/pedidos";
 
-async function getPedido(pedidoId: string, userId: string): Promise<Pedido | null> {
+function formatDelivery(delivery: Pedido["delivery"]) {
+  if (!delivery?.method) return "-";
+
+  if (delivery.method === "WHATSAPP") return "WhatsApp";
+
+  if (delivery.method === "PICKUP_LAPAZ") {
+    const labels: Record<string, string> = {
+      TELEFERICO_MORADO: "Teleferico Morado (Faro Murillo, Obelisco)",
+      TELEFERICO_ROJO: "Teleferico Rojo (Estacion Central, 16 de Julio)",
+      CORREOS: "Correos",
+    };
+
+    return labels[delivery.pickupPoint ?? ""] ?? "Entrega en La Paz";
+  }
+
+  return delivery.address ? `Entrega en casa: ${delivery.address}` : "Entrega en casa";
+}
+
+async function getPedido(pedidoId: string, userId: string, accessToken?: string | null): Promise<Pedido | null> {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mis-pedidos/${pedidoId}`, {
-    headers: { "x-user-id": userId },
+    headers: buildCentralApiHeaders({ userId, role: "CLIENTE", accessToken }),
     next: { revalidate: 0 },
   });
 
@@ -21,7 +40,7 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
   if (!session) redirect("/login");
 
   const { id } = await params;
-  const pedido = await getPedido(id, session.user.id);
+  const pedido = await getPedido(id, session.user.id, session.accessToken);
   if (!pedido) notFound();
 
   const descuento = pedido.descuento ?? 0;
@@ -110,6 +129,16 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
           <span>Metodo de pago</span>
           <span>{pedido.metodoPago ?? "-"}</span>
         </div>
+        <div className="flex justify-between text-sm" style={{ color: "var(--muted)" }}>
+          <span>Entrega</span>
+          <span className="max-w-[60%] text-right">{formatDelivery(pedido.delivery)}</span>
+        </div>
+        {pedido.delivery?.phone ? (
+          <div className="flex justify-between text-sm" style={{ color: "var(--muted)" }}>
+            <span>Celular</span>
+            <span>{pedido.delivery.phone}</span>
+          </div>
+        ) : null}
         <div className="flex justify-between text-base pt-3 border-t" style={{ borderColor: "var(--border)" }}>
           <span style={{ color: "var(--foreground)" }}>Total</span>
           <span style={{ color: "var(--foreground)", fontFamily: "Georgia, 'Times New Roman', serif" }}>
@@ -124,4 +153,3 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
     </div>
   );
 }
-

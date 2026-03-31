@@ -1,13 +1,14 @@
-﻿import type { Pedido } from "@/types/pedidos";
+﻿import { buildCentralApiHeaders, type CentralApiAuth } from "@/lib/central-api";
+import type { Pedido } from "@/types/pedidos";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "";
 
-export async function getMisPedidos(userId: string): Promise<Pedido[] | null> {
-  if (!userId || !API_URL) return [];
+export async function getMisPedidos(auth: CentralApiAuth | null): Promise<Pedido[] | null> {
+  if (!auth?.userId || !API_URL) return [];
 
   try {
     const res = await fetch(`${API_URL}/mis-pedidos`, {
-      headers: { "x-user-id": userId },
+      headers: buildCentralApiHeaders(auth),
       cache: "no-store",
       signal: AbortSignal.timeout(10000),
     });
@@ -19,12 +20,12 @@ export async function getMisPedidos(userId: string): Promise<Pedido[] | null> {
   }
 }
 
-export async function getPedidoDetalle(userId: string, pedidoId: string): Promise<Pedido | null | undefined> {
-  if (!userId || !pedidoId || !API_URL) return null;
+export async function getPedidoDetalle(auth: CentralApiAuth | null, pedidoId: string): Promise<Pedido | null | undefined> {
+  if (!auth?.userId || !pedidoId || !API_URL) return null;
 
   try {
     const res = await fetch(`${API_URL}/mis-pedidos/${pedidoId}`, {
-      headers: { "x-user-id": userId },
+      headers: buildCentralApiHeaders(auth),
       cache: "no-store",
       signal: AbortSignal.timeout(10000),
     });
@@ -35,4 +36,3 @@ export async function getPedidoDetalle(userId: string, pedidoId: string): Promis
     return undefined;
   }
 }
-

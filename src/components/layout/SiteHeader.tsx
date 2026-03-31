@@ -171,23 +171,32 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
                           <span style={{ color: "#5f564e" }}>Total reservado</span>
                           <strong style={{ color: "#111111" }}>{formatPrice(totalAmount)}</strong>
                         </div>
-                        {authenticated ? (
+                        <div className="grid gap-3">
                           <Link
-                            href="/pedidos"
+                            href="/checkout"
                             className="flex items-center justify-center bg-[#111111] text-white text-xs uppercase py-3 transition-opacity hover:opacity-85"
                             style={{ letterSpacing: "0.16em" }}
                           >
-                            Ver pedidos
+                            Finalizar compra
                           </Link>
-                        ) : (
-                          <Link
-                            href="/login"
-                            className="flex items-center justify-center bg-[#111111] text-white text-xs uppercase py-3 transition-opacity hover:opacity-85"
-                            style={{ letterSpacing: "0.16em" }}
-                          >
-                            Iniciar sesion
-                          </Link>
-                        )}
+                          {authenticated ? (
+                            <Link
+                              href="/pedidos"
+                              className="flex items-center justify-center border text-xs uppercase py-3 transition-colors hover:bg-[#f8f4ee]"
+                              style={{ letterSpacing: "0.16em", borderColor: "#ddd5cb", color: "#5f564e" }}
+                            >
+                              Ver pedidos
+                            </Link>
+                          ) : (
+                            <Link
+                              href="/login?callbackUrl=%2Fcheckout"
+                              className="flex items-center justify-center border text-xs uppercase py-3 transition-colors hover:bg-[#f8f4ee]"
+                              style={{ letterSpacing: "0.16em", borderColor: "#ddd5cb", color: "#5f564e" }}
+                            >
+                              Iniciar sesion
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </>
                   )}
@@ -287,6 +296,3 @@ function CartIcon() {
     </svg>
   );
 }
-
-
-

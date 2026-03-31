@@ -70,9 +70,10 @@ export async function runChat(input: {
   message: string;
   memory: unknown;
   attachments?: Array<{ name?: string; mimeType: string; data: string }>;
-  userId: string | null;
+  auth: { userId: string | null; accessToken?: string | null };
 }): Promise<ChatResponse> {
-  const memory = normalizeMemory(input.memory, Boolean(input.userId));
+  const customerAuth = input.auth.userId ? { userId: input.auth.userId, role: "CLIENTE" as const, accessToken: input.auth.accessToken ?? null } : null;
+  const memory = normalizeMemory(input.memory, Boolean(input.auth.userId));
   const aiInterpretation = await interpretWithGemini(input.message, memory, input.attachments ?? []);
   const interpretation = aiInterpretation ?? parseRuleIntent(input.message, memory);
   const sourceMode: ChatResponse["sourceMode"] = aiInterpretation ? "ai" : "rules";
@@ -84,7 +85,7 @@ export async function runChat(input: {
         "Puedo ayudarte a buscar productos, mostrar detalles, sugerir similares, buscar por codigo y revisar tus pedidos si ya iniciaste sesion.",
       intent: "ayuda",
       suggestions: ["Quiero una polera negra", "Muestrame novedades", "Mis pedidos", "Buscar por codigo"],
-      memory: buildBaseMemory(memory, { lastIntent: "ayuda", userAuthenticated: Boolean(input.userId) }),
+      memory: buildBaseMemory(memory, { lastIntent: "ayuda", userAuthenticated: Boolean(input.auth.userId) }),
       sourceMode,
     };
   }
@@ -95,7 +96,7 @@ export async function runChat(input: {
         reply: "Envia el codigo QR o de barras y te busco la coincidencia exacta.",
         intent: "buscar_por_codigo",
         suggestions: ["Codigo ABC12345", "Quiero una polera negra"],
-        memory: buildBaseMemory(memory, { lastIntent: "buscar_por_codigo", userAuthenticated: Boolean(input.userId) }),
+        memory: buildBaseMemory(memory, { lastIntent: "buscar_por_codigo", userAuthenticated: Boolean(input.auth.userId) }),
         sourceMode,
       };
     }
@@ -111,7 +112,7 @@ export async function runChat(input: {
         intent: "buscar_por_codigo",
         suggestions: ["Quiero algo negro", "Mostrar catalogo"],
         actions: productActionsOnEmpty(),
-        memory: buildBaseMemory(memory, { lastIntent: "buscar_por_codigo", userAuthenticated: Boolean(input.userId) }),
+        memory: buildBaseMemory(memory, { lastIntent: "buscar_por_codigo", userAuthenticated: Boolean(input.auth.userId) }),
         sourceMode,
       };
     }
@@ -141,14 +142,14 @@ export async function runChat(input: {
         preferredQuantity: entities.quantity ?? 1,
         pendingAction: null,
         pendingProductId: null,
-        userAuthenticated: Boolean(input.userId),
+        userAuthenticated: Boolean(input.auth.userId),
       }),
       sourceMode,
     };
   }
 
   if (interpretation.intent === "ver_pedidos") {
-    if (!input.userId) {
+    if (!input.auth.userId) {
       return {
         reply: "Para mostrarte tus pedidos primero debes iniciar sesion.",
         intent: "ver_pedidos",
@@ -159,7 +160,7 @@ export async function runChat(input: {
       };
     }
 
-    const orders = await getMisPedidos(input.userId);
+    const orders = await getMisPedidos(customerAuth);
     if (orders === null) return withNoOrdersReply(memory, sourceMode);
     if (orders.length === 0) {
       return {
@@ -188,7 +189,7 @@ export async function runChat(input: {
   }
 
   if (interpretation.intent === "ver_pedido") {
-    if (!input.userId) {
+    if (!input.auth.userId) {
       return {
         reply: "Necesitas iniciar sesion para revisar un pedido especifico.",
         intent: "ver_pedido",
@@ -209,7 +210,7 @@ export async function runChat(input: {
       };
     }
 
-    const order = await getPedidoDetalle(input.userId, orderId);
+    const order = await getPedidoDetalle(customerAuth, orderId);
     if (order === undefined) return withNoOrdersReply(memory, sourceMode);
     if (!order) {
       return {
@@ -255,7 +256,7 @@ export async function runChat(input: {
         reply: "Dime que producto quieres ver y te muestro el detalle.",
         intent: "ver_detalle",
         suggestions: ["Quiero una chompa negra", "Mostrar catalogo"],
-        memory: buildBaseMemory(memory, { lastIntent: "ver_detalle", userAuthenticated: Boolean(input.userId) }),
+        memory: buildBaseMemory(memory, { lastIntent: "ver_detalle", userAuthenticated: Boolean(input.auth.userId) }),
         sourceMode,
       };
     }
@@ -268,7 +269,7 @@ export async function runChat(input: {
         intent: "ver_detalle",
         suggestions: ["Mostrar similares", "Ver catalogo"],
         actions: productActionsOnEmpty(),
-        memory: buildBaseMemory(memory, { lastIntent: "ver_detalle", userAuthenticated: Boolean(input.userId) }),
+        memory: buildBaseMemory(memory, { lastIntent: "ver_detalle", userAuthenticated: Boolean(input.auth.userId) }),
         sourceMode,
       };
     }
@@ -295,7 +296,7 @@ export async function runChat(input: {
         preferredQuantity: entities.quantity ?? memory.preferredQuantity ?? 1,
         pendingAction: null,
         pendingProductId: null,
-        userAuthenticated: Boolean(input.userId),
+        userAuthenticated: Boolean(input.auth.userId),
       }),
       sourceMode,
     };
@@ -317,7 +318,7 @@ export async function runChat(input: {
         reply: "Primero dime cual producto te gusto y luego te muestro similares.",
         intent: "ver_similares",
         suggestions: ["Quiero una polera negra", "Mostrar catalogo"],
-        memory: buildBaseMemory(memory, { lastIntent: "ver_similares", userAuthenticated: Boolean(input.userId) }),
+        memory: buildBaseMemory(memory, { lastIntent: "ver_similares", userAuthenticated: Boolean(input.auth.userId) }),
         sourceMode,
       };
     }
@@ -330,7 +331,7 @@ export async function runChat(input: {
         intent: "ver_similares",
         suggestions: ["Mostrar catalogo"],
         actions: productActionsOnEmpty(),
-        memory: buildBaseMemory(memory, { lastIntent: "ver_similares", userAuthenticated: Boolean(input.userId) }),
+        memory: buildBaseMemory(memory, { lastIntent: "ver_similares", userAuthenticated: Boolean(input.auth.userId) }),
         sourceMode,
       };
     }
@@ -342,7 +343,7 @@ export async function runChat(input: {
         reply: "No encontre productos realmente parecidos ahora mismo, pero puedo seguir buscando por color, talla o precio.",
         intent: "ver_similares",
         suggestions: ["Quiero algo negro", "Quiero algo mas barato"],
-        memory: buildBaseMemory(memory, { lastIntent: "ver_similares", selectedProductId: detail._id, userAuthenticated: Boolean(input.userId) }),
+        memory: buildBaseMemory(memory, { lastIntent: "ver_similares", selectedProductId: detail._id, userAuthenticated: Boolean(input.auth.userId) }),
         sourceMode,
       };
     }
@@ -356,7 +357,7 @@ export async function runChat(input: {
         lastIntent: "ver_similares",
         lastProductIds: similars.map((product) => product._id).slice(0, 6),
         selectedProductId: detail._id,
-        userAuthenticated: Boolean(input.userId),
+        userAuthenticated: Boolean(input.auth.userId),
       }),
       sourceMode,
     };
@@ -385,7 +386,7 @@ export async function runChat(input: {
         reply: "Todavia no se que producto quieres agregar. Dime cual te interesa y te lo preparo.",
         intent: "agregar_carrito",
         suggestions: ["Quiero una chompa negra", "Mostrar catalogo"],
-        memory: buildBaseMemory(memory, { lastIntent: "agregar_carrito", userAuthenticated: Boolean(input.userId) }),
+        memory: buildBaseMemory(memory, { lastIntent: "agregar_carrito", userAuthenticated: Boolean(input.auth.userId) }),
         sourceMode,
       };
     }
@@ -397,7 +398,7 @@ export async function runChat(input: {
         reply: "Ese producto ya no esta disponible para reserva.",
         intent: "agregar_carrito",
         actions: productActionsOnEmpty(),
-        memory: buildBaseMemory(memory, { lastIntent: "agregar_carrito", userAuthenticated: Boolean(input.userId) }),
+        memory: buildBaseMemory(memory, { lastIntent: "agregar_carrito", userAuthenticated: Boolean(input.auth.userId) }),
         sourceMode,
       };
     }
@@ -434,7 +435,7 @@ export async function runChat(input: {
           preferredColor: preferredColor ?? variant?.color ?? null,
           preferredTalla: preferredTalla ?? variant?.talla ?? null,
           preferredQuantity,
-          userAuthenticated: Boolean(input.userId),
+          userAuthenticated: Boolean(input.auth.userId),
         }),
         sourceMode,
       };
@@ -460,7 +461,7 @@ export async function runChat(input: {
         preferredColor: preferredColor ?? variant?.color ?? null,
         preferredTalla: preferredTalla ?? variant?.talla ?? null,
         preferredQuantity,
-        userAuthenticated: Boolean(input.userId),
+        userAuthenticated: Boolean(input.auth.userId),
       }),
       sourceMode,
     };
@@ -493,7 +494,7 @@ export async function runChat(input: {
             minPrice: entities.minPrice,
             maxPrice: entities.maxPrice,
           },
-          userAuthenticated: Boolean(input.userId),
+          userAuthenticated: Boolean(input.auth.userId),
         }),
         sourceMode,
       };
@@ -530,7 +531,7 @@ export async function runChat(input: {
         preferredColor: entities.color,
         preferredTalla: entities.talla,
         preferredQuantity: entities.quantity ?? 1,
-        userAuthenticated: Boolean(input.userId),
+        userAuthenticated: Boolean(input.auth.userId),
       }),
       sourceMode,
     };
@@ -540,8 +541,10 @@ export async function runChat(input: {
     reply: "Puedo ayudarte a encontrar productos, revisar detalles, sugerir similares, buscar por codigo o ver tus pedidos.",
     intent: "fallback",
     suggestions: ["Quiero una chompa negra", "Buscar por codigo", "Mis pedidos"],
-    memory: buildBaseMemory(memory, { lastIntent: "fallback", userAuthenticated: Boolean(input.userId) }),
+    memory: buildBaseMemory(memory, { lastIntent: "fallback", userAuthenticated: Boolean(input.auth.userId) }),
     sourceMode,
   };
 }
+
+
 

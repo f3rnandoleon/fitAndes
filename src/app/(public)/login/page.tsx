@@ -1,12 +1,19 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+
+function sanitizeCallbackUrl(value: string | null) {
+  if (!value || !value.startsWith("/")) return "/dashboard";
+  return value;
+}
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = sanitizeCallbackUrl(searchParams.get("callbackUrl"));
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,8 +27,8 @@ export default function LoginPage() {
       email: form.email,
       password: form.password,
       redirect: false,
+      callbackUrl,
     });
-      console.log(res)
 
     setLoading(false);
 
@@ -30,7 +37,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard");
+    router.push(callbackUrl);
+    router.refresh();
   };
 
   return (
@@ -170,4 +178,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

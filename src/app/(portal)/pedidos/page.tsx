@@ -1,12 +1,13 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
+import { buildCentralApiHeaders } from "@/lib/central-api";
 import type { Pedido } from "@/types/pedidos";
 
-async function getMisPedidos(userId: string): Promise<Pedido[]> {
+async function getMisPedidos(userId: string, accessToken?: string | null): Promise<Pedido[]> {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mis-pedidos`, {
-    headers: { "x-user-id": userId },
+    headers: buildCentralApiHeaders({ userId, role: "CLIENTE", accessToken }),
     next: { revalidate: 0 },
   });
 
@@ -20,7 +21,7 @@ export default async function PedidosPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const pedidos = await getMisPedidos(session.user.id);
+  const pedidos = await getMisPedidos(session.user.id, session.accessToken);
 
   const estadoColor: Record<string, React.CSSProperties> = {
     PAGADA: { color: "var(--success)", background: "#e7efe9", borderColor: "#c5d8c9" },
@@ -96,4 +97,3 @@ export default async function PedidosPage() {
     </div>
   );
 }
-

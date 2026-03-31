@@ -1,4 +1,4 @@
-import type { NextAuthOptions } from "next-auth";
+﻿import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -6,6 +6,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 type AppRole = "ADMIN" | "VENDEDOR" | "CLIENTE";
 
 type LoginResponse = {
+  accessToken?: string;
+  refreshToken?: string;
   user?: {
     id?: string;
     email?: string;
@@ -39,6 +41,8 @@ async function loginWithCentralApi(email: string, password: string) {
     email: user.email,
     fullname: user.fullname,
     role: user.role,
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
   };
 }
 
@@ -64,6 +68,8 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             fullname: user.fullname,
             role: user.role,
+            accessToken: user.accessToken,
+            refreshToken: user.refreshToken,
           };
         } catch {
           return null;
@@ -78,6 +84,8 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.fullname = user.fullname;
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
       }
       return token;
     },
@@ -85,6 +93,8 @@ export const authOptions: NextAuthOptions = {
       session.user.id = token.id;
       session.user.role = token.role;
       session.user.fullname = token.fullname;
+      session.accessToken = token.accessToken;
+      session.refreshToken = token.refreshToken;
       return session;
     },
   },

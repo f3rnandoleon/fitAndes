@@ -118,27 +118,27 @@ export default async function HomePage() {
             fill
             sizes="100vw"
             style={{ minHeight: "88vh" }}
-            className="absolute bottom-0 left-0 min-w-screen h-full object-cover object-center opacity-40 pointer-events-none"
+            className="absolute bottom-0 left-0 min-w-screen h-full object-cover object-center opacity-60 pointer-events-none"
           />
-          <p className=" mt-20 text-xs uppercase mb-5 opacity-70 text-white" style={{ letterSpacing: "0.25em" }}>
+          <p className=" mt-20 text-xs uppercase mb-5 opacity-70 " style={{ letterSpacing: "0.25em" }}>
             Nueva Coleccion 2026
           </p>
           <h1
-            className="text-6xl text-white mb-6"
+            className="text-6xl mb-6"
             style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, lineHeight: 1.05 }}
           >
             Elegancia sin
             <br />
             esfuerzo
           </h1>
-          <p className="text-sm leading-relaxed mb-10 opacity-80 text-white max-w-xs">
+          <p className="text-sm leading-relaxed mb-10 opacity-80 max-w-xs">
             {productos.length > 0
               ? `${productos.length} productos activos listos para tu nueva seleccion.`
               : "Piezas atemporales confeccionadas con los materiales mas nobles. Disenadas para perdurar."}
           </p>
           <Link
             href="/catalogo"
-            className="inline-flex items-center gap-3 px-7 py-3.5 text-xs uppercase border border-white text-white hover:bg-white hover:text-stone-900 transition-colors"
+            className="inline-flex items-center gap-3 px-7 py-3.5 text-xs uppercase border  hover:bg-white hover:text-stone-900 transition-colors"
             style={{ letterSpacing: "0.2em" }}
           >
             Explorar Coleccion {"->"}
