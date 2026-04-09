@@ -1,7 +1,7 @@
-﻿import { primeraImagenDeProducto, primeraImagenDeVariante } from "@/lib/catalogo-imagenes";
+import { primeraImagenDeProducto, primeraImagenDeVariante } from "@/lib/catalogo-imagenes";
 import type { ChatAction, OrderCardData, ProductCardData } from "@/lib/chat/types";
 import type { CatalogProduct } from "@/types/catalogo";
-import type { Pedido } from "@/types/pedidos";
+import { getPedidoItemColor, getPedidoItemNombre, getPedidoItemTalla, getPedidoTotal, type Pedido } from "@/types/pedidos";
 
 function formatPrice(value: number): string {
   return `Bs. ${new Intl.NumberFormat("es-BO", {
@@ -68,14 +68,14 @@ export function buildOrderCard(order: Pedido): OrderCardData {
     title: order.numeroVenta,
     subtitle: `${formatDate(order.createdAt)} · ${order.items?.length ?? 0} item(s)`,
     status: order.estado,
-    total: order.total ?? order.subtotal ?? 0,
+    total: getPedidoTotal(order),
     detailHref: `/pedidos/${order._id}`,
     items:
       order.items?.map((item) => ({
-        nombre: item.nombre ?? "Producto",
+        nombre: getPedidoItemNombre(item),
         cantidad: item.cantidad,
-        color: item.color ?? null,
-        talla: item.talla ?? null,
+        color: getPedidoItemColor(item),
+        talla: getPedidoItemTalla(item),
       })) ?? [],
     actions: [{ type: "show_order", label: "Ver pedido", orderId: order._id }],
   };
@@ -85,4 +85,3 @@ export function formatReadyToReserve(product: CatalogProduct, color?: string | n
   const target = [product.nombre, color, talla].filter(Boolean).join(" · ");
   return `Tengo listo ${target}. Puedes agregarlo a tu reserva desde la tarjeta.`;
 }
-

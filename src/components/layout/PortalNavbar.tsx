@@ -16,7 +16,7 @@ export default function PortalNavbar({ fullname, email }: Props) {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
         <Link
-          href="/portal/dashboard"
+          href="/dashboard"
           className="text-lg sm:text-2xl uppercase font-bold"
           style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.2em" }}
         >

@@ -71,7 +71,7 @@ export default function RegistroPage() {
         return;
       }
 
-      router.push("/portal/dashboard");
+      router.push("/dashboard");
     } catch {
       setError("Error de conexion. Intenta de nuevo.");
     } finally {

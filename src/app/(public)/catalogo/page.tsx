@@ -1,28 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import CatalogoGrid from "@/components/catalogo/CatalogoGrid";
-
-interface VarianteCatalogo {
-  color: string;
-  talla: string;
-  stock: number;
-  imagen?: string;
-  imagenes?: string[];
-}
-
-interface ProductoCatalogo {
-  _id: string;
-  nombre: string;
-  modelo: string;
-  categoria?: string;
-  precioVenta: number;
-  descuento?: number;
-  createdAt?: string;
-  totalVendidos?: number;
-  imagen?: string;
-  imagenes?: string[];
-  variantes: VarianteCatalogo[];
-}
+import type { CatalogProduct } from "@/types/catalogo";
 
 export const metadata = {
   title: "Catalogo | FitAndes",
@@ -30,14 +9,14 @@ export const metadata = {
 };
 
 export default async function CatalogoPage() {
-  let productos: ProductoCatalogo[] = [];
+  let productos: CatalogProduct[] = [];
 
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/publicos`, {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(10000),
     });
-    productos = res.ok ? ((await res.json()) as ProductoCatalogo[]) : [];
+    productos = res.ok ? ((await res.json()) as CatalogProduct[]) : [];
   } catch {
     productos = [];
   }

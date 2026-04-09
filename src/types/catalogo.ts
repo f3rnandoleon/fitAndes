@@ -1,10 +1,13 @@
-﻿export interface CatalogVariant {
+export interface CatalogVariant {
+  variantId?: string | null;
   color: string;
   talla: string;
   stock: number;
   descripcion?: string | null;
   imagen?: string | null;
   imagenes?: Array<string | null | undefined> | null;
+  codigoBarra?: string | null;
+  qrCode?: string | null;
 }
 
 export interface CatalogProduct {
@@ -13,6 +16,7 @@ export interface CatalogProduct {
   modelo: string;
   categoria?: string | null;
   precioVenta: number;
+  sku?: string | null;
   descuento?: number | null;
   createdAt?: string;
   totalVendidos?: number;
@@ -26,9 +30,5 @@ export interface ProductByCodeResponse {
   nombre: string;
   modelo: string;
   precioVenta: number;
-  variante: CatalogVariant & {
-    codigoBarra?: string | null;
-    qrCode?: string | null;
-  };
+  variante: CatalogVariant;
 }
-

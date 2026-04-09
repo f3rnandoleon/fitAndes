@@ -27,6 +27,16 @@ function formatMoney(value: number) {
   }).format(value);
 }
 
+function readSaleTotal(saleData: Record<string, unknown> | null): number | null {
+  if (!saleData) return null;
+
+  const totales = saleData.totales;
+  if (!totales || typeof totales !== "object") return null;
+
+  const total = (totales as { total?: unknown }).total;
+  return typeof total === "number" ? total : null;
+}
+
 function deliveryLabel(delivery: CheckoutDeliveryInput) {
   if (delivery.method === "WHATSAPP") return "Coordinacion por WhatsApp";
 
@@ -193,6 +203,7 @@ export async function POST(request: NextRequest) {
   const salePayload = {
     items: payload.items.map((item) => ({
       productoId: item.productoId,
+      variantId: item.variantId ?? undefined,
       color: item.color,
       talla: item.talla,
       cantidad: item.cantidad,
@@ -238,7 +249,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!saleResponse.ok) {
+      const validationErrors = Array.isArray(saleData?.errors) ? saleData.errors : [];
+      const firstValidationMessage = validationErrors.find(
+        (error): error is { message?: string } => Boolean(error && typeof error === "object"),
+      )?.message;
       const message =
+        firstValidationMessage ||
         (typeof saleData?.message === "string" && saleData.message) ||
         (typeof saleData?.error === "string" && saleData.error) ||
         (!auth.accessToken
@@ -248,7 +264,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, message }, { status: saleResponse.status });
     }
 
-    const total = payload.items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
+    const total = readSaleTotal(saleData) ?? payload.items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
     const orderId = (typeof saleData?._id === "string" && saleData._id) || (typeof saleData?.id === "string" && saleData.id) || null;
     const orderNumber = (typeof saleData?.numeroVenta === "string" && saleData.numeroVenta) || null;
     const whatsappUrl =

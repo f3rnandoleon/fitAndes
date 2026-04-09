@@ -1,9 +1,9 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { buildCentralApiHeaders } from "@/lib/central-api";
-import type { Pedido } from "@/types/pedidos";
+import { getPedidoTotal, type Pedido } from "@/types/pedidos";
 
 async function getMisPedidos(userId: string, accessToken?: string | null): Promise<Pedido[]> {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mis-pedidos`, {
@@ -84,7 +84,7 @@ export default async function PedidosPage() {
                       {pedido.estado}
                     </span>
                     <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                      Bs. {(pedido.total ?? 0).toFixed(2)}
+                      Bs. {getPedidoTotal(pedido).toFixed(2)}
                     </p>
                     <span className="text-xs" style={{ color: "var(--subtle)" }}>{"\u2192"}</span>
                   </div>

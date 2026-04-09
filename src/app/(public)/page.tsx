@@ -4,7 +4,7 @@ import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
 import { BiHistory,BiLogIn,BiDevices } from "react-icons/bi";
 import { GrSecure } from "react-icons/gr";
-import imagen from "../../../public/banner-main.png"
+import imagen from "../../../public/banner-main.png";
 const API_URL =
   process.env.API_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
@@ -390,7 +390,7 @@ export default async function HomePage() {
               {[
                 { label: "Ingresar", href: "/login" },
                 { label: "Crear cuenta", href: "/registro" },
-                { label: "Mis pedidos", href: "/portal/pedidos" },
+                { label: "Mis pedidos", href: "/pedidos" },
               ].map((item) => (
                 <Link key={item.label} href={item.href} className="text-sm hover:opacity-50 transition-opacity" style={{ color: "#f5f2ee" }}>
                   {item.label}

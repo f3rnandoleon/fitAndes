@@ -1,44 +1,122 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
+import { useEffect, useMemo, useState } from "react";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
-import VarianteSelector from "@/components/catalogo/VarianteSelector";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
-
-interface Variante {
-  color: string;
-  talla: string;
-  stock: number;
-  imagen?: string;
-  imagenes?: string[];
-}
-
-interface Producto {
-  _id?: string;
-  nombre: string;
-  modelo: string;
-  precioVenta: number;
-  sku?: string;
-  imagen?: string;
-  imagenes?: string[];
-  variantes: Variante[];
-}
+import type { CatalogProduct, CatalogVariant } from "@/types/catalogo";
+import { useSession } from "next-auth/react";
 
 interface Props {
-  producto: Producto;
+  producto: CatalogProduct;
   colores: string[];
   tallas: string[];
 }
 
-export default function ProductoDetalleCliente({ producto, colores, tallas }: Props) {
+const COLOR_SWATCHES: Record<string, string> = {
+  amarillo: "#d7b84a",
+  azul: "#2856d6",
+  azulmarino: "#1e2a56",
+  beige: "#ccb189",
+  blanco: "#f4f0e8",
+  cafe: "#7e6147",
+  celeste: "#94c9e8",
+  crema: "#e5dac2",
+  gris: "#9c9c9c",
+  lila: "#a590bf",
+  marfil: "#ddd0b3",
+  morado: "#5b4382",
+  naranja: "#e8822f",
+  negro: "#191919",
+  rojo: "#dd433e",
+  rosado: "#dba6b3",
+  verde: "#7b9964",
+};
+
+function swatchColor(color: string) {
+  const normalized = color.toLowerCase().replace(/\s+/g, "");
+  return COLOR_SWATCHES[normalized] ?? "#b7b7b7";
+}
+
+function formatPrice(value: number) {
+  return `Bs ${new Intl.NumberFormat("es-BO", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value)}`;
+}
+
+function buildDetailList(producto: CatalogProduct, variante: CatalogVariant | null, descripcion: string): string[] {
+  const explicit = descripcion
+    .split(/\n|[•\-]\s+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (explicit.length >= 2) return explicit.slice(0, 6);
+
+  return [
+    producto.modelo ? `Modelo: ${producto.modelo}` : null,
+    producto.sku ? `SKU: ${producto.sku}` : null,
+    variante?.color ? `Color: ${variante.color}` : null,
+    variante?.talla ? `Talla: ${variante.talla}` : null,
+    variante ? `Stock disponible: ${variante.stock}` : null,
+  ].filter((item): item is string => Boolean(item));
+}
+
+export default function ProductoDetalleCliente({ producto, colores }: Props) {
   const { addItem } = useReservationCart();
-  const [varianteSeleccionada, setVarianteSeleccionada] = useState<Variante | null>(producto.variantes[0] ?? null);
+  const primeraVariante = producto.variantes[0] ?? null;
+  const [varianteSeleccionada, setVarianteSeleccionada] = useState<CatalogVariant | null>(primeraVariante);
   const [mensaje, setMensaje] = useState("");
+  const [indiceImagenActual, setIndiceImagenActual] = useState(0);
+  const [cantidad, setCantidad] = useState(1);
+  const { data: session, status } = useSession();
+
+  const authenticated = status === "authenticated" && session?.user?.role === "CLIENTE";
+
+  const colorSeleccionado = varianteSeleccionada?.color ?? primeraVariante?.color ?? colores[0] ?? "";
+  const tallasDisponibles = producto.variantes
+    .filter((variante) => variante.color === colorSeleccionado)
+    .map((variante) => variante.talla);
+
   const imagenes = imagenesDeVariante(varianteSeleccionada);
   const imagenesActivas = imagenes.length > 0 ? imagenes : imagenesDeProducto(producto);
   const stockActual = varianteSeleccionada?.stock ?? 0;
+  const descripcionActual =
+    varianteSeleccionada?.descripcion?.trim() ??
+    producto.variantes.find((variante) => variante.descripcion?.trim())?.descripcion?.trim() ??
+    "";
+  const detalles = useMemo(() => buildDetailList(producto, varianteSeleccionada, descripcionActual), [descripcionActual, producto, varianteSeleccionada]);
+  const descuento = producto.descuento ?? 0;
+  const precioAnterior = descuento > 0 ? producto.precioVenta / (1 - descuento / 100) : null;
+  const imagenPrincipal = imagenesActivas[indiceImagenActual] ?? null;
+
+  useEffect(() => {
+    setIndiceImagenActual(0);
+  }, [imagenesActivas.join("|")]);
+
+  useEffect(() => {
+    const cantidadMaxima = Math.max(1, stockActual);
+    setCantidad((actual) => Math.min(actual, cantidadMaxima));
+  }, [stockActual]);
+
+  function seleccionarColor(color: string) {
+    const siguiente =
+      producto.variantes.find((variante) => variante.color === color && variante.talla === varianteSeleccionada?.talla) ??
+      producto.variantes.find((variante) => variante.color === color) ??
+      null;
+
+    setVarianteSeleccionada(siguiente);
+    setMensaje("");
+  }
+
+  function seleccionarTalla(talla: string) {
+    const siguiente =
+      producto.variantes.find((variante) => variante.color === colorSeleccionado && variante.talla === talla) ?? null;
+
+    setVarianteSeleccionada(siguiente);
+    setMensaje("");
+  }
 
   function reservarSeleccion() {
     if (!varianteSeleccionada || stockActual <= 0) {
@@ -47,17 +125,19 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
     }
 
     const imagen = imagenesActivas[0] ?? null;
-    const id = `${producto._id ?? producto.sku ?? producto.nombre}-${varianteSeleccionada.color}-${varianteSeleccionada.talla}`;
+    const variantKey = varianteSeleccionada.variantId ?? `${varianteSeleccionada.color}-${varianteSeleccionada.talla}`;
+    const id = `${producto._id ?? producto.sku ?? producto.nombre}-${variantKey}`;
 
     addItem({
       id,
       productoId: producto._id,
+      variantId: varianteSeleccionada.variantId ?? null,
       nombre: producto.nombre,
       modelo: producto.modelo,
       imagen,
       color: varianteSeleccionada.color,
       talla: varianteSeleccionada.talla,
-      cantidad: 1,
+      cantidad,
       precio: producto.precioVenta,
       stockDisponible: stockActual,
     });
@@ -65,74 +145,262 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
     setMensaje("Producto agregado a tu reserva.");
   }
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-      <div
-        className="border h-80 lg:h-96 flex items-center justify-center overflow-hidden"
-        style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-      >
-        {imagenesActivas.length > 0 ? (
-          <CarruselImagenes imagenes={imagenesActivas} alt={producto.nombre} duracionMs={3200} />
-        ) : (
-          <div className="flex flex-col items-center gap-2" style={{ color: "var(--subtle)" }}>
-            <svg className="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1}
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-            <p className="text-sm">Sin imagen</p>
-          </div>
-        )}
-      </div>
+  function moverImagen(paso: number) {
+    if (imagenesActivas.length <= 1) return;
+    setIndiceImagenActual((actual) => (actual + paso + imagenesActivas.length) % imagenesActivas.length);
+  }
 
-      <div className="flex flex-col gap-6">
-        <div>
-          <p className="text-sm mb-1" style={{ color: "var(--subtle)" }}>
-            {producto.modelo}
-          </p>
-          <h1 className="text-4xl mb-3" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
-            {producto.nombre}
-          </h1>
-          <p className="text-3xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            Bs. {producto.precioVenta.toFixed(2)}
-          </p>
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,460px)_minmax(520px,1fr)] gap-8 lg:gap-8 items-start ">
+      <section className="grid gap-4 md:grid-cols-[68px_minmax(0,1fr)] lg:grid-cols-[70px_minmax(0,1fr)]">
+        {imagenesActivas.length > 1 ? (
+          <div className="order-2 md:order-1">
+            <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-visible pb-1">
+              {imagenesActivas.map((imagen, index) => {
+                const activa = index === indiceImagenActual;
+                return (
+                  <button
+                    key={`${imagen}-${index}`}
+                    type="button"
+                    onClick={() => setIndiceImagenActual(index)}
+                    className="relative h-24 w-[3.7rem] md:h-24 md:w-full shrink-0 overflow-hidden border transition-all"
+                    style={{
+                      borderColor: activa ? "#101010" : "#e3ddd4",
+                      background: "#f7f3ed",
+                    }}
+                    aria-label={`Ver imagen ${index + 1} de ${producto.nombre}`}
+                  >
+                    <Image src={imagen} alt={`${producto.nombre} miniatura ${index + 1}`} fill unoptimized sizes="80px" className="object-contain" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        <div className={`order-1 md:order-2 overflow-hidden relative ${imagenesActivas.length <= 1 ? "md:col-span-2" : ""}`}>
+          <div className="relative w-full aspect-[2/3]">
+            {imagenPrincipal ? (
+              <div className="relative h-full w-full ">
+                <Image
+                  src={imagenPrincipal}
+                  alt={producto.nombre}
+                  fill
+                  unoptimized
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 420px"
+                  className="object-contain object-center"
+                />
+
+                {imagenesActivas.length > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Imagen anterior"
+                      onClick={() => moverImagen(-1)}
+                      className="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
+                      style={{ background: "rgba(255,255,255,0.94)", borderColor: "#ddd4c9", color: "#111111" }}
+                    >
+                      {"\u2039"}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Imagen siguiente"
+                      onClick={() => moverImagen(1)}
+                      className="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
+                      style={{ background: "rgba(255,255,255,0.94)", borderColor: "#ddd4c9", color: "#111111" }}
+                    >
+                      {"\u203A"}
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5">
+                      {imagenesActivas.map((_, index) => (
+                        <span
+                          key={index}
+                          className="h-2.5 w-2.5 rounded-full border transition-all duration-300"
+                          style={{
+                            background: index === indiceImagenActual ? "#e45754" : "transparent",
+                            borderColor: index === indiceImagenActual ? "#e45754" : "#d3c8bc",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-2" style={{ color: "#968d82" }}>
+                <svg className="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <p className="text-sm">Sin imagen</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-2 py-2 sm:px-3 lg:px-2 ">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] uppercase mb-2" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
+              {(producto.categoria ?? "Catalogo").toUpperCase()} {producto.modelo ? `- ${producto.modelo.toUpperCase()}` : ""}
+            </p>
+            <h1 className="text-[2.05rem] leading-[1.08]" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "#201a16" }}>
+              {producto.nombre}
+            </h1>
+          </div>
+          
         </div>
 
-        <p className="text-xs" style={{ color: "var(--subtle)" }}>
-          SKU: <span style={{ color: "var(--muted)" }}>{producto.sku ?? "-"}</span>
-        </p>
+        <div className="mt-4 flex items-end gap-3">
+          <p className="text-[1.85rem] leading-none" style={{ color: "#201a16", fontFamily: "Georgia, 'Times New Roman', serif" }}>
+            {formatPrice(producto.precioVenta)}
+          </p>
+          {precioAnterior ? (
+            <p className="pb-1 text-sm line-through" style={{ color: "#a79b8c" }}>
+              {formatPrice(precioAnterior)}
+            </p>
+          ) : null}
+        </div>
 
-        <VarianteSelector
-          variantes={producto.variantes}
-          colores={colores}
-          tallas={tallas}
-          onVarianteChange={setVarianteSeleccionada}
-        />
+        {descripcionActual ? (
+          <p className="mt-5 text-[14px] leading-7" style={{ color: "#6b6258" }}>
+            {descripcionActual}
+          </p>
+        ) : null}
 
-        <button
-          type="button"
-          onClick={reservarSeleccion}
-          disabled={!varianteSeleccionada || stockActual <= 0}
-          className="inline-flex items-center justify-center text-xs uppercase text-white py-3.5 px-6 transition-opacity disabled:opacity-45 disabled:cursor-not-allowed hover:opacity-85"
-          style={{ background: "#1a1a1a", letterSpacing: "0.18em" }}
-        >
-          Agregar a reserva
-        </button>
-        {mensaje && (
-          <p className="text-sm" style={{ color: "#6b6058" }}>
+        <div className="mt-7">
+          <p className="text-[11px] uppercase mb-3" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
+            Color - <span style={{ color: "#201a16" }}>{colorSeleccionado || "-"}</span>
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {Array.from(new Set(producto.variantes.map((variante) => variante.color))).map((color) => {
+              const activo = color === colorSeleccionado;
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => seleccionarColor(color)}
+                  className="flex items-center gap-2"
+                  aria-label={`Seleccionar color ${color}`}
+                  title={color}
+                >
+                  <span
+                    className="block h-7 w-7 rounded-full border"
+                    style={{
+                      background: swatchColor(color),
+                      borderColor: activo ? "#111111" : "#d7cec3",
+                      boxShadow: activo ? "0 0 0 2px rgba(17,17,17,0.08)" : "none",
+                    }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <p className="text-[11px] uppercase" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
+              Talla
+            </p>
+            
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            {Array.from(new Set(tallasDisponibles)).map((talla) => {
+              const activa = talla === varianteSeleccionada?.talla;
+              return (
+                <button
+                  key={talla}
+                  type="button"
+                  onClick={() => seleccionarTalla(talla)}
+                  className="min-w-11 border px-4 py-2.5 text-sm transition-colors"
+                  style={{
+                    borderColor: activa ? "#111111" : "#e2d8cc",
+                    background: activa ? "#111111" : "#ffffff",
+                    color: activa ? "#ffffff" : "#4f463d",
+                  }}
+                >
+                  {talla}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-7 flex gap-3">
+          <div className="inline-flex items-center border" style={{ borderColor: "#ddd4c9" }}>
+            <button
+              type="button"
+              onClick={() => setCantidad((actual) => Math.max(1, actual - 1))}
+              className="h-12 w-12 text-lg"
+              aria-label="Reducir cantidad"
+            >
+              -
+            </button>
+            <span className="flex h-12 min-w-12 items-center justify-center text-sm" style={{ color: "#201a16" }}>
+              {cantidad}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCantidad((actual) => Math.min(stockActual || 1, actual + 1))}
+              className="h-12 w-12 text-lg"
+              aria-label="Aumentar cantidad"
+              disabled={stockActual <= 0}
+            >
+              +
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={reservarSeleccion}
+            disabled={!varianteSeleccionada || stockActual <= 0}
+            className="flex-1 inline-flex items-center justify-center text-[11px] uppercase text-white px-6 transition-opacity disabled:opacity-45 disabled:cursor-not-allowed hover:opacity-88"
+            style={{ background: "#1a1a1a", letterSpacing: "0.24em" }}
+          >
+            Anadir al carrito
+          </button>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between text-xs" style={{ color: "#8f8478" }}>
+          <span>{stockActual > 0 ? `${stockActual} unidades disponibles` : "Sin stock"}</span>
+          {varianteSeleccionada ? <span>{varianteSeleccionada.color} / {varianteSeleccionada.talla}</span> : null}
+        </div>
+
+        {mensaje ? (
+          <p className="mt-4 border px-4 py-3 text-sm" style={{ borderColor: "#d8cdc0", background: "#f6f1ea", color: "#6b6058" }}>
             {mensaje}
           </p>
-        )}
-        <Link href="/login" className="text-sm hover:opacity-60 transition-opacity" style={{ color: "var(--muted)" }}>
-          Inicia sesion para guardar tu reserva y seguir tus pedidos
-        </Link>
-        <Link href="/catalogo" className="text-sm hover:opacity-60 transition-opacity text-center" style={{ color: "var(--muted)" }}>
-          Volver al catalogo
-        </Link>
-      </div>
+        ) : null}
+
+        
+          <div className="mt-6 border-t " style={{ borderColor: "#efe7dd" }}>
+            
+          </div>
+
+        <div className="mt-6 flex flex-col gap-3">
+          {authenticated ? (
+              <>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm hover:opacity-60 transition-opacity" style={{ color: "var(--muted)" }}>
+                  Inicia sesion para guardar tu reserva y seguir tus pedidos
+                </Link>
+              </>
+            )}
+          
+          <Link href="/catalogo" className="text-sm hover:opacity-60 transition-opacity" style={{ color: "var(--muted)" }}>
+            Volver al catalogo
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

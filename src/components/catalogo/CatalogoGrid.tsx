@@ -4,28 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
-
-interface Variante {
-  color: string;
-  talla: string;
-  stock: number;
-  imagen?: string;
-  imagenes?: string[];
-}
-
-interface Producto {
-  _id: string;
-  nombre: string;
-  modelo: string;
-  categoria?: string;
-  precioVenta: number;
-  descuento?: number;
-  createdAt?: string;
-  totalVendidos?: number;
-  imagen?: string;
-  imagenes?: string[];
-  variantes: Variante[];
-}
+import type { CatalogProduct } from "@/types/catalogo";
 
 type OrdenKey = "fecha" | "relevancia" | "ventas" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
 
@@ -74,7 +53,7 @@ function esNuevo(createdAt?: string): boolean {
   return Date.now() - timestamp <= 1000 * 60 * 60 * 24 * 45;
 }
 
-function totalStock(producto: Producto): number {
+function totalStock(producto: CatalogProduct): number {
   return producto.variantes.reduce((sum, variante) => sum + variante.stock, 0);
 }
 
@@ -84,7 +63,7 @@ function colorStyle(color: string) {
   return base.startsWith("linear-gradient") ? { background: base } : { backgroundColor: base };
 }
 
-export default function CatalogoGrid({ productos }: { productos: Producto[] }) {
+export default function CatalogoGrid({ productos }: { productos: CatalogProduct[] }) {
   const [busqueda, setBusqueda] = useState("");
   const [colorFiltro, setColorFiltro] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
@@ -93,7 +72,7 @@ export default function CatalogoGrid({ productos }: { productos: Producto[] }) {
   const [ordenAbierto, setOrdenAbierto] = useState(false);
 
   const colores = Array.from(new Set(productos.flatMap((producto) => producto.variantes.map((variante) => variante.color)))).sort();
-  const categorias = Array.from(new Set(productos.map((producto) => producto.categoria).filter(Boolean))).sort();
+  const categorias = Array.from(new Set(productos.map((producto) => producto.categoria).filter((value): value is string => Boolean(value)))).sort();
   const tallas = Array.from(new Set(productos.flatMap((producto) => producto.variantes.map((variante) => variante.talla)))).sort(
     (a, b) => a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }),
   );
@@ -266,8 +245,6 @@ export default function CatalogoGrid({ productos }: { productos: Producto[] }) {
               </button>
             )}
           </div>
-
-          
         </div>
       </aside>
 
@@ -334,7 +311,7 @@ export default function CatalogoGrid({ productos }: { productos: Producto[] }) {
   );
 }
 
-function ProductoCard({ producto }: { producto: Producto }) {
+function ProductoCard({ producto }: { producto: CatalogProduct }) {
   const imagenes = imagenesDeProducto(producto);
   const nuevo = esNuevo(producto.createdAt);
   const descuento = producto.descuento ?? 0;

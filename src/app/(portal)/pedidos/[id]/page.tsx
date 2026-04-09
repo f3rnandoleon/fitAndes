@@ -1,9 +1,18 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { buildCentralApiHeaders } from "@/lib/central-api";
-import type { Pedido } from "@/types/pedidos";
+import {
+  getPedidoDescuento,
+  getPedidoItemColor,
+  getPedidoItemModelo,
+  getPedidoItemNombre,
+  getPedidoItemTalla,
+  getPedidoSubtotal,
+  getPedidoTotal,
+  type Pedido,
+} from "@/types/pedidos";
 
 function formatDelivery(delivery: Pedido["delivery"]) {
   if (!delivery?.method) return "-";
@@ -43,9 +52,9 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
   const pedido = await getPedido(id, session.user.id, session.accessToken);
   if (!pedido) notFound();
 
-  const descuento = pedido.descuento ?? 0;
-  const subtotal = pedido.subtotal ?? 0;
-  const total = pedido.total ?? 0;
+  const descuento = getPedidoDescuento(pedido);
+  const subtotal = getPedidoSubtotal(pedido);
+  const total = getPedidoTotal(pedido);
 
   const estadoColor: Record<string, React.CSSProperties> = {
     PAGADA: { color: "var(--success)", background: "#e7efe9", borderColor: "#c5d8c9" },
@@ -93,21 +102,33 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
           </p>
         </div>
         <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-          {pedido.items?.map((item, index) => (
-            <div key={item._id ?? `${item.nombre ?? "producto"}-${index}`} className="px-5 py-4 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                  {item.nombre ?? "Producto"}
-                </p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--subtle)" }}>
-                  {item.color ?? "-"} - {item.talla ?? "-"} - x{item.cantidad}
+          {pedido.items?.map((item, index) => {
+            const itemNombre = getPedidoItemNombre(item);
+            const itemModelo = getPedidoItemModelo(item);
+            const itemColor = getPedidoItemColor(item) ?? "-";
+            const itemTalla = getPedidoItemTalla(item) ?? "-";
+
+            return (
+              <div key={item._id ?? `${itemNombre}-${index}`} className="px-5 py-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
+                    {itemNombre}
+                  </p>
+                  {itemModelo ? (
+                    <p className="text-xs mt-0.5" style={{ color: "var(--subtle)" }}>
+                      {itemModelo}
+                    </p>
+                  ) : null}
+                  <p className="text-xs mt-0.5" style={{ color: "var(--subtle)" }}>
+                    {itemColor} - {itemTalla} - x{item.cantidad}
+                  </p>
+                </div>
+                <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                  Bs. {(item.precioVenta * item.cantidad).toFixed(2)}
                 </p>
               </div>
-              <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                Bs. {(item.precioVenta * item.cantidad).toFixed(2)}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

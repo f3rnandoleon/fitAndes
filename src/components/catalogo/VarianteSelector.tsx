@@ -1,19 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CatalogVariant } from "@/types/catalogo";
 
-interface Variante {
-  color: string;
-  talla: string;
-  stock: number;
-  imagen?: string;
-  imagenes?: string[];
-}
 interface Props {
-  variantes: Variante[];
+  variantes: CatalogVariant[];
   colores: string[];
   tallas: string[];
-  onVarianteChange?: (variante: Variante | null) => void;
+  onVarianteChange?: (variante: CatalogVariant | null) => void;
 }
 
 export default function VarianteSelector({ variantes, colores, tallas, onVarianteChange }: Props) {

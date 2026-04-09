@@ -1,25 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductoDetalleCliente from "@/components/catalogo/ProductoDetalleCliente";
-
-interface VarianteProducto {
-  color: string;
-  talla: string;
-  stock: number;
-  imagen?: string;
-  imagenes?: string[];
-}
-
-interface ProductoDetalle {
-  _id?: string;
-  nombre: string;
-  modelo: string;
-  precioVenta: number;
-  sku?: string;
-  imagen?: string;
-  imagenes?: string[];
-  variantes: VarianteProducto[];
-}
+import type { CatalogProduct } from "@/types/catalogo";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -29,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return { title: "Producto | FitAndes" };
-    const p = await res.json();
+    const p = (await res.json()) as CatalogProduct;
     return { title: `${p.nombre} - ${p.modelo} | FitAndes` };
   } catch {
     return { title: "Producto | FitAndes" };
@@ -51,7 +33,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
 
   if (!res.ok) notFound();
 
-  const producto = (await res.json()) as ProductoDetalle;
+  const producto = (await res.json()) as CatalogProduct;
   const colores = Array.from(new Set(producto.variantes.map((v) => v.color))) as string[];
   const tallas = Array.from(new Set(producto.variantes.map((v) => v.talla))) as string[];
 

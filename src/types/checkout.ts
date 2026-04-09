@@ -1,4 +1,4 @@
-﻿export const DELIVERY_METHODS = ["WHATSAPP", "PICKUP_LAPAZ", "HOME_DELIVERY"] as const;
+export const DELIVERY_METHODS = ["WHATSAPP", "PICKUP_LAPAZ", "HOME_DELIVERY"] as const;
 
 export const PICKUP_POINTS = ["TELEFERICO_MORADO", "TELEFERICO_ROJO", "CORREOS"] as const;
 
@@ -11,6 +11,7 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export interface CheckoutItemInput {
   id: string;
   productoId?: string;
+  variantId?: string | null;
   nombre: string;
   modelo?: string;
   imagen?: string | null;

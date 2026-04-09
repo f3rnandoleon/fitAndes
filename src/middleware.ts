@@ -6,8 +6,7 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
 
-    // Si es ruta del portal y no es CLIENTE, redirige
-    if (pathname.startsWith("/portal") && token?.role !== "CLIENTE") {
+    if ((pathname.startsWith("/dashboard") || pathname.startsWith("/pedidos")) && token?.role !== "CLIENTE") {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
@@ -21,5 +20,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/portal/:path*"],
+  matcher: ["/dashboard/:path*", "/pedidos/:path*"],
 };

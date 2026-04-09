@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 export interface ReservationItem {
   id: string;
   productoId?: string;
+  variantId?: string | null;
   nombre: string;
   modelo?: string;
   imagen?: string | null;
