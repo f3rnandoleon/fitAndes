@@ -75,8 +75,10 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
   const authenticated = status === "authenticated" && session?.user?.role === "CLIENTE";
 
   const colorSeleccionado = varianteSeleccionada?.color ?? primeraVariante?.color ?? colores[0] ?? "";
+  const colorSecundarioSeleccionado = varianteSeleccionada?.colorSecundario ?? primeraVariante?.colorSecundario;
+  
   const tallasDisponibles = producto.variantes
-    .filter((variante) => variante.color === colorSeleccionado)
+    .filter((variante) => variante.color === colorSeleccionado && variante.colorSecundario === colorSecundarioSeleccionado)
     .map((variante) => variante.talla);
 
   const imagenes = imagenesDeVariante(varianteSeleccionada);
@@ -100,10 +102,10 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
     setCantidad((actual) => Math.min(actual, cantidadMaxima));
   }, [stockActual]);
 
-  function seleccionarColor(color: string) {
+  function seleccionarColor(color: string, colorSecundario?: string | null) {
     const siguiente =
-      producto.variantes.find((variante) => variante.color === color && variante.talla === varianteSeleccionada?.talla) ??
-      producto.variantes.find((variante) => variante.color === color) ??
+      producto.variantes.find((variante) => variante.color === color && variante.colorSecundario === colorSecundario && variante.talla === varianteSeleccionada?.talla) ??
+      producto.variantes.find((variante) => variante.color === color && variante.colorSecundario === colorSecundario) ??
       null;
 
     setVarianteSeleccionada(siguiente);
@@ -112,7 +114,7 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
 
   function seleccionarTalla(talla: string) {
     const siguiente =
-      producto.variantes.find((variante) => variante.color === colorSeleccionado && variante.talla === talla) ?? null;
+      producto.variantes.find((variante) => variante.color === colorSeleccionado && variante.colorSecundario === colorSecundarioSeleccionado && variante.talla === talla) ?? null;
 
     setVarianteSeleccionada(siguiente);
     setMensaje("");
@@ -136,6 +138,7 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
       modelo: producto.modelo,
       imagen,
       color: varianteSeleccionada.color,
+      colorSecundario: varianteSeleccionada.colorSecundario,
       talla: varianteSeleccionada.talla,
       cantidad,
       precio: producto.precioVenta,
@@ -276,24 +279,34 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
 
         <div className="mt-7">
           <p className="text-[11px] uppercase mb-3" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
-            Color - <span style={{ color: "#201a16" }}>{colorSeleccionado || "-"}</span>
+            Color - <span style={{ color: "#201a16" }}>{colorSeleccionado || "-"}{colorSecundarioSeleccionado ? ` / ${colorSecundarioSeleccionado}` : ""}</span>
           </p>
           <div className="flex flex-wrap gap-3">
-            {Array.from(new Set(producto.variantes.map((variante) => variante.color))).map((color) => {
-              const activo = color === colorSeleccionado;
+            {Array.from(
+              new Map(
+                producto.variantes.map((v) => [
+                  `${v.color}-${v.colorSecundario || ""}`,
+                  { color: v.color, colorSecundario: v.colorSecundario },
+                ])
+              ).values()
+            ).map(({ color, colorSecundario }) => {
+              const activo = color === colorSeleccionado && colorSecundario === colorSecundarioSeleccionado;
+              const colorBase = swatchColor(color);
+              const colorSec = colorSecundario ? swatchColor(colorSecundario) : null;
+              
               return (
                 <button
-                  key={color}
+                  key={`${color}-${colorSecundario || ""}`}
                   type="button"
-                  onClick={() => seleccionarColor(color)}
+                  onClick={() => seleccionarColor(color, colorSecundario)}
                   className="flex items-center gap-2"
-                  aria-label={`Seleccionar color ${color}`}
-                  title={color}
+                  aria-label={`Seleccionar color ${color}${colorSecundario ? ` y ${colorSecundario}` : ""}`}
+                  title={`${color}${colorSecundario ? ` / ${colorSecundario}` : ""}`}
                 >
                   <span
                     className="block h-7 w-7 rounded-full border"
                     style={{
-                      background: swatchColor(color),
+                      background: colorSec ? `linear-gradient(135deg, ${colorBase} 50%, ${colorSec} 50%)` : colorBase,
                       borderColor: activo ? "#111111" : "#d7cec3",
                       boxShadow: activo ? "0 0 0 2px rgba(17,17,17,0.08)" : "none",
                     }}
@@ -370,7 +383,7 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
 
         <div className="mt-4 flex items-center justify-between text-xs" style={{ color: "#8f8478" }}>
           <span>{stockActual > 0 ? `${stockActual} unidades disponibles` : "Sin stock"}</span>
-          {varianteSeleccionada ? <span>{varianteSeleccionada.color} / {varianteSeleccionada.talla}</span> : null}
+          {varianteSeleccionada ? <span>{varianteSeleccionada.color}{varianteSeleccionada.colorSecundario ? ` / ${varianteSeleccionada.colorSecundario}` : ""} / {varianteSeleccionada.talla}</span> : null}
         </div>
 
         {mensaje ? (

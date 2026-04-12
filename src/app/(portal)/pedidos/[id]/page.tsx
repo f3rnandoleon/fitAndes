@@ -9,6 +9,7 @@ import {
   getPedidoItemModelo,
   getPedidoItemNombre,
   getPedidoItemTalla,
+  getPedidoItemColorSecundario,
   getPedidoSubtotal,
   getPedidoTotal,
   type Pedido,
@@ -106,6 +107,7 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
             const itemNombre = getPedidoItemNombre(item);
             const itemModelo = getPedidoItemModelo(item);
             const itemColor = getPedidoItemColor(item) ?? "-";
+            const itemColorSecundario = getPedidoItemColorSecundario(item);
             const itemTalla = getPedidoItemTalla(item) ?? "-";
 
             return (
@@ -120,7 +122,7 @@ export default async function PedidoDetallePage({ params }: { params: Promise<{ 
                     </p>
                   ) : null}
                   <p className="text-xs mt-0.5" style={{ color: "var(--subtle)" }}>
-                    {itemColor} - {itemTalla} - x{item.cantidad}
+                    {itemColor}{itemColorSecundario ? ` / ${itemColorSecundario}` : ""} - {itemTalla} - x{item.cantidad}
                   </p>
                 </div>
                 <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>

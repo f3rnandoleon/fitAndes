@@ -1,4 +1,4 @@
-﻿import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth-options";
@@ -121,7 +121,7 @@ function buildWhatsappUrl({
   items.forEach((item, index) => {
     lines.push(
       `${index + 1}. ${item.nombre}${item.modelo ? ` / ${item.modelo}` : ""}`,
-      `   Variante: ${item.color} / ${item.talla}`,
+      `   Variante: ${item.color}${item.colorSecundario ? ` / ${item.colorSecundario}` : ""} / ${item.talla}`,
       `   Cantidad: ${item.cantidad}`,
       `   Subtotal: Bs. ${formatMoney(item.cantidad * item.precio)}`,
     );
@@ -205,6 +205,7 @@ export async function POST(request: NextRequest) {
       productoId: item.productoId,
       variantId: item.variantId ?? undefined,
       color: item.color,
+      colorSecundario: item.colorSecundario ?? undefined,
       talla: item.talla,
       cantidad: item.cantidad,
     })),

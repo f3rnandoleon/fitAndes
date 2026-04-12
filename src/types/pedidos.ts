@@ -10,6 +10,7 @@ export interface PedidoItemVariantSnapshot {
   codigoBarra?: string | null;
   qrCode?: string | null;
   color?: string | null;
+  colorSecundario?: string | null;
   talla?: string | null;
 }
 
@@ -19,6 +20,7 @@ export interface PedidoItem {
   variantId?: string | null;
   nombre?: string | null;
   color?: string | null;
+  colorSecundario?: string | null;
   talla?: string | null;
   cantidad: number;
   precioVenta: number;
@@ -86,4 +88,8 @@ export function getPedidoItemColor(item: PedidoItem): string | null {
 
 export function getPedidoItemTalla(item: PedidoItem): string | null {
   return item.talla ?? item.variante?.talla ?? null;
+}
+
+export function getPedidoItemColorSecundario(item: PedidoItem): string | null {
+  return item.colorSecundario ?? item.variante?.colorSecundario ?? null;
 }

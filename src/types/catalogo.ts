@@ -1,6 +1,7 @@
 export interface CatalogVariant {
   variantId?: string | null;
   color: string;
+  colorSecundario?: string | null;
   talla: string;
   stock: number;
   descripcion?: string | null;

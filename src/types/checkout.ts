@@ -16,6 +16,7 @@ export interface CheckoutItemInput {
   modelo?: string;
   imagen?: string | null;
   color: string;
+  colorSecundario?: string | null;
   talla: string;
   cantidad: number;
   precio: number;
