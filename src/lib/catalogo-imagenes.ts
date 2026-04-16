@@ -60,7 +60,9 @@ export function primeraImagenDeVariante(variante?: RecursoConImagenes | null): s
 export function imagenesDeProducto(producto?: ProductoConImagenes | null): string[] {
   if (!producto) return [];
 
-  const imagenes = (producto.variantes ?? []).flatMap((variante) => imagenesDeVariante(variante));
+  const imagenes = (producto.variantes ?? [])
+    .map((variante) => primeraImagenDeVariante(variante))
+    .filter((imagen): imagen is string => Boolean(imagen));
   if (imagenes.length > 0) return Array.from(new Set(imagenes));
 
   return recolectarImagenes(producto);

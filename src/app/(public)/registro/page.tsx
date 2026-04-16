@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -165,6 +166,7 @@ export default function RegistroPage() {
             </p>
           </div>
 
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="fullname" className="text-xs uppercase" style={{ letterSpacing: "0.16em", color: "var(--subtle)" }}>
@@ -262,6 +264,10 @@ export default function RegistroPage() {
               Inicia sesion
             </Link>
           </p>
+          
+          <div className="mt-6">
+            <GoogleAuthButton callbackUrl="/dashboard" text="signup_with" promptText="o registrate con Google" />
+          </div>
         </div>
       </div>
     </div>

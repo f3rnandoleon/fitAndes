@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 function sanitizeCallbackUrl(value: string | null) {
   if (!value || !value.startsWith("/")) return "/dashboard";
@@ -33,7 +34,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (res?.error) {
-      setError("Correo o contrasena incorrectos.");
+      setError(res.error === "CredentialsSignin" ? "Correo o contrasena incorrectos." : res.error);
       return;
     }
 
@@ -112,6 +113,8 @@ export default function LoginPage() {
             </p>
           </div>
 
+          
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-xs uppercase" style={{ letterSpacing: "0.16em", color: "var(--subtle)" }}>
@@ -173,6 +176,9 @@ export default function LoginPage() {
               Registrate gratis
             </Link>
           </p>
+          <div className="mt-6">
+            <GoogleAuthButton callbackUrl={callbackUrl} text="signin_with" promptText="o entra con Google" />
+          </div>
         </div>
       </div>
     </div>
