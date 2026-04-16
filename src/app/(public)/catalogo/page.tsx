@@ -11,12 +11,15 @@ export const metadata = {
 export default async function CatalogoPage() {
   let productos: CatalogProduct[] = [];
 
+  const productosConStock = (items: CatalogProduct[]) =>
+    items.filter((producto) => producto.variantes.some((variante) => (Number(variante.stock) || 0) > 0));
+
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/publicos`, {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(10000),
     });
-    productos = res.ok ? ((await res.json()) as CatalogProduct[]) : [];
+    productos = res.ok ? productosConStock((await res.json()) as CatalogProduct[]) : [];
   } catch {
     productos = [];
   }

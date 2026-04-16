@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
+import { getProductColorValue, isLightProductColor, sortProductColors } from "@/lib/product-colors";
 import type { CatalogProduct } from "@/types/catalogo";
 
 type OrdenKey = "fecha" | "relevancia" | "ventas" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
@@ -18,26 +19,6 @@ const ORDENES: Array<{ key: OrdenKey; label: string }> = [
   { key: "nombre-asc", label: "Nombre, ascendente" },
   { key: "nombre-desc", label: "Nombre, descendente" },
 ];
-
-const COLOR_MAP: Record<string, string> = {
-  amarillo: "#fff100",
-  azul: "#1f2cff",
-  azulmarino: "#1d2c6b",
-  beige: "#dcc79a",
-  blanco: "#f4f1eb",
-  cafe: "#a48262",
-  celeste: "#57c1e8",
-  crema: "#efe3c7",
-  gris: "#c4c6cb",
-  lila: "#b79cc8",
-  morado: "#3d1687",
-  naranja: "#ff860f",
-  negro: "#111111",
-  plata: "linear-gradient(135deg, #8b8b8b 0%, #ececec 50%, #7f7f7f 100%)",
-  rojo: "#ff160f",
-  rosado: "#f5b3c1",
-  verde: "#7ec34a",
-};
 
 function formatearPrecio(precio: number): string {
   return `Bs ${new Intl.NumberFormat("es-BO", {
@@ -54,12 +35,19 @@ function esNuevo(createdAt?: string): boolean {
 }
 
 function totalStock(producto: CatalogProduct): number {
-  return producto.variantes.reduce((sum, variante) => sum + variante.stock, 0);
+  return producto.variantes.reduce((sum, variante) => sum + Math.max(0, Number(variante.stock) || 0), 0);
+}
+
+function variantesConStock(producto: CatalogProduct) {
+  return producto.variantes.filter((variante) => (Number(variante.stock) || 0) > 0);
+}
+
+function productoTieneStock(producto: CatalogProduct): boolean {
+  return totalStock(producto) > 0;
 }
 
 function colorStyle(color: string) {
-  const key = color.toLowerCase().replace(/\s+/g, "");
-  const base = COLOR_MAP[key] ?? "#d7ccbf";
+  const base = getProductColorValue(color);
   return base.startsWith("linear-gradient") ? { background: base } : { backgroundColor: base };
 }
 
@@ -71,24 +59,26 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
   const [orden, setOrden] = useState<OrdenKey>("fecha");
   const [ordenAbierto, setOrdenAbierto] = useState(false);
 
-  const colores = Array.from(new Set(productos.flatMap((producto) => producto.variantes.map((variante) => variante.color)))).sort();
-  const categorias = Array.from(new Set(productos.map((producto) => producto.categoria).filter((value): value is string => Boolean(value)))).sort();
-  const tallas = Array.from(new Set(productos.flatMap((producto) => producto.variantes.map((variante) => variante.talla)))).sort(
+  const productosConStock = productos.filter(productoTieneStock);
+  const colores = sortProductColors(Array.from(new Set(productosConStock.flatMap((producto) => variantesConStock(producto).map((variante) => variante.color)))));
+  const categorias = Array.from(new Set(productosConStock.map((producto) => producto.categoria).filter((value): value is string => Boolean(value)))).sort();
+  const tallas = Array.from(new Set(productosConStock.flatMap((producto) => variantesConStock(producto).map((variante) => variante.talla)))).sort(
     (a, b) => a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }),
   );
-  const categoriaPrincipal = categorias.length === 1 ? categorias[0]?.toUpperCase() : productos[0]?.categoria?.toUpperCase() ?? "CATALOGO";
+  const categoriaPrincipal = categorias.length === 1 ? categorias[0]?.toUpperCase() : productosConStock[0]?.categoria?.toUpperCase() ?? "CATALOGO";
 
   const termino = busqueda.trim().toLowerCase();
-  const filtrados = productos.filter((producto) => {
+  const filtrados = productosConStock.filter((producto) => {
+    const variantesDisponibles = variantesConStock(producto);
     const coincideBusqueda =
       !termino ||
       producto.nombre.toLowerCase().includes(termino) ||
       producto.modelo.toLowerCase().includes(termino) ||
       (producto.categoria ?? "").toLowerCase().includes(termino);
 
-    const coincideColor = !colorFiltro || producto.variantes.some((variante) => variante.color === colorFiltro);
+    const coincideColor = !colorFiltro || variantesDisponibles.some((variante) => variante.color === colorFiltro);
     const coincideCategoria = !categoriaFiltro || producto.categoria === categoriaFiltro;
-    const coincideTalla = !tallaFiltro || producto.variantes.some((variante) => variante.talla === tallaFiltro);
+    const coincideTalla = !tallaFiltro || variantesDisponibles.some((variante) => variante.talla === tallaFiltro);
     return coincideBusqueda && coincideColor && coincideCategoria && coincideTalla;
   });
 
@@ -123,7 +113,7 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
             {categoriaPrincipal}
           </h1>
           <p className="text-sm mt-3" style={{ color: "#a49a8f" }}>
-            {productos.length} productos
+            {productosConStock.length} productos
           </p>
         </div>
 
@@ -161,7 +151,7 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
                     className="h-8 w-8 border transition-transform hover:scale-105"
                     style={{
                       ...colorStyle(color),
-                      borderColor: activo ? "#111111" : "#ddd5cb",
+                      borderColor: activo ? "#111111" : isLightProductColor(color) ? "#b8afa2" : "#ddd5cb",
                       boxShadow: activo ? "0 0 0 2px rgba(17,17,17,0.12)" : "none",
                     }}
                   />
@@ -331,9 +321,6 @@ function ProductoCard({ producto }: { producto: CatalogProduct }) {
               Novedades
             </span>
           )}
-          <span className="absolute right-4 top-4 z-10 text-2xl" style={{ color: "#92887d" }}>
-            ?
-          </span>
 
           {imagenes.length > 0 ? (
             <CarruselImagenes

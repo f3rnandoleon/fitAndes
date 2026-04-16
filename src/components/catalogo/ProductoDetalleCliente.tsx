@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
+import { getProductColorValue, isLightProductColor } from "@/lib/product-colors";
 import type { CatalogProduct, CatalogVariant } from "@/types/catalogo";
 import { useSession } from "next-auth/react";
 
@@ -14,53 +15,11 @@ interface Props {
   tallas: string[];
 }
 
-const COLOR_SWATCHES: Record<string, string> = {
-  amarillo: "#d7b84a",
-  azul: "#2856d6",
-  azulmarino: "#1e2a56",
-  beige: "#ccb189",
-  blanco: "#f4f0e8",
-  cafe: "#7e6147",
-  celeste: "#94c9e8",
-  crema: "#e5dac2",
-  gris: "#9c9c9c",
-  lila: "#a590bf",
-  marfil: "#ddd0b3",
-  morado: "#5b4382",
-  naranja: "#e8822f",
-  negro: "#191919",
-  rojo: "#dd433e",
-  rosado: "#dba6b3",
-  verde: "#7b9964",
-};
-
-function swatchColor(color: string) {
-  const normalized = color.toLowerCase().replace(/\s+/g, "");
-  return COLOR_SWATCHES[normalized] ?? "#b7b7b7";
-}
-
 function formatPrice(value: number) {
   return `Bs ${new Intl.NumberFormat("es-BO", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value)}`;
-}
-
-function buildDetailList(producto: CatalogProduct, variante: CatalogVariant | null, descripcion: string): string[] {
-  const explicit = descripcion
-    .split(/\n|[•\-]\s+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  if (explicit.length >= 2) return explicit.slice(0, 6);
-
-  return [
-    producto.modelo ? `Modelo: ${producto.modelo}` : null,
-    producto.sku ? `SKU: ${producto.sku}` : null,
-    variante?.color ? `Color: ${variante.color}` : null,
-    variante?.talla ? `Talla: ${variante.talla}` : null,
-    variante ? `Stock disponible: ${variante.stock}` : null,
-  ].filter((item): item is string => Boolean(item));
 }
 
 export default function ProductoDetalleCliente({ producto, colores }: Props) {
@@ -88,14 +47,14 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
     varianteSeleccionada?.descripcion?.trim() ??
     producto.variantes.find((variante) => variante.descripcion?.trim())?.descripcion?.trim() ??
     "";
-  const detalles = useMemo(() => buildDetailList(producto, varianteSeleccionada, descripcionActual), [descripcionActual, producto, varianteSeleccionada]);
   const descuento = producto.descuento ?? 0;
   const precioAnterior = descuento > 0 ? producto.precioVenta / (1 - descuento / 100) : null;
   const imagenPrincipal = imagenesActivas[indiceImagenActual] ?? null;
+  const imagenesActivasKey = imagenesActivas.join("|");
 
   useEffect(() => {
     setIndiceImagenActual(0);
-  }, [imagenesActivas.join("|")]);
+  }, [imagenesActivasKey]);
 
   useEffect(() => {
     const cantidadMaxima = Math.max(1, stockActual);
@@ -291,8 +250,9 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
               ).values()
             ).map(({ color, colorSecundario }) => {
               const activo = color === colorSeleccionado && colorSecundario === colorSecundarioSeleccionado;
-              const colorBase = swatchColor(color);
-              const colorSec = colorSecundario ? swatchColor(colorSecundario) : null;
+              const colorBase = getProductColorValue(color);
+              const colorSec = colorSecundario ? getProductColorValue(colorSecundario) : null;
+              const coloresClaros = isLightProductColor(color) && (!colorSecundario || isLightProductColor(colorSecundario));
               
               return (
                 <button
@@ -307,7 +267,7 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
                     className="block h-7 w-7 rounded-full border"
                     style={{
                       background: colorSec ? `linear-gradient(135deg, ${colorBase} 50%, ${colorSec} 50%)` : colorBase,
-                      borderColor: activo ? "#111111" : "#d7cec3",
+                      borderColor: activo ? "#111111" : coloresClaros ? "#b8afa2" : "#d7cec3",
                       boxShadow: activo ? "0 0 0 2px rgba(17,17,17,0.08)" : "none",
                     }}
                   />
