@@ -1,7 +1,7 @@
 import { primeraImagenDeProducto, primeraImagenDeVariante } from "@/lib/catalogo-imagenes";
 import type { ChatAction, OrderCardData, ProductCardData } from "@/lib/chat/types";
-import type { CatalogProduct } from "@/types/catalogo";
-import { getPedidoItemColor, getPedidoItemNombre, getPedidoItemTalla, getPedidoTotal, type Pedido } from "@/types/pedidos";
+import { filterCatalogAvailableVariants, type CatalogProduct } from "@/types/catalogo";
+import { getPedidoEstado, getPedidoItemColor, getPedidoItemNombre, getPedidoItemTalla, getPedidoNumero, getPedidoTotal, type Pedido } from "@/types/pedidos";
 
 function formatPrice(value: number): string {
   return `Bs. ${new Intl.NumberFormat("es-BO", {
@@ -28,14 +28,18 @@ export function buildProductCard(
     preferredQuantity?: number | null;
   } = {},
 ): ProductCardData {
+  const productWithAvailableVariants = filterCatalogAvailableVariants(product);
   const preferredVariant =
-    product.variantes.find(
+    productWithAvailableVariants.variantes.find(
       (variant) =>
         (!options.preferredColor || variant.color.toLowerCase() === options.preferredColor.toLowerCase()) &&
         (!options.preferredTalla || variant.talla.toUpperCase() === options.preferredTalla.toUpperCase()),
     ) ?? null;
 
-  const description = preferredVariant?.descripcion ?? product.variantes.find((variant) => variant.descripcion)?.descripcion ?? null;
+  const description =
+    preferredVariant?.descripcion ??
+    productWithAvailableVariants.variantes.find((variant) => variant.descripcion)?.descripcion ??
+    null;
   const image = primeraImagenDeVariante(preferredVariant) ?? primeraImagenDeProducto(product);
 
   const actions: ChatAction[] = [
@@ -53,7 +57,7 @@ export function buildProductCard(
     image,
     description,
     detailHref: `/catalogo/${product._id}`,
-    variants: product.variantes,
+    variants: productWithAvailableVariants.variantes,
     preferredColor: options.preferredColor ?? preferredVariant?.color ?? null,
     preferredTalla: options.preferredTalla ?? preferredVariant?.talla ?? null,
     preferredQuantity: options.preferredQuantity ?? 1,
@@ -65,9 +69,9 @@ export function buildOrderCard(order: Pedido): OrderCardData {
   return {
     type: "order",
     id: order._id,
-    title: order.numeroVenta,
+    title: getPedidoNumero(order),
     subtitle: `${formatDate(order.createdAt)} · ${order.items?.length ?? 0} item(s)`,
-    status: order.estado,
+    status: getPedidoEstado(order),
     total: getPedidoTotal(order),
     detailHref: `/pedidos/${order._id}`,
     items:

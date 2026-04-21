@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor } from "@/lib/product-colors";
-import type { CatalogProduct, CatalogVariant } from "@/types/catalogo";
+import { filterCatalogAvailableVariants, getCatalogVariantAvailableStock, type CatalogProduct, type CatalogVariant } from "@/types/catalogo";
 import { useSession } from "next-auth/react";
 
 interface Props {
@@ -24,7 +24,13 @@ function formatPrice(value: number) {
 
 export default function ProductoDetalleCliente({ producto, colores }: Props) {
   const { addItem } = useReservationCart();
-  const primeraVariante = producto.variantes[0] ?? null;
+  const productoDisponible = filterCatalogAvailableVariants(producto);
+  const variantesDisponibles = productoDisponible.variantes;
+  const primeraVariante =
+    variantesDisponibles[0] ??
+    producto.variantes.find((variante) => getCatalogVariantAvailableStock(variante) > 0) ??
+    producto.variantes[0] ??
+    null;
   const [varianteSeleccionada, setVarianteSeleccionada] = useState<CatalogVariant | null>(primeraVariante);
   const [mensaje, setMensaje] = useState("");
   const [indiceImagenActual, setIndiceImagenActual] = useState(0);
@@ -35,14 +41,15 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
 
   const colorSeleccionado = varianteSeleccionada?.color ?? primeraVariante?.color ?? colores[0] ?? "";
   const colorSecundarioSeleccionado = varianteSeleccionada?.colorSecundario ?? primeraVariante?.colorSecundario;
-  
-  const tallasDisponibles = producto.variantes
-    .filter((variante) => variante.color === colorSeleccionado && variante.colorSecundario === colorSecundarioSeleccionado)
-    .map((variante) => variante.talla);
+
+  const variantesDelColor = variantesDisponibles.filter(
+    (variante) => variante.color === colorSeleccionado && variante.colorSecundario === colorSecundarioSeleccionado,
+  );
+  const tallasDisponibles = variantesDelColor.map((variante) => variante.talla);
 
   const imagenes = imagenesDeVariante(varianteSeleccionada);
   const imagenesActivas = imagenes.length > 0 ? imagenes : imagenesDeProducto(producto);
-  const stockActual = varianteSeleccionada?.stock ?? 0;
+  const stockActual = varianteSeleccionada ? getCatalogVariantAvailableStock(varianteSeleccionada) : 0;
   const descripcionActual =
     varianteSeleccionada?.descripcion?.trim() ??
     producto.variantes.find((variante) => variante.descripcion?.trim())?.descripcion?.trim() ??
@@ -63,8 +70,17 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
 
   function seleccionarColor(color: string, colorSecundario?: string | null) {
     const siguiente =
-      producto.variantes.find((variante) => variante.color === color && variante.colorSecundario === colorSecundario && variante.talla === varianteSeleccionada?.talla) ??
-      producto.variantes.find((variante) => variante.color === color && variante.colorSecundario === colorSecundario) ??
+      variantesDisponibles.find(
+        (variante) =>
+          variante.color === color &&
+          variante.colorSecundario === colorSecundario &&
+          variante.talla === varianteSeleccionada?.talla,
+      ) ??
+      variantesDisponibles.find(
+        (variante) =>
+          variante.color === color &&
+          variante.colorSecundario === colorSecundario,
+      ) ??
       null;
 
     setVarianteSeleccionada(siguiente);
@@ -73,7 +89,9 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
 
   function seleccionarTalla(talla: string) {
     const siguiente =
-      producto.variantes.find((variante) => variante.color === colorSeleccionado && variante.colorSecundario === colorSecundarioSeleccionado && variante.talla === talla) ?? null;
+      variantesDisponibles.find(
+        (variante) => variante.color === colorSeleccionado && variante.colorSecundario === colorSecundarioSeleccionado && variante.talla === talla,
+      ) ?? null;
 
     setVarianteSeleccionada(siguiente);
     setMensaje("");
@@ -240,13 +258,13 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
           <p className="text-[11px] uppercase mb-3" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
             Color - <span style={{ color: "#201a16" }}>{colorSeleccionado || "-"}{colorSecundarioSeleccionado ? ` / ${colorSecundarioSeleccionado}` : ""}</span>
           </p>
-          <div className="flex flex-wrap gap-3">
-            {Array.from(
-              new Map(
-                producto.variantes.map((v) => [
+        <div className="flex flex-wrap gap-3">
+          {Array.from(
+            new Map(
+                variantesDisponibles.map((v) => [
                   `${v.color}-${v.colorSecundario || ""}`,
                   { color: v.color, colorSecundario: v.colorSecundario },
-                ])
+                ]),
               ).values()
             ).map(({ color, colorSecundario }) => {
               const activo = color === colorSeleccionado && colorSecundario === colorSecundarioSeleccionado;

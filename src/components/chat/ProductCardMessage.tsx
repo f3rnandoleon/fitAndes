@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import type { ChatAction, ProductCardData } from "@/lib/chat/types";
+import { catalogVariantIsAvailable, getCatalogVariantAvailableStock } from "@/types/catalogo";
 
 interface AddSelection {
   color: string;
@@ -21,13 +22,14 @@ function unique<T>(items: T[]): T[] {
 }
 
 export default function ProductCardMessage({ card, onAction, onAdd }: Props) {
-  const [selectedColor, setSelectedColor] = useState(card.preferredColor ?? card.variants[0]?.color ?? "");
-  const [selectedTalla, setSelectedTalla] = useState(card.preferredTalla ?? card.variants[0]?.talla ?? "");
+  const availableVariants = card.variants.filter(catalogVariantIsAvailable);
+  const [selectedColor, setSelectedColor] = useState(card.preferredColor ?? availableVariants[0]?.color ?? "");
+  const [selectedTalla, setSelectedTalla] = useState(card.preferredTalla ?? availableVariants[0]?.talla ?? "");
   const [cantidad, setCantidad] = useState(card.preferredQuantity ?? 1);
 
-  const colors = unique(card.variants.map((variant) => variant.color));
+  const colors = unique(availableVariants.map((variant) => variant.color));
   const tallasDisponibles = unique(
-    card.variants.filter((variant) => !selectedColor || variant.color === selectedColor).map((variant) => variant.talla),
+    availableVariants.filter((variant) => !selectedColor || variant.color === selectedColor).map((variant) => variant.talla),
   );
 
   useEffect(() => {
@@ -46,12 +48,12 @@ export default function ProductCardMessage({ card, onAction, onAdd }: Props) {
   }, [card.preferredTalla, selectedTalla, tallasDisponibles]);
 
   const selectedVariant =
-    card.variants.find((variant) => variant.color === selectedColor && variant.talla === selectedTalla) ??
-    card.variants.find((variant) => variant.color === selectedColor) ??
-    card.variants[0] ??
+    availableVariants.find((variant) => variant.color === selectedColor && variant.talla === selectedTalla) ??
+    availableVariants.find((variant) => variant.color === selectedColor) ??
+    availableVariants[0] ??
     null;
 
-  const stock = selectedVariant?.stock ?? 0;
+  const stock = selectedVariant ? getCatalogVariantAvailableStock(selectedVariant) : 0;
   const canAdd = Boolean(selectedVariant && stock > 0);
 
   return (

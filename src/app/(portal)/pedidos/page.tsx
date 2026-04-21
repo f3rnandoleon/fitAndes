@@ -2,31 +2,21 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
-import { buildCentralApiHeaders } from "@/lib/central-api";
-import { getPedidoTotal, type Pedido } from "@/types/pedidos";
-
-async function getMisPedidos(userId: string, accessToken?: string | null): Promise<Pedido[]> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mis-pedidos`, {
-    headers: buildCentralApiHeaders({ userId, role: "CLIENTE", accessToken }),
-    next: { revalidate: 0 },
-  });
-
-  if (!res.ok) return [];
-
-  const data = await res.json();
-  return Array.isArray(data) ? (data as Pedido[]) : [];
-}
+import { getOrders } from "@/services/orders.service";
+import { getPedidoEstado, getPedidoEstadoTone, getPedidoNumero, getPedidoTotal } from "@/types/pedidos";
 
 export default async function PedidosPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const pedidos = await getMisPedidos(session.user.id, session.accessToken);
+  const pedidos = (await getOrders({ userId: session.user.id, role: "CLIENTE", accessToken: session.accessToken })) ?? [];
 
   const estadoColor: Record<string, React.CSSProperties> = {
-    PAGADA: { color: "var(--success)", background: "#e7efe9", borderColor: "#c5d8c9" },
-    PENDIENTE: { color: "#6a4f21", background: "#efe5d5", borderColor: "#cfbc98" },
-    CANCELADA: { color: "var(--danger)", background: "#f3e3e0", borderColor: "#d9b2ac" },
+    success: { color: "var(--success)", background: "#e7efe9", borderColor: "#c5d8c9" },
+    warning: { color: "#6a4f21", background: "#efe5d5", borderColor: "#cfbc98" },
+    danger: { color: "var(--danger)", background: "#f3e3e0", borderColor: "#d9b2ac" },
+    accent: { color: "#2450a6", background: "#e7eefb", borderColor: "#c4d3f3" },
+    neutral: { color: "var(--muted)", background: "#ece7e0", borderColor: "var(--border)" },
   };
 
   return (
@@ -64,7 +54,7 @@ export default async function PedidosPage() {
               <div className="border px-5 py-4 transition-opacity hover:opacity-85" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{pedido.numeroVenta}</p>
+                    <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{getPedidoNumero(pedido)}</p>
                     <p className="text-xs mt-0.5" style={{ color: "var(--subtle)" }}>
                       {new Date(pedido.createdAt).toLocaleDateString("es-BO", {
                         day: "2-digit",
@@ -79,9 +69,9 @@ export default async function PedidosPage() {
                     </span>
                     <span
                       className="text-xs px-2.5 py-1 border"
-                      style={estadoColor[pedido.estado] ?? { color: "var(--muted)", background: "#ece7e0", borderColor: "var(--border)" }}
+                      style={estadoColor[getPedidoEstadoTone(pedido)]}
                     >
-                      {pedido.estado}
+                      {getPedidoEstado(pedido)}
                     </span>
                     <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
                       Bs. {getPedidoTotal(pedido).toFixed(2)}

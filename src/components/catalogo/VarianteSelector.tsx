@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { CatalogVariant } from "@/types/catalogo";
+import { getCatalogVariantAvailableStock, type CatalogVariant } from "@/types/catalogo";
 
 interface Props {
   variantes: CatalogVariant[];
@@ -11,25 +11,28 @@ interface Props {
 }
 
 export default function VarianteSelector({ variantes, colores, tallas, onVarianteChange }: Props) {
-  const primeraVariante = variantes[0];
-  const [colorSel, setColorSel] = useState<string>(primeraVariante?.color ?? colores[0] ?? "");
+  const variantesDisponibles = variantes.filter((variant) => getCatalogVariantAvailableStock(variant) > 0);
+  const coloresDisponibles = colores.filter((color) => variantesDisponibles.some((variant) => variant.color === color));
+  const primeraVariante = variantesDisponibles[0] ?? variantes[0];
+  const [colorSel, setColorSel] = useState<string>(primeraVariante?.color ?? coloresDisponibles[0] ?? "");
   const [tallaSel, setTallaSel] = useState<string>(primeraVariante?.talla ?? "");
 
-  const varianteActual = variantes.find((v) => v.color === colorSel && v.talla === tallaSel);
-  const tallasDisponibles = tallas.filter((t) => variantes.some((v) => v.color === colorSel && v.talla === t));
+  const varianteActual = variantesDisponibles.find((v) => v.color === colorSel && v.talla === tallaSel);
+  const stockActual = varianteActual ? getCatalogVariantAvailableStock(varianteActual) : 0;
+  const tallasDisponibles = tallas.filter((t) => variantesDisponibles.some((v) => v.color === colorSel && v.talla === t));
 
   useEffect(() => {
-    const tallaValida = variantes.some((v) => v.color === colorSel && v.talla === tallaSel);
+    const tallaValida = variantesDisponibles.some((v) => v.color === colorSel && v.talla === tallaSel);
     if (!tallaValida) {
-      const siguienteTalla = variantes.find((v) => v.color === colorSel)?.talla ?? "";
+      const siguienteTalla = variantesDisponibles.find((v) => v.color === colorSel)?.talla ?? "";
       if (siguienteTalla !== tallaSel) {
         setTallaSel(siguienteTalla);
         return;
       }
     }
 
-    onVarianteChange?.(variantes.find((v) => v.color === colorSel && v.talla === tallaSel) ?? null);
-  }, [colorSel, tallaSel, variantes, onVarianteChange]);
+    onVarianteChange?.(variantesDisponibles.find((v) => v.color === colorSel && v.talla === tallaSel) ?? null);
+  }, [colorSel, tallaSel, variantesDisponibles, onVarianteChange]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -38,7 +41,7 @@ export default function VarianteSelector({ variantes, colores, tallas, onVariant
           Color - <span className="normal-case" style={{ color: "var(--foreground)" }}>{colorSel}</span>
         </p>
         <div className="flex flex-wrap gap-2">
-          {colores.map((c) => (
+          {coloresDisponibles.map((c) => (
             <button
               key={c}
               onClick={() => setColorSel(c)}
@@ -60,26 +63,20 @@ export default function VarianteSelector({ variantes, colores, tallas, onVariant
           Talla
         </p>
         <div className="flex flex-wrap gap-2">
-          {tallas.map((t) => {
-            const disponible = tallasDisponibles.includes(t);
-            return (
-              <button
-                key={t}
-                onClick={() => disponible && setTallaSel(t)}
-                disabled={!disponible}
-                className="px-3 py-1.5 text-sm border transition disabled:cursor-not-allowed"
-                style={
-                  tallaSel === t
-                    ? { borderColor: "#1a1a1a", color: "#1a1a1a", background: "#ddd9d3" }
-                    : disponible
-                      ? { borderColor: "var(--border)", color: "var(--muted)", background: "var(--surface)" }
-                      : { borderColor: "#ddd5cc", color: "#b8b0a5", background: "#efeae3", textDecoration: "line-through" }
-                }
-              >
-                {t}
-              </button>
-            );
-          })}
+          {tallasDisponibles.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTallaSel(t)}
+              className="px-3 py-1.5 text-sm border transition"
+              style={
+                tallaSel === t
+                  ? { borderColor: "#1a1a1a", color: "#1a1a1a", background: "#ddd9d3" }
+                  : { borderColor: "var(--border)", color: "var(--muted)", background: "var(--surface)" }
+              }
+            >
+              {t}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -88,17 +85,17 @@ export default function VarianteSelector({ variantes, colores, tallas, onVariant
           className="text-sm"
           style={{
             color:
-              varianteActual.stock > 5
+              stockActual > 5
                 ? "var(--success)"
-                : varianteActual.stock > 0
+                : stockActual > 0
                   ? "var(--accent)"
                   : "var(--danger)",
           }}
         >
-          {varianteActual.stock > 5
-            ? `${varianteActual.stock} unidades disponibles`
-            : varianteActual.stock > 0
-              ? `Ultimas ${varianteActual.stock} unidades`
+          {stockActual > 5
+            ? `${stockActual} unidades disponibles`
+            : stockActual > 0
+              ? `Ultimas ${stockActual} unidades`
               : "Sin stock"}
         </p>
       )}

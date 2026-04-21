@@ -3,7 +3,13 @@ import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth-options";
 import { buildCentralApiHeaders, type CentralApiRole } from "@/lib/central-api";
-import type { CheckoutDeliveryInput, CheckoutItemInput, CheckoutSubmitPayload } from "@/types/checkout";
+import type {
+  CheckoutCustomerContext,
+  CheckoutDeliveryInput,
+  CheckoutItemInput,
+  CheckoutSubmitPayload,
+  DeliveryMethod,
+} from "@/types/checkout";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const WHATSAPP_NUMBER = "59176574068";
@@ -16,8 +22,15 @@ type CheckoutAuth = {
   accessToken?: string | null;
 };
 
+type JsonRecord = Record<string, unknown>;
+
 function normalizePhone(phone?: string) {
   return (phone ?? "").replace(/\D/g, "").trim();
+}
+
+function compactText(value?: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
 }
 
 function formatMoney(value: number) {
@@ -27,30 +40,25 @@ function formatMoney(value: number) {
   }).format(value);
 }
 
-function readSaleTotal(saleData: Record<string, unknown> | null): number | null {
-  if (!saleData) return null;
+function parseJsonRecord(data: unknown): JsonRecord | null {
+  return data && typeof data === "object" ? (data as JsonRecord) : null;
+}
 
-  const totales = saleData.totales;
-  if (!totales || typeof totales !== "object") return null;
-
-  const total = (totales as { total?: unknown }).total;
-  return typeof total === "number" ? total : null;
+function readString(source: JsonRecord | null, key: string): string | null {
+  const value = source?.[key];
+  return typeof value === "string" && value ? value : null;
 }
 
 function deliveryLabel(delivery: CheckoutDeliveryInput) {
   if (delivery.method === "WHATSAPP") return "Coordinacion por WhatsApp";
 
-  if (delivery.method === "PICKUP_LAPAZ") {
-    const labels: Record<string, string> = {
-      TELEFERICO_MORADO: "Teleferico Morado (Faro Murillo, Obelisco)",
-      TELEFERICO_ROJO: "Teleferico Rojo (Estacion Central, 16 de Julio)",
-      CORREOS: "Correos",
-    };
-
-    return labels[delivery.pickupPoint ?? ""] ?? "Entrega en La Paz";
+  if (delivery.method === "PICKUP_POINT") {
+    return [delivery.recipientName, delivery.address, delivery.scheduledAt].filter(Boolean).join(" - ") || "Punto de encuentro";
   }
 
-  return "Entrega en casa";
+  const destination = [delivery.department, delivery.city].filter(Boolean).join(", ");
+  const carrier = [delivery.shippingCompany, delivery.branch].filter(Boolean).join(" - ");
+  return [destination, carrier].filter(Boolean).join(" / ") || "Envio nacional";
 }
 
 async function getCheckoutAuth(request: NextRequest): Promise<CheckoutAuth | null> {
@@ -81,22 +89,60 @@ async function getCheckoutAuth(request: NextRequest): Promise<CheckoutAuth | nul
   };
 }
 
+async function fetchCentralJson(path: string, init: RequestInit, auth: CheckoutAuth) {
+  const response = await fetch(`${API_URL}${path}`, {
+    ...init,
+    headers: {
+      ...buildCentralApiHeaders(
+        {
+          userId: auth.id,
+          role: auth.role,
+          accessToken: auth.accessToken,
+        },
+        { includeJsonContentType: init.body ? true : false },
+      ),
+      ...(init.headers ?? {}),
+    },
+    cache: "no-store",
+  });
+
+  const data = await response.json().catch(() => null);
+  return { response, data: parseJsonRecord(data) };
+}
+
+function firstValidationMessage(data: JsonRecord | null) {
+  const errors = data?.errors;
+  if (!Array.isArray(errors)) return null;
+
+  const firstError = errors.find((error) => error && typeof error === "object") as { message?: unknown } | undefined;
+  return typeof firstError?.message === "string" ? firstError.message : null;
+}
+
+function extractErrorMessage(data: JsonRecord | null, fallback: string) {
+  return (
+    firstValidationMessage(data) ||
+    (typeof data?.message === "string" ? data.message : null) ||
+    (typeof data?.error === "string" ? data.error : null) ||
+    fallback
+  );
+}
+
 function buildWhatsappUrl({
   customerName,
   customerEmail,
   items,
-  paymentMethod,
   delivery,
   total,
   orderNumber,
+  notes,
 }: {
   customerName: string;
   customerEmail: string;
   items: CheckoutItemInput[];
-  paymentMethod: string;
   delivery: CheckoutDeliveryInput;
   total: number;
   orderNumber?: string | null;
+  notes?: string | null;
 }) {
   const lines = [
     "Hola FitAndes, quiero confirmar este pedido web:",
@@ -104,7 +150,6 @@ function buildWhatsappUrl({
     "",
     `Cliente: ${customerName}`,
     `Correo: ${customerEmail}`,
-    `Metodo de pago: ${paymentMethod}`,
     `Entrega: ${deliveryLabel(delivery)}`,
   ];
 
@@ -112,8 +157,12 @@ function buildWhatsappUrl({
     lines.push(`Celular de contacto: ${delivery.phone}`);
   }
 
-  if (delivery.method === "HOME_DELIVERY" && delivery.address) {
-    lines.push(`Direccion: ${delivery.address}`);
+  if (delivery.senderPhone) {
+    lines.push(`Celular remitente: ${delivery.senderPhone}`);
+  }
+
+  if (notes) {
+    lines.push(`Observaciones: ${notes}`);
   }
 
   lines.push("", "Productos:");
@@ -137,7 +186,7 @@ function validatePayload(payload: CheckoutSubmitPayload) {
     return "No hay productos para registrar.";
   }
 
-  if (!payload.delivery || !["WHATSAPP", "PICKUP_LAPAZ", "HOME_DELIVERY"].includes(payload.delivery.method)) {
+  if (!payload.delivery || !["WHATSAPP", "PICKUP_POINT", "SHIPPING_NATIONAL"].includes(payload.delivery.method)) {
     return "Selecciona un metodo de entrega valido.";
   }
 
@@ -146,16 +195,20 @@ function validatePayload(payload: CheckoutSubmitPayload) {
   }
 
   const invalidItem = payload.items.find(
-    (item) => !item.productoId || !item.color || !item.talla || item.cantidad < 1,
+    (item) => !item.productoId || !item.color || !item.talla || !Number.isInteger(item.cantidad) || item.cantidad < 1,
   );
 
   if (invalidItem) {
     return "Hay un producto sin datos suficientes para generar el pedido.";
   }
 
-  if (payload.delivery.method === "PICKUP_LAPAZ") {
-    if (!payload.delivery.pickupPoint) {
-      return "Selecciona un punto de entrega en La Paz.";
+  if (payload.notes && payload.notes.trim().length > 300) {
+    return "Las observaciones no pueden superar los 300 caracteres.";
+  }
+
+  if (payload.delivery.method === "PICKUP_POINT") {
+    if (!compactText(payload.delivery.address)) {
+      return "Ingresa el punto de encuentro o direccion de referencia.";
     }
 
     if (normalizePhone(payload.delivery.phone).length < 8) {
@@ -163,17 +216,227 @@ function validatePayload(payload: CheckoutSubmitPayload) {
     }
   }
 
-  if (payload.delivery.method === "HOME_DELIVERY") {
-    if (!payload.delivery.address?.trim()) {
-      return "Ingresa la direccion exacta de entrega.";
+  if (payload.delivery.method === "SHIPPING_NATIONAL") {
+    if (payload.paymentMethod !== "QR") {
+      return "El envio nacional solo esta disponible con pago QR.";
     }
 
-    if (normalizePhone(payload.delivery.phone).length < 8) {
-      return "Ingresa un celular valido para la entrega en casa.";
+    if (!compactText(payload.delivery.department) || !compactText(payload.delivery.shippingCompany) || !compactText(payload.delivery.senderName)) {
+      return "Completa departamento, empresa de envio y nombre del remitente.";
+    }
+
+    if (!compactText(payload.delivery.senderCI)) {
+      return "Ingresa el CI del remitente.";
+    }
+
+    if (normalizePhone(payload.delivery.senderPhone).length < 8) {
+      return "Ingresa un celular valido del remitente.";
     }
   }
 
   return null;
+}
+
+async function syncRemoteCart(auth: CheckoutAuth, items: CheckoutItemInput[]) {
+  const clearCart = await fetch(`${API_URL}/cart`, {
+    method: "DELETE",
+    headers: buildCentralApiHeaders({ userId: auth.id, role: auth.role, accessToken: auth.accessToken }),
+    cache: "no-store",
+  });
+
+  if (!clearCart.ok) {
+    const data = parseJsonRecord(await clearCart.json().catch(() => null));
+    return {
+      ok: false,
+      status: clearCart.status,
+      message: extractErrorMessage(data, "No pude sincronizar tu carrito con el sistema central."),
+    };
+  }
+
+  for (const item of items) {
+    const addItem = await fetch(`${API_URL}/cart/items`, {
+      method: "POST",
+      headers: buildCentralApiHeaders(
+        {
+          userId: auth.id,
+          role: auth.role,
+          accessToken: auth.accessToken,
+        },
+        { includeJsonContentType: true },
+      ),
+      body: JSON.stringify({
+        productoId: item.productoId,
+        variantId: item.variantId ?? undefined,
+        color: item.color,
+        colorSecundario: item.colorSecundario ?? undefined,
+        talla: item.talla,
+        cantidad: item.cantidad,
+      }),
+      cache: "no-store",
+    });
+
+    if (!addItem.ok) {
+      const data = parseJsonRecord(await addItem.json().catch(() => null));
+      return {
+        ok: false,
+        status: addItem.status,
+        message: extractErrorMessage(data, `No pude agregar ${item.nombre} al carrito del sistema central.`),
+      };
+    }
+  }
+
+  return { ok: true as const };
+}
+
+function buildOrderCheckoutPayload(payload: CheckoutSubmitPayload) {
+  const notes = compactText(payload.notes);
+
+  if (payload.delivery.method === "WHATSAPP") {
+    return {
+      metodoPago: payload.paymentMethod,
+      delivery: { method: "WHATSAPP" },
+      notes,
+    };
+  }
+
+  if (payload.delivery.method === "PICKUP_POINT") {
+    return {
+      metodoPago: payload.paymentMethod,
+      delivery: {
+        method: "PICKUP_POINT",
+        address: compactText(payload.delivery.address),
+        phone: normalizePhone(payload.delivery.phone),
+        recipientName: compactText(payload.delivery.recipientName),
+        scheduledAt: compactText(payload.delivery.scheduledAt),
+      },
+      notes,
+    };
+  }
+
+  return {
+    metodoPago: payload.paymentMethod,
+    delivery: {
+      method: "SHIPPING_NATIONAL",
+      department: compactText(payload.delivery.department),
+      city: compactText(payload.delivery.city),
+      shippingCompany: compactText(payload.delivery.shippingCompany),
+      branch: compactText(payload.delivery.branch),
+      recipientName: compactText(payload.delivery.recipientName),
+      senderName: compactText(payload.delivery.senderName),
+      senderCI: compactText(payload.delivery.senderCI),
+      senderPhone: normalizePhone(payload.delivery.senderPhone),
+    },
+    notes,
+  };
+}
+
+function extractOrderInfo(data: JsonRecord | null) {
+  const order = parseJsonRecord(data?.order) ?? data;
+
+  return {
+    orderId: readString(order, "_id") ?? readString(order, "id") ?? readString(data, "orderId"),
+    orderNumber:
+      readString(order, "orderNumber") ??
+      readString(order, "numeroPedido") ??
+      readString(order, "numeroVenta") ??
+      readString(data, "orderNumber"),
+  };
+}
+
+function extractPaymentId(data: JsonRecord | null) {
+  const payment = parseJsonRecord(data?.payment) ?? data;
+  return readString(payment, "_id") ?? readString(payment, "id") ?? readString(data, "paymentId");
+}
+
+async function createQrPayment(auth: CheckoutAuth, orderId: string) {
+  const { response, data } = await fetchCentralJson(
+    "/payments",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        orderId,
+        metodoPago: "QR",
+        idempotencyKey: `checkout-${orderId}`,
+      }),
+    },
+    auth,
+  );
+
+  const paymentId = extractPaymentId(data);
+  if (response.ok || paymentId) {
+    return {
+      ok: true as const,
+      paymentId,
+      warning: response.ok ? null : extractErrorMessage(data, "No pude recuperar la transaccion QR existente."),
+    };
+  }
+
+  return {
+    ok: false as const,
+    paymentId: null,
+    warning: extractErrorMessage(data, "El pedido se creo, pero no pude preparar el pago QR."),
+  };
+}
+
+function normalizeCheckoutContext(data: JsonRecord | null): CheckoutCustomerContext {
+  const user = parseJsonRecord(data?.user);
+  const profile = parseJsonRecord(data?.profile);
+  const defaultAddress = parseJsonRecord(data?.defaultAddress);
+  const defaultDeliveryMethod = readString(profile, "defaultDeliveryMethod") as DeliveryMethod | null;
+
+  return {
+    user: user
+      ? {
+          fullname: readString(user, "fullname"),
+          email: readString(user, "email"),
+        }
+      : null,
+    profile: profile
+      ? {
+          phone: readString(profile, "phone"),
+          defaultDeliveryMethod,
+          notes: readString(profile, "notes"),
+        }
+      : null,
+    defaultAddress: defaultAddress
+      ? {
+          recipientName: readString(defaultAddress, "recipientName"),
+          phone: readString(defaultAddress, "phone"),
+          department: readString(defaultAddress, "department"),
+          city: readString(defaultAddress, "city"),
+          zone: readString(defaultAddress, "zone"),
+          addressLine: readString(defaultAddress, "addressLine"),
+          reference: readString(defaultAddress, "reference"),
+        }
+      : null,
+  };
+}
+
+export async function GET(request: NextRequest) {
+  const auth = await getCheckoutAuth(request);
+
+  if (!auth || auth.role !== "CLIENTE") {
+    return NextResponse.json({ message: "Debes iniciar sesion para continuar." }, { status: 401 });
+  }
+
+  if (!API_URL) {
+    return NextResponse.json({ message: "La API principal no esta configurada." }, { status: 500 });
+  }
+
+  try {
+    const { response, data } = await fetchCentralJson("/customers/me", { method: "GET" }, auth);
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { message: extractErrorMessage(data, "No pude cargar tus datos de cliente.") },
+        { status: response.status },
+      );
+    }
+
+    return NextResponse.json(normalizeCheckoutContext(data));
+  } catch {
+    return NextResponse.json({ message: "No pude consultar tu perfil de cliente." }, { status: 502 });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -200,93 +463,72 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: validationError }, { status: 400 });
   }
 
-  const salePayload = {
-    items: payload.items.map((item) => ({
-      productoId: item.productoId,
-      variantId: item.variantId ?? undefined,
-      color: item.color,
-      colorSecundario: item.colorSecundario ?? undefined,
-      talla: item.talla,
-      cantidad: item.cantidad,
-    })),
-    metodoPago: payload.paymentMethod,
-    tipoVenta: "WEB",
-    descuento: 0,
-    delivery: {
-      method: payload.delivery.method,
-      pickupPoint: payload.delivery.method === "PICKUP_LAPAZ" ? payload.delivery.pickupPoint ?? null : null,
-      address: payload.delivery.method === "HOME_DELIVERY" ? payload.delivery.address?.trim() ?? "" : null,
-      phone:
-        payload.delivery.method === "PICKUP_LAPAZ" || payload.delivery.method === "HOME_DELIVERY"
-          ? normalizePhone(payload.delivery.phone)
-          : null,
-    },
-  };
+  const syncResult = await syncRemoteCart(auth, payload.items);
+  if (!syncResult.ok) {
+    return NextResponse.json({ ok: false, message: syncResult.message }, { status: syncResult.status });
+  }
 
   try {
-    const saleResponse = await fetch(`${API_URL}/ventas`, {
-      method: "POST",
-      headers: buildCentralApiHeaders(
+    const { response, data } = await fetchCentralJson(
+      "/orders/checkout",
+      {
+        method: "POST",
+        body: JSON.stringify(buildOrderCheckoutPayload(payload)),
+      },
+      auth,
+    );
+
+    if (!response.ok) {
+      return NextResponse.json(
         {
-          userId: auth.id,
-          role: auth.role,
-          accessToken: auth.accessToken,
+          ok: false,
+          message: extractErrorMessage(
+            data,
+            !auth.accessToken
+              ? "Tu sesion actual no tiene el token del backend. Cierra sesion e inicia de nuevo para finalizar la compra."
+              : "No pude registrar tu pedido en este momento. Intenta nuevamente.",
+          ),
         },
-        { includeJsonContentType: true },
-      ),
-      body: JSON.stringify(salePayload),
-      cache: "no-store",
-    });
-
-    const rawText = await saleResponse.text();
-    let saleData: Record<string, unknown> | null = null;
-
-    if (rawText) {
-      try {
-        saleData = JSON.parse(rawText) as Record<string, unknown>;
-      } catch {
-        saleData = { message: rawText };
-      }
+        { status: response.status },
+      );
     }
 
-    if (!saleResponse.ok) {
-      const validationErrors = Array.isArray(saleData?.errors) ? saleData.errors : [];
-      const firstValidationMessage = validationErrors.find(
-        (error): error is { message?: string } => Boolean(error && typeof error === "object"),
-      )?.message;
-      const message =
-        firstValidationMessage ||
-        (typeof saleData?.message === "string" && saleData.message) ||
-        (typeof saleData?.error === "string" && saleData.error) ||
-        (!auth.accessToken
-          ? "Tu sesion actual no tiene el token del backend. Cierra sesion e inicia de nuevo para finalizar la compra."
-          : "No pude registrar tu pedido en este momento. Intenta nuevamente.");
-
-      return NextResponse.json({ ok: false, message }, { status: saleResponse.status });
-    }
-
-    const total = readSaleTotal(saleData) ?? payload.items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
-    const orderId = (typeof saleData?._id === "string" && saleData._id) || (typeof saleData?.id === "string" && saleData.id) || null;
-    const orderNumber = (typeof saleData?.numeroVenta === "string" && saleData.numeroVenta) || null;
+    const { orderId, orderNumber } = extractOrderInfo(data);
+    const total = payload.items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
     const whatsappUrl =
       payload.delivery.method === "WHATSAPP"
         ? buildWhatsappUrl({
             customerName: auth.fullname ?? "Cliente FitAndes",
             customerEmail: auth.email ?? "-",
             items: payload.items,
-            paymentMethod: payload.paymentMethod,
             delivery: payload.delivery,
             total,
             orderNumber,
+            notes: payload.notes?.trim() ?? null,
           })
         : null;
+
+    let paymentId: string | null = null;
+    let warning: string | null = null;
+
+    if (payload.paymentMethod === "QR" && orderId) {
+      const paymentSetup = await createQrPayment(auth, orderId);
+      paymentId = paymentSetup.paymentId;
+      warning = paymentSetup.warning;
+    }
 
     return NextResponse.json({
       ok: true,
       orderId,
       orderNumber,
+      paymentId,
+      receiptRequired: payload.paymentMethod === "QR",
       whatsappUrl,
-      message: "Pedido registrado correctamente.",
+      warning,
+      message:
+        payload.paymentMethod === "QR"
+          ? "Pedido registrado. El siguiente paso es subir tu comprobante QR."
+          : "Pedido registrado correctamente.",
     });
   } catch {
     return NextResponse.json(

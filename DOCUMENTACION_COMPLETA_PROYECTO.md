@@ -140,6 +140,12 @@ NEXTAUTH_SECRET=tu-secreto-seguro
 NEXTAUTH_URL=http://localhost:3000
 ```
 
+Importante para Google Sign-In:
+
+- `NEXTAUTH_URL` debe coincidir con la URL real desde la que abres la web, incluyendo el puerto.
+- Si trabajas en `http://localhost:3001`, ese es el origen que debes registrar en Google Cloud Console.
+- `http://localhost:3000` y `http://localhost:3001` cuentan como origenes distintos para Google OAuth.
+
 ## 7. Scripts de desarrollo
 
 Definidos en `package.json`:

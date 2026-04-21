@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import CatalogoGrid from "@/components/catalogo/CatalogoGrid";
-import type { CatalogProduct } from "@/types/catalogo";
+import { catalogVariantIsAvailable, type CatalogProduct } from "@/types/catalogo";
 
 export const metadata = {
   title: "Catalogo | FitAndes",
@@ -12,7 +12,7 @@ export default async function CatalogoPage() {
   let productos: CatalogProduct[] = [];
 
   const productosConStock = (items: CatalogProduct[]) =>
-    items.filter((producto) => producto.variantes.some((variante) => (Number(variante.stock) || 0) > 0));
+    items.filter((producto) => producto.variantes.some(catalogVariantIsAvailable));
 
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/publicos`, {

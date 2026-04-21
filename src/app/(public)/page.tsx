@@ -2,6 +2,7 @@
 import Link from "next/link";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
+import { getCatalogProductAvailableStock, type CatalogProduct, type CatalogVariant } from "@/types/catalogo";
 import { BiHistory,BiLogIn,BiDevices } from "react-icons/bi";
 import { GrSecure } from "react-icons/gr";
 import imagen from "../../../public/banner-main.png";
@@ -10,23 +11,9 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   (process.env.NEXTAUTH_URL ? `${process.env.NEXTAUTH_URL}/api` : undefined);
 
-interface VariantePublica {
-  color: string;
-  talla: string;
-  stock: number;
-  imagen?: string;
-  imagenes?: string[];
-}
+type VariantePublica = CatalogVariant;
 
-interface ProductoPublico {
-  _id: string;
-  nombre: string;
-  modelo: string;
-  precioVenta: number;
-  descuento?: number;
-  createdAt?: string;
-  totalVendidos?: number;
-  imagenes?: string[];
+interface ProductoPublico extends Omit<CatalogProduct, "variantes"> {
   variantes?: VariantePublica[];
 }
 
@@ -42,7 +29,10 @@ function normalizarNumero(value: unknown): number {
 }
 
 function totalStock(producto: ProductoPublico): number {
-  return (producto.variantes ?? []).reduce((acc, item) => acc + normalizarNumero(item.stock), 0);
+  return getCatalogProductAvailableStock({
+    ...producto,
+    variantes: producto.variantes ?? [],
+  });
 }
 
 function formatearPrecio(precio: number): string {
@@ -84,6 +74,7 @@ export default async function HomePage() {
   const productos = await getProductosPublicos();
 
   const recienLlegados = [...productos]
+    .filter((producto) => totalStock(producto) > 0)
     .sort((a, b) => {
       const dateA = new Date(a.createdAt ?? 0).getTime();
       const dateB = new Date(b.createdAt ?? 0).getTime();

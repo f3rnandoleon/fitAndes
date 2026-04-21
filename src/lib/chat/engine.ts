@@ -12,6 +12,8 @@ import {
 } from "@/services/chat-catalogo.service";
 import { getMisPedidos, getPedidoDetalle } from "@/services/chat-pedidos.service";
 import type { CatalogProduct } from "@/types/catalogo";
+import { getPedidoNumero } from "@/types/pedidos";
+import { catalogVariantIsAvailable } from "@/types/catalogo";
 
 function buildBaseMemory(memory: ChatMemory, overrides: Partial<ChatMemory>): ChatMemory {
   return normalizeMemory({ ...memory, ...overrides }, overrides.userAuthenticated ?? memory.userAuthenticated);
@@ -223,7 +225,7 @@ export async function runChat(input: {
     }
 
     return {
-      reply: `Aqui tienes el detalle de ${order.numeroVenta}.`,
+      reply: `Aqui tienes el detalle de ${getPedidoNumero(order)}.`,
       intent: "ver_pedido",
       cards: [buildOrderCard(order)],
       suggestions: ["Mis pedidos", "Volver al catalogo"],
@@ -409,12 +411,12 @@ export async function runChat(input: {
     const variant = resolveVariant(product, preferredColor, preferredTalla);
     const exactVariantExists = product.variantes.some(
       (item) =>
-        item.stock > 0 &&
+        catalogVariantIsAvailable(item) &&
         (!preferredColor || item.color.toLowerCase() === preferredColor.toLowerCase()) &&
         (!preferredTalla || item.talla.toUpperCase() === preferredTalla.toUpperCase()),
     );
 
-    const needsMoreSelection = !exactVariantExists && product.variantes.filter((item) => item.stock > 0).length > 1;
+    const needsMoreSelection = !exactVariantExists && product.variantes.filter(catalogVariantIsAvailable).length > 1;
     if (needsMoreSelection) {
       return {
         reply: `Antes de agregar ${product.nombre}, selecciona color y talla en la tarjeta.`,

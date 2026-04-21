@@ -5,7 +5,7 @@ import { useState } from "react";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor, sortProductColors } from "@/lib/product-colors";
-import type { CatalogProduct } from "@/types/catalogo";
+import { catalogVariantIsAvailable, getCatalogProductAvailableStock, type CatalogProduct } from "@/types/catalogo";
 
 type OrdenKey = "fecha" | "relevancia" | "ventas" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
 
@@ -35,11 +35,11 @@ function esNuevo(createdAt?: string): boolean {
 }
 
 function totalStock(producto: CatalogProduct): number {
-  return producto.variantes.reduce((sum, variante) => sum + Math.max(0, Number(variante.stock) || 0), 0);
+  return getCatalogProductAvailableStock(producto);
 }
 
 function variantesConStock(producto: CatalogProduct) {
-  return producto.variantes.filter((variante) => (Number(variante.stock) || 0) > 0);
+  return producto.variantes.filter(catalogVariantIsAvailable);
 }
 
 function productoTieneStock(producto: CatalogProduct): boolean {

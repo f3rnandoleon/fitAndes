@@ -1,40 +1,48 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
-import type { CheckoutSubmitResponse, DeliveryMethod, PaymentMethod, PickupPoint } from "@/types/checkout";
+import {
+  EMPTY_DELIVERY_OPTIONS,
+  getPickupScheduleById,
+  getPickupScheduleTimeSlots,
+  getShippingBranches,
+  getShippingCompaniesByDepartment,
+  getShippingDepartments,
+} from "@/lib/delivery-options";
+import type {
+  CheckoutCustomerContext,
+  CheckoutSubmitResponse,
+  DeliveryMethod,
+  DeliveryOptionsConfig,
+  PaymentMethod,
+} from "@/types/checkout";
 
 const DELIVERY_OPTIONS: Array<{ value: DeliveryMethod; label: string; description: string }> = [
   {
     value: "WHATSAPP",
     label: "WhatsApp",
-    description: "Prepara un mensaje estructurado del pedido y lo envia al WhatsApp de FitAndes.",
+    description: "Enviar Mensaje con el pedido listo para coordinar entrega directamente.",
   },
   {
-    value: "PICKUP_LAPAZ",
-    label: "Entrega en La Paz",
-    description: "Retiro coordinado en un punto de entrega. Se pedira tu celular para contactarte.",
+    value: "PICKUP_POINT",
+    label: "Punto de encuentro(La Paz)",
+    description: "Llena informacion para entrega directa en el punto de encuentro deseado",
   },
   {
-    value: "HOME_DELIVERY",
-    label: "Entrega en casa",
-    description: "Envio a domicilio con direccion exacta y celular de contacto.",
+    value: "SHIPPING_NATIONAL",
+    label: "Envio nacional",
+    description: "Envio a otro departamento mediante encomienda. Este flujo requiere  datos de entrega y pago QR para confirmar envio.",
   },
-];
-
-const PICKUP_OPTIONS: Array<{ value: PickupPoint; label: string }> = [
-  { value: "TELEFERICO_MORADO", label: "Teleferico Morado (Faro Murillo, Obelisco)" },
-  { value: "TELEFERICO_ROJO", label: "Teleferico Rojo (Estacion Central, 16 de Julio)" },
-  { value: "CORREOS", label: "Correos" },
 ];
 
 const PAYMENT_OPTIONS: Array<{ value: PaymentMethod; label: string; description: string }> = [
-  { value: "EFECTIVO", label: "Efectivo", description: "Pago coordinado al momento de la entrega o retiro." },
-  { value: "QR", label: "QR", description: "Pago por QR coordinado durante la confirmacion del pedido." },
+  { value: "EFECTIVO", label: "Efectivo", description: "Pago al momento de la entrega." },
+  { value: "QR", label: "QR", description: "Despues de crear pedido debe subir comprobante del pago para confirmar envio." },
 ];
 
 function formatPrice(value: number) {
@@ -48,19 +56,186 @@ function sanitizeCallbackUrl(path: string) {
   return path.startsWith("/") ? path : "/checkout";
 }
 
+function buildDefaultAddress(context: CheckoutCustomerContext | null) {
+  if (!context?.defaultAddress) return "";
+
+  const parts = [context.defaultAddress.zone, context.defaultAddress.addressLine, context.defaultAddress.reference]
+    .map((value) => value?.trim())
+    .filter(Boolean);
+
+  return parts.join(", ");
+}
+
+function persistPaymentReference(orderId: string | null | undefined, paymentId: string | null | undefined) {
+  if (!orderId || !paymentId) return;
+  window.localStorage.setItem(`fitandes-payment:${orderId}`, paymentId);
+}
+
 export default function CheckoutPageClient() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { items, totalAmount, totalItems, updateQuantity, removeItem, clearCart } = useReservationCart();
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("WHATSAPP");
-  const [pickupPoint, setPickupPoint] = useState<PickupPoint>("TELEFERICO_MORADO");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("EFECTIVO");
-  const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [pickupScheduleId, setPickupScheduleId] = useState("");
+  const [pickupTime, setPickupTime] = useState("");
+  const [department, setDepartment] = useState("");
+  const [city, setCity] = useState("");
+  const [shippingCompany, setShippingCompany] = useState("");
+  const [branch, setBranch] = useState("");
+  const [senderName, setSenderName] = useState("");
+  const [senderCI, setSenderCI] = useState("");
+  const [senderPhone, setSenderPhone] = useState("");
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [prefillLoading, setPrefillLoading] = useState(false);
+  const [deliveryConfig, setDeliveryConfig] = useState<DeliveryOptionsConfig>(EMPTY_DELIVERY_OPTIONS);
+  const [deliveryOptionsLoading, setDeliveryOptionsLoading] = useState(true);
+  const [deliveryOptionsError, setDeliveryOptionsError] = useState("");
 
   const authenticated = status === "authenticated" && session?.user?.role === "CLIENTE";
+  const pickupPointOptions = deliveryConfig.pickupPoints;
+  const pickupScheduleOptions = deliveryConfig.pickupSchedules;
+  const selectedPickupSchedule = getPickupScheduleById(pickupScheduleId, deliveryConfig);
+  const pickupTimeOptions = getPickupScheduleTimeSlots(pickupScheduleId, deliveryConfig);
+  const shippingDepartments = getShippingDepartments(deliveryConfig);
+  const shippingCompanies = getShippingCompaniesByDepartment(department, deliveryConfig);
+  const shippingBranches = getShippingBranches(department, shippingCompany, deliveryConfig);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDeliveryOptionsLoading(true);
+    setDeliveryOptionsError("");
+
+    void fetch("/api/delivery-options", { cache: "no-store" })
+      .then(async (response) => {
+        const data = (await response.json().catch(() => null)) as DeliveryOptionsConfig | { message?: string } | null;
+        if (!response.ok) {
+          throw new Error((data && "message" in data && data.message) || "No pude cargar las opciones de entrega.");
+        }
+        return data as DeliveryOptionsConfig;
+      })
+      .then((config) => {
+        if (!cancelled) {
+          setDeliveryConfig(config ?? EMPTY_DELIVERY_OPTIONS);
+        }
+      })
+      .catch((fetchError: unknown) => {
+        if (!cancelled) {
+          setDeliveryOptionsError(fetchError instanceof Error ? fetchError.message : "No pude cargar las opciones de entrega.");
+          setDeliveryConfig(EMPTY_DELIVERY_OPTIONS);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDeliveryOptionsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (deliveryMethod === "SHIPPING_NATIONAL" && paymentMethod !== "QR") {
+      setPaymentMethod("QR");
+    }
+  }, [deliveryMethod, paymentMethod]);
+
+  useEffect(() => {
+    if (deliveryMethod !== "PICKUP_POINT") return;
+
+    if (!pickupPointOptions.some((option) => option.name === address)) {
+      setAddress(pickupPointOptions[0]?.name ?? "");
+    }
+
+    if (!pickupScheduleOptions.some((option) => option.id === pickupScheduleId)) {
+      setPickupScheduleId(pickupScheduleOptions[0]?.id ?? "");
+    }
+  }, [deliveryMethod, address, pickupScheduleId, pickupPointOptions, pickupScheduleOptions]);
+
+  useEffect(() => {
+    if (deliveryMethod !== "PICKUP_POINT") return;
+
+    if (!pickupTimeOptions.includes(pickupTime)) {
+      setPickupTime(pickupTimeOptions[0] ?? "");
+    }
+  }, [deliveryMethod, pickupTime, pickupTimeOptions]);
+
+  useEffect(() => {
+    if (deliveryMethod !== "SHIPPING_NATIONAL") return;
+
+    if (!shippingDepartments.includes(department)) {
+      setDepartment(shippingDepartments[0] ?? "");
+    }
+  }, [deliveryMethod, department, shippingDepartments]);
+
+  useEffect(() => {
+    if (deliveryMethod !== "SHIPPING_NATIONAL") return;
+
+    if (!shippingCompanies.some((company) => company.name === shippingCompany)) {
+      setShippingCompany(shippingCompanies[0]?.name ?? "");
+    }
+  }, [deliveryMethod, shippingCompany, shippingCompanies]);
+
+  useEffect(() => {
+    if (deliveryMethod !== "SHIPPING_NATIONAL") return;
+
+    if (!shippingBranches.includes(branch)) {
+      setBranch(shippingBranches[0] ?? "");
+    }
+  }, [deliveryMethod, branch, shippingBranches]);
+
+  useEffect(() => {
+    if (!authenticated) return;
+
+    let cancelled = false;
+    setPrefillLoading(true);
+
+    void fetch("/api/checkout", { cache: "no-store" })
+      .then(async (response) => {
+        const data = (await response.json().catch(() => null)) as CheckoutCustomerContext | { message?: string } | null;
+        if (!response.ok) {
+          throw new Error((data && "message" in data && data.message) || "No pude cargar tus datos.");
+        }
+        return data as CheckoutCustomerContext;
+      })
+      .then((context) => {
+        if (cancelled) return;
+
+        if (context.profile?.defaultDeliveryMethod && DELIVERY_OPTIONS.some((option) => option.value === context.profile?.defaultDeliveryMethod)) {
+          setDeliveryMethod(context.profile.defaultDeliveryMethod);
+        }
+
+        const fallbackPhone = context.profile?.phone ?? context.defaultAddress?.phone ?? "";
+        const fallbackName = context.defaultAddress?.recipientName ?? context.user?.fullname ?? "";
+        const fallbackAddress = buildDefaultAddress(context);
+
+        setPhone((current) => current || fallbackPhone);
+        setRecipientName((current) => current || fallbackName);
+        setAddress((current) => current || fallbackAddress);
+        setDepartment((current) => current || context.defaultAddress?.department || "");
+        setCity((current) => current || context.defaultAddress?.city || "");
+        setSenderName("WEB");
+        setSenderPhone((current) => current || fallbackPhone);
+        setNotes((current) => current || context.profile?.notes || "");
+      })
+      .catch((fetchError: unknown) => {
+        if (cancelled) return;
+        const message = fetchError instanceof Error ? fetchError.message : "No pude cargar tus datos de checkout.";
+        setError(message);
+      })
+      .finally(() => {
+        if (!cancelled) setPrefillLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authenticated]);
 
   function goToLogin() {
     router.push(`/login?callbackUrl=${encodeURIComponent(sanitizeCallbackUrl("/checkout"))}`);
@@ -68,6 +243,7 @@ export default function CheckoutPageClient() {
 
   function validateForm() {
     const normalizedPhone = phone.replace(/\D/g, "");
+    const normalizedSenderPhone = senderPhone.replace(/\D/g, "");
 
     if (!authenticated) {
       return "Inicia sesion para registrar tu pedido en el historial.";
@@ -82,17 +258,51 @@ export default function CheckoutPageClient() {
       return "Hay un producto sin identificador valido. Vuelve a agregarlo desde el catalogo.";
     }
 
-    if (deliveryMethod === "PICKUP_LAPAZ" && normalizedPhone.length < 8) {
-      return "Ingresa un celular valido para coordinar la entrega en La Paz.";
+    if (notes.trim().length > 300) {
+      return "Las observaciones no pueden superar los 300 caracteres.";
     }
 
-    if (deliveryMethod === "HOME_DELIVERY") {
+    if (deliveryMethod === "PICKUP_POINT") {
+      if (pickupPointOptions.length === 0 || pickupScheduleOptions.length === 0) {
+        return "No pude cargar los puntos de entrega del sistema central.";
+      }
+
       if (!address.trim()) {
-        return "Ingresa la direccion exacta para la entrega en casa.";
+        return "Selecciona un punto de encuentro.";
       }
 
       if (normalizedPhone.length < 8) {
-        return "Ingresa un celular valido para la entrega en casa.";
+        return "Ingresa un celular valido para coordinar la entrega.";
+      }
+
+      if (!pickupScheduleId) {
+        return "Selecciona un rango horario disponible.";
+      }
+
+      if (!pickupTime.trim()) {
+        return "Selecciona una hora especifica dentro del rango.";
+      }
+    }
+
+    if (deliveryMethod === "SHIPPING_NATIONAL") {
+      if (shippingDepartments.length === 0 || shippingCompanies.length === 0) {
+        return "No pude cargar las opciones de envio del sistema central.";
+      }
+
+      if (paymentMethod !== "QR") {
+        return "El envio nacional solo admite pago QR.";
+      }
+
+      if (!department.trim() || !shippingCompany.trim() || !branch.trim()) {
+        return "Selecciona departamento, empresa y sucursal de encomienda.";
+      }
+
+      if (!senderCI.trim()) {
+        return "Ingresa el CI del remitente.";
+      }
+
+      if (normalizedSenderPhone.length < 8) {
+        return "Ingresa un celular valido del remitente.";
       }
     }
 
@@ -109,8 +319,19 @@ export default function CheckoutPageClient() {
 
     setError("");
     setLoading(true);
+    const pendingWhatsappWindow = deliveryMethod === "WHATSAPP" ? window.open("", "_blank") : null;
+
+    if (pendingWhatsappWindow) {
+      pendingWhatsappWindow.document.write("<title>Abriendo WhatsApp...</title><p style=\"font-family:sans-serif;padding:16px\">Preparando tu pedido para WhatsApp...</p>");
+      pendingWhatsappWindow.opener = null;
+    }
 
     try {
+      const pickupScheduleValue =
+        deliveryMethod === "PICKUP_POINT" && selectedPickupSchedule && pickupTime
+          ? `${selectedPickupSchedule.day} ${pickupTime}`
+          : "";
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -119,30 +340,49 @@ export default function CheckoutPageClient() {
           paymentMethod,
           delivery: {
             method: deliveryMethod,
-            pickupPoint: deliveryMethod === "PICKUP_LAPAZ" ? pickupPoint : null,
-            phone: deliveryMethod === "WHATSAPP" ? "" : phone,
-            address: deliveryMethod === "HOME_DELIVERY" ? address : "",
+            address: address.trim(),
+            phone: phone.trim(),
+            recipientName: recipientName.trim(),
+            scheduledAt: pickupScheduleValue,
+            department: department.trim(),
+            city: city.trim(),
+            shippingCompany: shippingCompany.trim(),
+            branch: branch.trim(),
+            senderName: senderName.trim(),
+            senderCI: senderCI.trim(),
+            senderPhone: senderPhone.trim(),
           },
+          notes: notes.trim(),
         }),
       });
 
-      const data = (await response.json()) as CheckoutSubmitResponse;
+      const data = (await response.json().catch(() => null)) as CheckoutSubmitResponse | null;
 
-      if (!response.ok || !data.ok) {
-        setError(data.message ?? "No pude completar tu pedido en este momento.");
+      if (!response.ok || !data?.ok) {
+        pendingWhatsappWindow?.close();
+        setError(data?.message ?? "No pude completar tu pedido en este momento.");
         setLoading(false);
         return;
       }
 
       clearCart();
+      persistPaymentReference(data.orderId, data.paymentId);
 
       if (data.whatsappUrl) {
-        window.open(data.whatsappUrl, "_blank", "noopener,noreferrer");
+        if (pendingWhatsappWindow && !pendingWhatsappWindow.closed) {
+          pendingWhatsappWindow.location.href = data.whatsappUrl;
+        } else {
+          window.location.href = data.whatsappUrl;
+        }
+      } else {
+        pendingWhatsappWindow?.close();
       }
 
-      router.push(data.orderId ? `/pedidos/${data.orderId}` : "/pedidos");
+      const query = data.paymentId ? `?paymentId=${encodeURIComponent(data.paymentId)}` : "";
+      router.push(data.orderId ? `/pedidos/${data.orderId}${query}` : "/pedidos");
       router.refresh();
     } catch {
+      pendingWhatsappWindow?.close();
       setError("Ocurrio un problema al finalizar tu compra. Intenta nuevamente.");
       setLoading(false);
     }
@@ -185,7 +425,7 @@ export default function CheckoutPageClient() {
               Finalizar compra
             </h1>
             <p className="mt-3 text-sm max-w-2xl" style={{ color: "#5f564e" }}>
-              Revisa tu pedido, elige la entrega y confirma. Cuando termines, la compra se guardara en tu historial.
+              Tu carrito local se sincronizara con el sistema central para generar un pedido real y reservar stock.
             </p>
           </div>
 
@@ -197,6 +437,11 @@ export default function CheckoutPageClient() {
               <>
                 <p className="text-sm" style={{ color: "#111111" }}>{session.user.fullname}</p>
                 <p className="text-xs mt-1" style={{ color: "#6f6459" }}>{session.user.email}</p>
+                {prefillLoading ? (
+                  <p className="text-[11px] mt-3" style={{ color: "#8f8478" }}>
+                    Cargando datos de cliente...
+                  </p>
+                ) : null}
               </>
             ) : (
               <>
@@ -334,112 +579,233 @@ export default function CheckoutPageClient() {
                 ))}
               </div>
 
-              {deliveryMethod === "PICKUP_LAPAZ" && (
+              {deliveryOptionsLoading ? (
+                <p className="mt-4 text-xs" style={{ color: "#6f6459" }}>
+                  Cargando opciones de entrega del sistema central...
+                </p>
+              ) : null}
+
+              {deliveryOptionsError ? (
+                <p className="mt-4 border px-4 py-3 text-sm" style={{ borderColor: "#d9b2ac", background: "#f6e8e5", color: "#8b3f36" }}>
+                  {deliveryOptionsError}
+                </p>
+              ) : null}
+
+              {deliveryMethod === "PICKUP_POINT" ? (
                 <div className="mt-4 space-y-3">
-                  <div>
-                    <label className="text-xs uppercase block mb-2" style={{ letterSpacing: "0.14em", color: "#8f8478" }}>
-                      Punto de entrega
-                    </label>
+                  <Field label="Punto de encuentro">
                     <select
-                      value={pickupPoint}
-                      onChange={(event) => setPickupPoint(event.target.value as PickupPoint)}
+                      value={address}
+                      onChange={(event) => setAddress(event.target.value)}
                       className="w-full border px-4 py-3 text-sm"
                       style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
                     >
-                      {PICKUP_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
+                      {pickupPointOptions.map((option) => (
+                        <option key={option.id} value={option.name}>
+                          {option.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Celular de contacto">
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      placeholder="76543210"
+                      className="w-full border px-4 py-3 text-sm"
+                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+                    />
+                  </Field>
+                  <Field label="Nombre de quien recibe">
+                    <input
+                      type="text"
+                      value={recipientName}
+                      onChange={(event) => setRecipientName(event.target.value)}
+                      placeholder="Nombre opcional"
+                      className="w-full border px-4 py-3 text-sm"
+                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+                    />
+                  </Field>
+                  <Field label="Horario disponible">
+                    <select
+                      value={pickupScheduleId}
+                      onChange={(event) => setPickupScheduleId(event.target.value)}
+                      className="w-full border px-4 py-3 text-sm"
+                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+                    >
+                      {pickupScheduleOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
                           {option.label}
                         </option>
                       ))}
                     </select>
-                  </div>
-                  <div>
-                    <label className="text-xs uppercase block mb-2" style={{ letterSpacing: "0.14em", color: "#8f8478" }}>
-                      Celular de contacto
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(event) => setPhone(event.target.value)}
-                      placeholder="76543210"
+                  </Field>
+                  <Field label="Hora especifica">
+                    <select
+                      value={pickupTime}
+                      onChange={(event) => setPickupTime(event.target.value)}
                       className="w-full border px-4 py-3 text-sm"
                       style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    />
-                  </div>
+                    >
+                      {pickupTimeOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
                 </div>
-              )}
+              ) : null}
 
-              {deliveryMethod === "HOME_DELIVERY" && (
+              {deliveryMethod === "SHIPPING_NATIONAL" ? (
                 <div className="mt-4 space-y-3">
-                  <div>
-                    <label className="text-xs uppercase block mb-2" style={{ letterSpacing: "0.14em", color: "#8f8478" }}>
-                      Direccion exacta
-                    </label>
-                    <textarea
-                      value={address}
-                      onChange={(event) => setAddress(event.target.value)}
-                      rows={4}
-                      placeholder="Zona, calle, numero de casa o edificio, referencias"
-                      className="w-full border px-4 py-3 text-sm resize-none"
+                  <Field label="Departamento">
+                    <select
+                      value={department}
+                      onChange={(event) => setDepartment(event.target.value)}
+                      className="w-full border px-4 py-3 text-sm"
+                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+                    >
+                      {shippingDepartments.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Empresa de envio">
+                    <select
+                      value={shippingCompany}
+                      onChange={(event) => setShippingCompany(event.target.value)}
+                      className="w-full border px-4 py-3 text-sm"
+                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+                    >
+                      {shippingCompanies.map((option) => (
+                        <option key={option.id} value={option.name}>
+                          {option.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Sucursal o terminal">
+                    <select
+                      value={branch}
+                      onChange={(event) => setBranch(event.target.value)}
+                      className="w-full border px-4 py-3 text-sm"
+                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+                    >
+                      {shippingBranches.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Nombre del destinatario">
+                    <input
+                      type="text"
+                      value={recipientName}
+                      onChange={(event) => setRecipientName(event.target.value)}
+                      placeholder="Opcional"
+                      className="w-full border px-4 py-3 text-sm"
                       style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
                     />
-                  </div>
-                  <div>
-                    <label className="text-xs uppercase block mb-2" style={{ letterSpacing: "0.14em", color: "#8f8478" }}>
-                      Celular de contacto
-                    </label>
+                  </Field>
+                  <Field label="Nombre del remitente">
+                    <input
+                      type="text"
+                      value="FitAndes"
+                      readOnly
+                      className="w-full border px-4 py-3 text-sm"
+                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+                    />
+                  </Field>
+                  <Field label="CI del remitente">
+                    <input
+                      type="text"
+                      value={senderCI}
+                      onChange={(event) => setSenderCI(event.target.value)}
+                      placeholder="12345678"
+                      className="w-full border px-4 py-3 text-sm"
+                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+                    />
+                  </Field>
+                  <Field label="Celular del remitente">
                     <input
                       type="tel"
-                      value={phone}
-                      onChange={(event) => setPhone(event.target.value)}
+                      value={senderPhone}
+                      onChange={(event) => setSenderPhone(event.target.value)}
                       placeholder="76543210"
                       className="w-full border px-4 py-3 text-sm"
                       style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
                     />
-                  </div>
+                  </Field>
                 </div>
-              )}
+              ) : null}
 
-              {deliveryMethod === "WHATSAPP" && (
-                <p className="mt-4 text-xs" style={{ color: "#6f6459" }}>
-                  Al confirmar, abriremos un mensaje estructurado al numero +591 76574068 con el detalle completo del pedido.
+              {deliveryMethod === "WHATSAPP" ? (
+                <p className="mt-4 text-xs"  style={{ color: "#6f6459" }}>
+                  Al confirmar, abriremos un mensaje estructurado al numero +591 76574068 con el detalle del pedido y el stock quedara reservado.
                 </p>
-              )}
+              ) : null}
             </section>
-
+              {deliveryMethod !== "WHATSAPP" ? (
             <section className="border p-5 sm:p-6" style={{ borderColor: "#e6ddd2", background: "rgba(255,255,255,0.95)" }}>
               <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
                 Metodo de pago
               </p>
               <div className="space-y-3">
-                {PAYMENT_OPTIONS.map((option) => (
-                  <label
-                    key={option.value}
-                    className="block border px-4 py-3 cursor-pointer transition-colors"
-                    style={{
-                      borderColor: paymentMethod === option.value ? "#111111" : "#e6ddd2",
-                      background: paymentMethod === option.value ? "#fcfaf7" : "#ffffff",
-                    }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="radio"
-                        name="payment-method"
-                        value={option.value}
-                        checked={paymentMethod === option.value}
-                        onChange={() => setPaymentMethod(option.value)}
-                        className="mt-1"
-                      />
-                      <div>
-                        <p className="text-sm" style={{ color: "#111111" }}>{option.label}</p>
-                        <p className="text-xs mt-1" style={{ color: "#6f6459" }}>{option.description}</p>
+                {PAYMENT_OPTIONS.map((option) => {
+                  const disabled = deliveryMethod === "SHIPPING_NATIONAL" && option.value !== "QR";
+
+                  return (
+                    <label
+                      key={option.value}
+                      className="block border px-4 py-3 transition-colors"
+                      style={{
+                        borderColor: paymentMethod === option.value ? "#111111" : "#e6ddd2",
+                        background: disabled ? "#f6f1ea" : paymentMethod === option.value ? "#fcfaf7" : "#ffffff",
+                        opacity: disabled ? 0.55 : 1,
+                        cursor: disabled ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="radio"
+                          name="payment-method"
+                          value={option.value}
+                          checked={paymentMethod === option.value}
+                          onChange={() => !disabled && setPaymentMethod(option.value)}
+                          disabled={disabled}
+                          className="mt-1"
+                        />
+                        <div>
+                          <p className="text-sm" style={{ color: "#111111" }}>{option.label}</p>
+                          <p className="text-xs mt-1" style={{ color: "#6f6459" }}>
+                            {disabled ? "No disponible para envio nacional." : option.description}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </label>
-                ))}
+                    </label>
+                  );
+                })}
               </div>
             </section>
+              ) : null}
 
+            <section className="border p-5 sm:p-6" style={{ borderColor: "#e6ddd2", background: "rgba(255,255,255,0.95)" }}>
+              <Field label="Observaciones del pedido">
+                <textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  rows={3}
+                  placeholder="Indicaciones opcionales para la coordinacion o entrega"
+                  className="w-full border px-4 py-3 text-sm resize-none"
+                  style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+                />
+              </Field>
+            </section>
             <section className="border p-5 sm:p-6" style={{ borderColor: "#e6ddd2", background: "rgba(255,255,255,0.98)" }}>
               <div className="flex items-center justify-between text-sm">
                 <span style={{ color: "#5f564e" }}>Productos</span>
@@ -458,6 +824,12 @@ export default function CheckoutPageClient() {
               <div className="mt-2 flex items-center justify-between text-sm">
                 <span style={{ color: "#5f564e" }}>Pago</span>
                 <span style={{ color: "#111111" }}>{paymentMethod}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-sm">
+                <span style={{ color: "#5f564e" }}>Siguiente paso</span>
+                <span style={{ color: "#111111" }}>
+                  {paymentMethod === "QR" ? "Subir comprobante" : deliveryMethod === "WHATSAPP" ? "Abrir WhatsApp" : "Esperar confirmacion"}
+                </span>
               </div>
 
               <div className="mt-5 border-t pt-5" style={{ borderColor: "#eee5da" }}>
@@ -498,5 +870,16 @@ export default function CheckoutPageClient() {
         </div>
       </div>
     </main>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-xs uppercase block mb-2" style={{ letterSpacing: "0.14em", color: "#8f8478" }}>
+        {label}
+      </label>
+      {children}
+    </div>
   );
 }

@@ -4,6 +4,8 @@ export interface CatalogVariant {
   colorSecundario?: string | null;
   talla: string;
   stock: number;
+  reservedStock?: number | null;
+  stockDisponible?: number | null;
   descripcion?: string | null;
   imagen?: string | null;
   imagenes?: Array<string | null | undefined> | null;
@@ -32,4 +34,29 @@ export interface ProductByCodeResponse {
   modelo: string;
   precioVenta: number;
   variante: CatalogVariant;
+}
+
+export function getCatalogVariantAvailableStock(variant: CatalogVariant): number {
+  if (typeof variant.stockDisponible === "number" && Number.isFinite(variant.stockDisponible)) {
+    return Math.max(0, variant.stockDisponible);
+  }
+
+  const stock = typeof variant.stock === "number" && Number.isFinite(variant.stock) ? variant.stock : 0;
+  const reserved = typeof variant.reservedStock === "number" && Number.isFinite(variant.reservedStock) ? variant.reservedStock : 0;
+  return Math.max(0, stock - reserved);
+}
+
+export function getCatalogProductAvailableStock(product: CatalogProduct): number {
+  return product.variantes.reduce((sum, variant) => sum + getCatalogVariantAvailableStock(variant), 0);
+}
+
+export function catalogVariantIsAvailable(variant: CatalogVariant): boolean {
+  return getCatalogVariantAvailableStock(variant) > 0;
+}
+
+export function filterCatalogAvailableVariants(product: CatalogProduct): CatalogProduct {
+  return {
+    ...product,
+    variantes: product.variantes.filter(catalogVariantIsAvailable),
+  };
 }

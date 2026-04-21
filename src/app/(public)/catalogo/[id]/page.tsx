@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductoDetalleCliente from "@/components/catalogo/ProductoDetalleCliente";
-import type { CatalogProduct } from "@/types/catalogo";
+import { filterCatalogAvailableVariants, type CatalogProduct } from "@/types/catalogo";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -33,7 +33,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
 
   if (!res.ok) notFound();
 
-  const producto = (await res.json()) as CatalogProduct;
+  const producto = filterCatalogAvailableVariants((await res.json()) as CatalogProduct);
   const colores = Array.from(new Set(producto.variantes.map((v) => v.color))) as string[];
   const tallas = Array.from(new Set(producto.variantes.map((v) => v.talla))) as string[];
 

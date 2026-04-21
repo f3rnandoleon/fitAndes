@@ -1,6 +1,6 @@
 ﻿import { primeraImagenDeProducto } from "@/lib/catalogo-imagenes";
 import type { SearchProductsParams } from "@/lib/chat/types";
-import type { CatalogProduct, CatalogVariant, ProductByCodeResponse } from "@/types/catalogo";
+import { catalogVariantIsAvailable, type CatalogProduct, type CatalogVariant, type ProductByCodeResponse } from "@/types/catalogo";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "";
 
@@ -121,10 +121,14 @@ export async function searchProducts(params: SearchProductsParams): Promise<Cata
   const recentQuery = isRecentQuery(query);
 
   const filtered = products.filter((product) => {
+    if (!product.variantes.some(catalogVariantIsAvailable)) {
+      return false;
+    }
+
     const byColorOrSize =
       !color && !talla
         ? true
-        : product.variantes.some((variant) => matchVariant(variant, color, talla) && variant.stock > 0);
+        : product.variantes.some((variant) => matchVariant(variant, color, talla) && catalogVariantIsAvailable(variant));
 
     if (!byColorOrSize) return false;
 
@@ -164,13 +168,13 @@ export async function findSimilarProducts(reference: CatalogProduct, preferredCo
   const wantedColor = preferredColor ? normalizeText(preferredColor) : null;
 
   return products
-    .filter((product) => product._id !== reference._id)
+    .filter((product) => product._id !== reference._id && product.variantes.some(catalogVariantIsAvailable))
     .map((product) => {
       let score = 0;
       const name = normalizeText(product.nombre);
       const model = normalizeText(product.modelo);
       const category = normalizeText(product.categoria ?? "");
-      const colors = product.variantes.map((variant) => normalizeText(variant.color));
+      const colors = product.variantes.filter(catalogVariantIsAvailable).map((variant) => normalizeText(variant.color));
 
       if (name === baseName || name.includes(baseName) || baseName.includes(name)) score += 4;
       if (model && model === baseModel) score += 3;
@@ -188,7 +192,7 @@ export async function findSimilarProducts(reference: CatalogProduct, preferredCo
 }
 
 export function resolveVariant(product: CatalogProduct, color?: string | null, talla?: string | null): CatalogVariant | null {
-  const available = product.variantes.filter((variant) => variant.stock > 0);
+  const available = product.variantes.filter(catalogVariantIsAvailable);
   if (available.length === 0) return product.variantes[0] ?? null;
 
   const exact = available.find((variant) => matchVariant(variant, color, talla));
@@ -208,11 +212,11 @@ export function resolveVariant(product: CatalogProduct, color?: string | null, t
 }
 
 export function listAvailableColors(product: CatalogProduct): string[] {
-  return Array.from(new Set(product.variantes.map((variant) => variant.color)));
+  return Array.from(new Set(product.variantes.filter(catalogVariantIsAvailable).map((variant) => variant.color)));
 }
 
 export function listAvailableSizes(product: CatalogProduct): string[] {
-  return Array.from(new Set(product.variantes.map((variant) => variant.talla)));
+  return Array.from(new Set(product.variantes.filter(catalogVariantIsAvailable).map((variant) => variant.talla)));
 }
 
 export function selectProductImage(product: CatalogProduct): string | null {
