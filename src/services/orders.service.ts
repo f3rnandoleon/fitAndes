@@ -1,68 +1,79 @@
-import { buildCentralApiHeaders, type CentralApiAuth } from "@/lib/central-api";
+import { buildCentralApiHeaders, fetchCentralApiWithFallback, parseJsonRecord, type CentralApiAuth } from "@/lib/central-api";
 import type { Pedido } from "@/types/pedidos";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "";
 
 function parsePedidoArray(data: unknown): Pedido[] {
   if (Array.isArray(data)) return data as Pedido[];
 
-  if (data && typeof data === "object") {
-    const orders = (data as { orders?: unknown }).orders;
+  const record = parseJsonRecord(data);
+  if (record) {
+    const pedidos = record.pedidos;
+    if (Array.isArray(pedidos)) return pedidos as Pedido[];
+
+    const orders = record.orders;
     if (Array.isArray(orders)) return orders as Pedido[];
   }
 
   return [];
 }
 
-async function fetchJson(path: string, auth: CentralApiAuth): Promise<{ ok: boolean; status: number; data: unknown }> {
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: buildCentralApiHeaders(auth),
-    cache: "no-store",
-    signal: AbortSignal.timeout(10000),
-  });
+async function fetchOrders(auth: CentralApiAuth): Promise<Pedido[] | null> {
+  const result = await fetchCentralApiWithFallback(
+    [
+      { path: "/pedidos", init: { headers: buildCentralApiHeaders(auth) } },
+      { path: "/orders", init: { headers: buildCentralApiHeaders(auth) } },
+      { path: "/mis-pedidos", init: { headers: buildCentralApiHeaders(auth) } },
+    ],
+    { timeoutMs: 10000 },
+  );
 
-  const data = await res.json().catch(() => null);
-  return { ok: res.ok, status: res.status, data };
+  if (!result.response.ok) return null;
+  return parsePedidoArray(result.data);
 }
 
-async function fetchOrdersFrom(path: string, auth: CentralApiAuth): Promise<Pedido[] | null> {
-  const response = await fetchJson(path, auth);
-  if (!response.ok) return null;
-  return parsePedidoArray(response.data);
+function parsePedidoDetail(data: unknown): Pedido | null {
+  const record = parseJsonRecord(data);
+
+  if (record) {
+    const pedido = record.pedido;
+    if (pedido && typeof pedido === "object") return pedido as Pedido;
+
+    const order = record.order;
+    if (order && typeof order === "object") return order as Pedido;
+  }
+
+  return record ? (record as unknown as Pedido) : null;
 }
 
-async function fetchOrderFrom(path: string, auth: CentralApiAuth): Promise<Pedido | null | undefined> {
-  const response = await fetchJson(path, auth);
+async function fetchOrder(auth: CentralApiAuth, orderId: string): Promise<Pedido | null | undefined> {
+  const result = await fetchCentralApiWithFallback(
+    [
+      { path: `/pedidos/${orderId}`, init: { headers: buildCentralApiHeaders(auth) } },
+      { path: `/orders/${orderId}`, init: { headers: buildCentralApiHeaders(auth) } },
+      { path: `/mis-pedidos/${orderId}`, init: { headers: buildCentralApiHeaders(auth) } },
+    ],
+    { timeoutMs: 10000 },
+  );
 
-  if (response.status === 404 || response.status === 400) return null;
-  if (!response.ok) return undefined;
-  if (!response.data || typeof response.data !== "object") return null;
-
-  return response.data as Pedido;
+  if (result.response.status === 404 || result.response.status === 400) return null;
+  if (!result.response.ok) return undefined;
+  return parsePedidoDetail(result.data);
 }
 
 export async function getOrders(auth: CentralApiAuth | null): Promise<Pedido[] | null> {
-  if (!auth?.userId || !API_URL) return [];
+  if (!auth?.userId) return [];
 
   try {
-    const modernOrders = await fetchOrdersFrom("/orders", auth);
-    if (modernOrders) return modernOrders;
-
-    const legacyOrders = await fetchOrdersFrom("/mis-pedidos", auth);
-    return legacyOrders ?? null;
+    return await fetchOrders(auth);
   } catch {
     return null;
   }
 }
 
 export async function getOrderDetail(auth: CentralApiAuth | null, orderId: string): Promise<Pedido | null | undefined> {
-  if (!auth?.userId || !orderId || !API_URL) return null;
+  if (!auth?.userId || !orderId) return null;
 
   try {
-    const modernOrder = await fetchOrderFrom(`/orders/${orderId}`, auth);
-    if (modernOrder !== undefined) return modernOrder;
-
-    return await fetchOrderFrom(`/mis-pedidos/${orderId}`, auth);
+    return await fetchOrder(auth, orderId);
   } catch {
     return undefined;
   }

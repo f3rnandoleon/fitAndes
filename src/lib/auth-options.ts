@@ -13,19 +13,23 @@ type LoginResponse = {
     id?: string;
     email?: string;
     fullname?: string;
+    nombreCompleto?: string;
     role?: AppRole;
+    rol?: AppRole;
   };
 };
 
 function normalizeUser(data: LoginResponse) {
   const user = data.user;
-  if (!user?.id || !user.email || !user.fullname || !user.role) return null;
+  const fullname = user?.fullname ?? user?.nombreCompleto;
+  const role = user?.role ?? user?.rol;
+  if (!user?.id || !user.email || !fullname || !role) return null;
 
   return {
     id: user.id,
     email: user.email,
-    fullname: user.fullname,
-    role: user.role,
+    fullname,
+    role,
     accessToken: data.accessToken,
     refreshToken: data.refreshToken,
   };

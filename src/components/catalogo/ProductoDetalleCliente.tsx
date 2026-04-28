@@ -6,7 +6,13 @@ import { useEffect, useState } from "react";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor } from "@/lib/product-colors";
-import { filterCatalogAvailableVariants, getCatalogVariantAvailableStock, type CatalogProduct, type CatalogVariant } from "@/types/catalogo";
+import {
+  filterCatalogAvailableVariants,
+  getCatalogVariantAvailableStock,
+  getCatalogVariantId,
+  type CatalogProduct,
+  type CatalogVariant,
+} from "@/types/catalogo";
 import { useSession } from "next-auth/react";
 
 interface Props {
@@ -104,13 +110,14 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
     }
 
     const imagen = imagenesActivas[0] ?? null;
-    const variantKey = varianteSeleccionada.variantId ?? `${varianteSeleccionada.color}-${varianteSeleccionada.talla}`;
+    const variantId = getCatalogVariantId(varianteSeleccionada);
+    const variantKey = variantId ?? `${varianteSeleccionada.color}-${varianteSeleccionada.talla}`;
     const id = `${producto._id ?? producto.sku ?? producto.nombre}-${variantKey}`;
 
     addItem({
       id,
       productoId: producto._id,
-      variantId: varianteSeleccionada.variantId ?? null,
+      variantId,
       nombre: producto.nombre,
       modelo: producto.modelo,
       imagen,

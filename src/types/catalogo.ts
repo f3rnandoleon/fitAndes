@@ -1,10 +1,12 @@
 export interface CatalogVariant {
   variantId?: string | null;
+  varianteId?: string | null;
   color: string;
   colorSecundario?: string | null;
   talla: string;
   stock: number;
   reservedStock?: number | null;
+  stockReservado?: number | null;
   stockDisponible?: number | null;
   descripcion?: string | null;
   imagen?: string | null;
@@ -36,13 +38,18 @@ export interface ProductByCodeResponse {
   variante: CatalogVariant;
 }
 
+export function getCatalogVariantId(variant: CatalogVariant): string | null {
+  return variant.variantId ?? variant.varianteId ?? null;
+}
+
 export function getCatalogVariantAvailableStock(variant: CatalogVariant): number {
   if (typeof variant.stockDisponible === "number" && Number.isFinite(variant.stockDisponible)) {
     return Math.max(0, variant.stockDisponible);
   }
 
   const stock = typeof variant.stock === "number" && Number.isFinite(variant.stock) ? variant.stock : 0;
-  const reserved = typeof variant.reservedStock === "number" && Number.isFinite(variant.reservedStock) ? variant.reservedStock : 0;
+  const reservedBase = variant.reservedStock ?? variant.stockReservado;
+  const reserved = typeof reservedBase === "number" && Number.isFinite(reservedBase) ? reservedBase : 0;
   return Math.max(0, stock - reserved);
 }
 

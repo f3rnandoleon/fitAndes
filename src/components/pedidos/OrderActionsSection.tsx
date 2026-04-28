@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { canPedidoBeCancelledByClient, getPedidoClientEditDeadline, getPedidoClientEditRemainingMs, type Pedido } from "@/types/pedidos";
+import {
+  canPedidoBeCancelledByClient,
+  getPedidoClientEditDeadline,
+  getPedidoClientEditRemainingMs,
+  getPedidoEstadoPedido,
+  type Pedido,
+} from "@/types/pedidos";
 
 function formatRemainingTime(valueMs: number): string {
   const totalSeconds = Math.max(0, Math.floor(valueMs / 1000));
@@ -63,7 +69,7 @@ export default function OrderActionsSection({ pedido }: { pedido: Pedido }) {
     }
   }
 
-  if (pedido.orderStatus !== "PENDING_PAYMENT") {
+  if (getPedidoEstadoPedido(pedido) !== "PENDING_PAYMENT") {
     return null;
   }
 

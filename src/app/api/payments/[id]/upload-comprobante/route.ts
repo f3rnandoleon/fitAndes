@@ -2,9 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth-options";
-import { buildCentralApiHeaders, type CentralApiRole } from "@/lib/central-api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import {
+  buildCentralApiHeaders,
+  CENTRAL_API_URL,
+  fetchCentralApiWithFallback,
+  parseJsonRecord,
+  type CentralApiRole,
+} from "@/lib/central-api";
 
 type PaymentAuth = {
   id: string;
@@ -15,6 +19,16 @@ type PaymentAuth = {
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
+
+function cloneFormData(source: FormData) {
+  const cloned = new FormData();
+
+  for (const [key, value] of source.entries()) {
+    cloned.append(key, value);
+  }
+
+  return cloned;
+}
 
 async function getPaymentAuth(request: NextRequest): Promise<PaymentAuth | null> {
   const session = await getServerSession(authOptions);
@@ -46,7 +60,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ message: "Debes iniciar sesion para subir el comprobante." }, { status: 401 });
   }
 
-  if (!API_URL) {
+  if (!CENTRAL_API_URL) {
     return NextResponse.json({ message: "La API principal no esta configurada." }, { status: 500 });
   }
 
@@ -63,27 +77,41 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const response = await fetch(`${API_URL}/payments/${id}/upload-comprobante`, {
-      method: "POST",
-      headers: buildCentralApiHeaders({
-        userId: auth.id,
-        role: auth.role,
-        accessToken: auth.accessToken,
-      }),
-      body: formData,
-      cache: "no-store",
+    const headers = buildCentralApiHeaders({
+      userId: auth.id,
+      role: auth.role,
+      accessToken: auth.accessToken,
     });
 
-    const data = await response.json().catch(() => null);
-    if (!response.ok) {
+    const result = await fetchCentralApiWithFallback([
+      {
+        path: `/pagos/${id}/upload-comprobante`,
+        init: {
+          method: "POST",
+          headers,
+          body: cloneFormData(formData),
+        },
+      },
+      {
+        path: `/payments/${id}/upload-comprobante`,
+        init: {
+          method: "POST",
+          headers,
+          body: cloneFormData(formData),
+        },
+      },
+    ]);
+
+    const data = parseJsonRecord(result.data);
+    if (!result.response.ok) {
       const message =
-        (data && typeof data === "object" && "message" in data && typeof data.message === "string" && data.message) ||
+        (data && typeof data.message === "string" && data.message) ||
         "No pude subir el comprobante en este momento.";
 
-      return NextResponse.json({ message }, { status: response.status });
+      return NextResponse.json({ message }, { status: result.response.status });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(result.data);
   } catch {
     return NextResponse.json({ message: "No pude conectar con la API principal para subir el comprobante." }, { status: 502 });
   }

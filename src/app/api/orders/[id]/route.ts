@@ -2,9 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth-options";
-import { buildCentralApiHeaders, type CentralApiRole } from "@/lib/central-api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL;
+import {
+  buildCentralApiHeaders,
+  CENTRAL_API_URL,
+  fetchCentralApiWithFallback,
+  parseJsonRecord,
+  readString,
+  type CentralApiRole,
+} from "@/lib/central-api";
 
 type OrderAuth = {
   id: string;
@@ -12,13 +17,7 @@ type OrderAuth = {
   accessToken?: string | null;
 };
 
-type JsonRecord = Record<string, unknown>;
-
-function parseJsonRecord(data: unknown): JsonRecord | null {
-  return data && typeof data === "object" ? (data as JsonRecord) : null;
-}
-
-function extractErrorMessage(data: JsonRecord | null, fallback: string) {
+function extractErrorMessage(data: Record<string, unknown> | null, fallback: string) {
   const errors = data?.errors;
   if (Array.isArray(errors)) {
     const firstError = errors.find((error) => error && typeof error === "object") as { message?: unknown } | undefined;
@@ -53,6 +52,62 @@ async function getOrderAuth(request: NextRequest): Promise<OrderAuth | null> {
   };
 }
 
+function buildCentralDeliveryPayload(source: Record<string, unknown>) {
+  const metodo = readString(source, "metodo", "method");
+  if (!metodo) return null;
+
+  if (metodo === "PICKUP_POINT") {
+    return {
+      metodo,
+      direccion: readString(source, "direccion", "address", "puntoRecojo"),
+      telefono: readString(source, "telefono", "phone"),
+      nombreDestinatario: readString(source, "nombreDestinatario", "recipientName"),
+      programadoPara: readString(source, "programadoPara", "scheduledAt"),
+    };
+  }
+
+  if (metodo === "SHIPPING_NATIONAL") {
+    return {
+      metodo,
+      departamento: readString(source, "departamento", "department"),
+      ciudad: readString(source, "ciudad", "city"),
+      empresaEnvio: readString(source, "empresaEnvio", "shippingCompany"),
+      sucursal: readString(source, "sucursal", "branch"),
+      nombreDestinatario: readString(source, "nombreDestinatario", "recipientName"),
+      nombreRemitente: readString(source, "nombreRemitente", "senderName"),
+      ciRemitente: readString(source, "ciRemitente", "senderCI"),
+      telefonoRemitente: readString(source, "telefonoRemitente", "senderPhone"),
+    };
+  }
+
+  return { metodo };
+}
+
+function buildCanonicalOrderPatchPayload(payload: unknown) {
+  const source = parseJsonRecord(payload);
+  if (!source) return null;
+
+  const canonical: Record<string, unknown> = {};
+  const estadoPedido = readString(source, "estadoPedido", "orderStatus");
+  if (estadoPedido) {
+    canonical.estadoPedido = estadoPedido;
+  }
+
+  const entregaSource =
+    parseJsonRecord(source.entrega) ??
+    parseJsonRecord(source.deliverySnapshot) ??
+    parseJsonRecord(source.delivery);
+
+  if (entregaSource) {
+    const entrega = buildCentralDeliveryPayload(entregaSource);
+    if (entrega) {
+      canonical.entrega = entrega;
+    }
+  }
+
+  return Object.keys(canonical).length > 0 ? canonical : source;
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -62,7 +117,7 @@ export async function PATCH(
     return NextResponse.json({ message: "Debes iniciar sesion para actualizar el pedido." }, { status: 401 });
   }
 
-  if (!API_URL) {
+  if (!CENTRAL_API_URL) {
     return NextResponse.json({ message: "La API principal no esta configurada." }, { status: 500 });
   }
 
@@ -78,22 +133,46 @@ export async function PATCH(
     return NextResponse.json({ message: "No pude leer la actualizacion del pedido." }, { status: 400 });
   }
 
-  try {
-    const response = await fetch(`${API_URL}/orders/${id}`, {
-      method: "PATCH",
-      headers: buildCentralApiHeaders(
-        { userId: auth.id, role: auth.role, accessToken: auth.accessToken },
-        { includeJsonContentType: true },
-      ),
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
+  const headers = buildCentralApiHeaders(
+    { userId: auth.id, role: auth.role, accessToken: auth.accessToken },
+    { includeJsonContentType: true },
+  );
 
-    const data = parseJsonRecord(await response.json().catch(() => null));
-    if (!response.ok) {
+  const canonicalPayload = buildCanonicalOrderPatchPayload(payload);
+
+  try {
+    const result = await fetchCentralApiWithFallback([
+      {
+        path: `/pedidos/${id}`,
+        init: {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify(canonicalPayload ?? payload),
+        },
+      },
+      {
+        path: `/pedidos/${id}`,
+        init: {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify(payload),
+        },
+      },
+      {
+        path: `/orders/${id}`,
+        init: {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify(payload),
+        },
+      },
+    ]);
+
+    const data = parseJsonRecord(result.data);
+    if (!result.response.ok) {
       return NextResponse.json(
         { message: extractErrorMessage(data, "No pude actualizar el pedido.") },
-        { status: response.status },
+        { status: result.response.status },
       );
     }
 

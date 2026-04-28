@@ -2,7 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth-options";
-import { buildCentralApiHeaders, type CentralApiRole } from "@/lib/central-api";
+import {
+  buildCentralApiHeaders,
+  CENTRAL_API_URL,
+  fetchCentralApiWithFallback,
+  parseJsonRecord,
+  readString,
+  type CentralApiRole,
+} from "@/lib/central-api";
 import type {
   CheckoutCustomerContext,
   CheckoutDeliveryInput,
@@ -11,7 +18,6 @@ import type {
   DeliveryMethod,
 } from "@/types/checkout";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const WHATSAPP_NUMBER = "59176574068";
 
 type CheckoutAuth = {
@@ -23,6 +29,13 @@ type CheckoutAuth = {
 };
 
 type JsonRecord = Record<string, unknown>;
+
+type CentralJsonAttempt = {
+  path: string;
+  method?: string;
+  body?: BodyInit | null;
+  headers?: HeadersInit;
+};
 
 function normalizePhone(phone?: string) {
   return (phone ?? "").replace(/\D/g, "").trim();
@@ -38,27 +51,6 @@ function formatMoney(value: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
-}
-
-function parseJsonRecord(data: unknown): JsonRecord | null {
-  return data && typeof data === "object" ? (data as JsonRecord) : null;
-}
-
-function readString(source: JsonRecord | null, key: string): string | null {
-  const value = source?.[key];
-  return typeof value === "string" && value ? value : null;
-}
-
-function deliveryLabel(delivery: CheckoutDeliveryInput) {
-  if (delivery.method === "WHATSAPP") return "Coordinacion por WhatsApp";
-
-  if (delivery.method === "PICKUP_POINT") {
-    return [delivery.recipientName, delivery.address, delivery.scheduledAt].filter(Boolean).join(" - ") || "Punto de encuentro";
-  }
-
-  const destination = [delivery.department, delivery.city].filter(Boolean).join(", ");
-  const carrier = [delivery.shippingCompany, delivery.branch].filter(Boolean).join(" - ");
-  return [destination, carrier].filter(Boolean).join(" / ") || "Envio nacional";
 }
 
 async function getCheckoutAuth(request: NextRequest): Promise<CheckoutAuth | null> {
@@ -89,25 +81,35 @@ async function getCheckoutAuth(request: NextRequest): Promise<CheckoutAuth | nul
   };
 }
 
-async function fetchCentralJson(path: string, init: RequestInit, auth: CheckoutAuth) {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: {
-      ...buildCentralApiHeaders(
-        {
-          userId: auth.id,
-          role: auth.role,
-          accessToken: auth.accessToken,
-        },
-        { includeJsonContentType: init.body ? true : false },
-      ),
-      ...(init.headers ?? {}),
-    },
-    cache: "no-store",
-  });
+async function fetchCentralJson(attempts: CentralJsonAttempt[], auth: CheckoutAuth) {
+  return fetchCentralApiWithFallback(
+    attempts.map((attempt) => {
+      const body = attempt.body ?? undefined;
+      const headers = new Headers(
+        buildCentralApiHeaders(
+          {
+            userId: auth.id,
+            role: auth.role,
+            accessToken: auth.accessToken,
+          },
+          { includeJsonContentType: typeof body === "string" },
+        ),
+      );
 
-  const data = await response.json().catch(() => null);
-  return { response, data: parseJsonRecord(data) };
+      new Headers(attempt.headers ?? undefined).forEach((value, key) => {
+        headers.set(key, value);
+      });
+
+      return {
+        path: attempt.path,
+        init: {
+          method: attempt.method ?? "GET",
+          headers,
+          body,
+        },
+      };
+    }),
+  );
 }
 
 function firstValidationMessage(data: JsonRecord | null) {
@@ -125,6 +127,18 @@ function extractErrorMessage(data: JsonRecord | null, fallback: string) {
     (typeof data?.error === "string" ? data.error : null) ||
     fallback
   );
+}
+
+function deliveryLabel(delivery: CheckoutDeliveryInput) {
+  if (delivery.method === "WHATSAPP") return "Coordinacion por WhatsApp";
+
+  if (delivery.method === "PICKUP_POINT") {
+    return [delivery.recipientName, delivery.address, delivery.scheduledAt].filter(Boolean).join(" - ") || "Punto de encuentro";
+  }
+
+  const destination = [delivery.department, delivery.city].filter(Boolean).join(", ");
+  const carrier = [delivery.shippingCompany, delivery.branch].filter(Boolean).join(" - ");
+  return [destination, carrier].filter(Boolean).join(" / ") || "Envio nacional";
 }
 
 function buildWhatsappUrl({
@@ -237,49 +251,161 @@ function validatePayload(payload: CheckoutSubmitPayload) {
   return null;
 }
 
-async function syncRemoteCart(auth: CheckoutAuth, items: CheckoutItemInput[]) {
-  const clearCart = await fetch(`${API_URL}/cart`, {
-    method: "DELETE",
-    headers: buildCentralApiHeaders({ userId: auth.id, role: auth.role, accessToken: auth.accessToken }),
-    cache: "no-store",
-  });
+function buildCanonicalDeliveryPayload(delivery: CheckoutDeliveryInput) {
+  if (delivery.method === "WHATSAPP") {
+    return { metodo: "WHATSAPP" as const };
+  }
 
-  if (!clearCart.ok) {
-    const data = parseJsonRecord(await clearCart.json().catch(() => null));
+  if (delivery.method === "PICKUP_POINT") {
     return {
-      ok: false,
-      status: clearCart.status,
+      metodo: "PICKUP_POINT" as const,
+      direccion: compactText(delivery.address),
+      telefono: normalizePhone(delivery.phone),
+      nombreDestinatario: compactText(delivery.recipientName),
+      programadoPara: compactText(delivery.scheduledAt),
+    };
+  }
+
+  return {
+    metodo: "SHIPPING_NATIONAL" as const,
+    departamento: compactText(delivery.department),
+    ciudad: compactText(delivery.city),
+    empresaEnvio: compactText(delivery.shippingCompany),
+    sucursal: compactText(delivery.branch),
+    nombreDestinatario: compactText(delivery.recipientName),
+    nombreRemitente: compactText(delivery.senderName),
+    ciRemitente: compactText(delivery.senderCI),
+    telefonoRemitente: normalizePhone(delivery.senderPhone),
+  };
+}
+
+function buildLegacyDeliveryPayload(delivery: CheckoutDeliveryInput) {
+  if (delivery.method === "WHATSAPP") {
+    return { method: "WHATSAPP" as const };
+  }
+
+  if (delivery.method === "PICKUP_POINT") {
+    return {
+      method: "PICKUP_POINT" as const,
+      address: compactText(delivery.address),
+      phone: normalizePhone(delivery.phone),
+      recipientName: compactText(delivery.recipientName),
+      scheduledAt: compactText(delivery.scheduledAt),
+    };
+  }
+
+  return {
+    method: "SHIPPING_NATIONAL" as const,
+    department: compactText(delivery.department),
+    city: compactText(delivery.city),
+    shippingCompany: compactText(delivery.shippingCompany),
+    branch: compactText(delivery.branch),
+    recipientName: compactText(delivery.recipientName),
+    senderName: compactText(delivery.senderName),
+    senderCI: compactText(delivery.senderCI),
+    senderPhone: normalizePhone(delivery.senderPhone),
+  };
+}
+
+function buildCanonicalCheckoutPayload(payload: CheckoutSubmitPayload) {
+  return {
+    metodoPago: payload.paymentMethod,
+    entrega: buildCanonicalDeliveryPayload(payload.delivery),
+    notas: compactText(payload.notes),
+  };
+}
+
+function buildLegacyCheckoutPayload(payload: CheckoutSubmitPayload) {
+  return {
+    metodoPago: payload.paymentMethod,
+    delivery: buildLegacyDeliveryPayload(payload.delivery),
+    notes: compactText(payload.notes),
+  };
+}
+
+async function syncRemoteCart(auth: CheckoutAuth, items: CheckoutItemInput[]) {
+  const clearCartResult = await fetchCentralApiWithFallback([
+    {
+      path: "/carrito",
+      init: {
+        method: "DELETE",
+        headers: buildCentralApiHeaders({ userId: auth.id, role: auth.role, accessToken: auth.accessToken }),
+      },
+    },
+    {
+      path: "/cart",
+      init: {
+        method: "DELETE",
+        headers: buildCentralApiHeaders({ userId: auth.id, role: auth.role, accessToken: auth.accessToken }),
+      },
+    },
+  ]);
+
+  if (!clearCartResult.response.ok) {
+    const data = parseJsonRecord(clearCartResult.data);
+    return {
+      ok: false as const,
+      status: clearCartResult.response.status,
       message: extractErrorMessage(data, "No pude sincronizar tu carrito con el sistema central."),
     };
   }
 
   for (const item of items) {
-    const addItem = await fetch(`${API_URL}/cart/items`, {
-      method: "POST",
-      headers: buildCentralApiHeaders(
-        {
-          userId: auth.id,
-          role: auth.role,
-          accessToken: auth.accessToken,
-        },
-        { includeJsonContentType: true },
-      ),
-      body: JSON.stringify({
-        productoId: item.productoId,
-        variantId: item.variantId ?? undefined,
-        color: item.color,
-        colorSecundario: item.colorSecundario ?? undefined,
-        talla: item.talla,
-        cantidad: item.cantidad,
-      }),
-      cache: "no-store",
-    });
+    const headers = buildCentralApiHeaders(
+      { userId: auth.id, role: auth.role, accessToken: auth.accessToken },
+      { includeJsonContentType: true },
+    );
 
-    if (!addItem.ok) {
-      const data = parseJsonRecord(await addItem.json().catch(() => null));
+    const canonicalItemBody = {
+      productoId: item.productoId,
+      varianteId: item.variantId ?? undefined,
+      color: item.color,
+      colorSecundario: item.colorSecundario ?? undefined,
+      talla: item.talla,
+      cantidad: item.cantidad,
+    };
+
+    const legacyItemBody = {
+      productoId: item.productoId,
+      variantId: item.variantId ?? undefined,
+      color: item.color,
+      colorSecundario: item.colorSecundario ?? undefined,
+      talla: item.talla,
+      cantidad: item.cantidad,
+    };
+
+    const addItemResult = await fetchCentralApiWithFallback([
+      {
+        path: "/carrito/items",
+        init: {
+          method: "POST",
+          headers,
+          body: JSON.stringify(canonicalItemBody),
+        },
+      },
+      {
+        path: "/carrito/items",
+        init: {
+          method: "POST",
+          headers,
+          body: JSON.stringify(legacyItemBody),
+        },
+      },
+      {
+        path: "/cart/items",
+        init: {
+          method: "POST",
+          headers,
+          body: JSON.stringify(legacyItemBody),
+        },
+      },
+    ]);
+
+    if (!addItemResult.response.ok) {
+      const data = parseJsonRecord(addItemResult.data);
       return {
-        ok: false,
-        status: addItem.status,
+        ok: false as const,
+        status: addItemResult.response.status,
         message: extractErrorMessage(data, `No pude agregar ${item.nombre} al carrito del sistema central.`),
       };
     }
@@ -288,86 +414,51 @@ async function syncRemoteCart(auth: CheckoutAuth, items: CheckoutItemInput[]) {
   return { ok: true as const };
 }
 
-function buildOrderCheckoutPayload(payload: CheckoutSubmitPayload) {
-  const notes = compactText(payload.notes);
-
-  if (payload.delivery.method === "WHATSAPP") {
-    return {
-      metodoPago: payload.paymentMethod,
-      delivery: { method: "WHATSAPP" },
-      notes,
-    };
-  }
-
-  if (payload.delivery.method === "PICKUP_POINT") {
-    return {
-      metodoPago: payload.paymentMethod,
-      delivery: {
-        method: "PICKUP_POINT",
-        address: compactText(payload.delivery.address),
-        phone: normalizePhone(payload.delivery.phone),
-        recipientName: compactText(payload.delivery.recipientName),
-        scheduledAt: compactText(payload.delivery.scheduledAt),
-      },
-      notes,
-    };
-  }
-
-  return {
-    metodoPago: payload.paymentMethod,
-    delivery: {
-      method: "SHIPPING_NATIONAL",
-      department: compactText(payload.delivery.department),
-      city: compactText(payload.delivery.city),
-      shippingCompany: compactText(payload.delivery.shippingCompany),
-      branch: compactText(payload.delivery.branch),
-      recipientName: compactText(payload.delivery.recipientName),
-      senderName: compactText(payload.delivery.senderName),
-      senderCI: compactText(payload.delivery.senderCI),
-      senderPhone: normalizePhone(payload.delivery.senderPhone),
-    },
-    notes,
-  };
-}
-
 function extractOrderInfo(data: JsonRecord | null) {
-  const order = parseJsonRecord(data?.order) ?? data;
+  const order = parseJsonRecord(data?.pedido) ?? parseJsonRecord(data?.order) ?? data;
 
   return {
-    orderId: readString(order, "_id") ?? readString(order, "id") ?? readString(data, "orderId"),
+    orderId: readString(order, "_id", "id") ?? readString(data, "orderId", "pedidoId"),
     orderNumber:
-      readString(order, "orderNumber") ??
-      readString(order, "numeroPedido") ??
-      readString(order, "numeroVenta") ??
-      readString(data, "orderNumber"),
+      readString(order, "numeroPedido", "orderNumber", "numeroVenta") ??
+      readString(data, "orderNumber", "numeroPedido"),
   };
 }
 
 function extractPaymentId(data: JsonRecord | null) {
-  const payment = parseJsonRecord(data?.payment) ?? data;
-  return readString(payment, "_id") ?? readString(payment, "id") ?? readString(data, "paymentId");
+  const payment = parseJsonRecord(data?.pago) ?? parseJsonRecord(data?.payment) ?? data;
+  return readString(payment, "_id", "id") ?? readString(data, "paymentId", "pagoId");
 }
 
 async function createQrPayment(auth: CheckoutAuth, orderId: string) {
-  const { response, data } = await fetchCentralJson(
-    "/payments",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        orderId,
-        metodoPago: "QR",
-        idempotencyKey: `checkout-${orderId}`,
-      }),
-    },
+  const canonicalBody = {
+    pedidoId: orderId,
+    metodoPago: "QR",
+    idempotencyKey: `checkout-${orderId}`,
+  };
+
+  const legacyBody = {
+    orderId,
+    metodoPago: "QR",
+    idempotencyKey: `checkout-${orderId}`,
+  };
+
+  const result = await fetchCentralJson(
+    [
+      { path: "/pagos", method: "POST", body: JSON.stringify(canonicalBody) },
+      { path: "/pagos", method: "POST", body: JSON.stringify(legacyBody) },
+      { path: "/payments", method: "POST", body: JSON.stringify(legacyBody) },
+    ],
     auth,
   );
 
+  const data = parseJsonRecord(result.data);
   const paymentId = extractPaymentId(data);
-  if (response.ok || paymentId) {
+  if (result.response.ok || paymentId) {
     return {
       ok: true as const,
       paymentId,
-      warning: response.ok ? null : extractErrorMessage(data, "No pude recuperar la transaccion QR existente."),
+      warning: result.response.ok ? null : extractErrorMessage(data, "No pude recuperar la transaccion QR existente."),
     };
   }
 
@@ -382,31 +473,31 @@ function normalizeCheckoutContext(data: JsonRecord | null): CheckoutCustomerCont
   const user = parseJsonRecord(data?.user);
   const profile = parseJsonRecord(data?.profile);
   const defaultAddress = parseJsonRecord(data?.defaultAddress);
-  const defaultDeliveryMethod = readString(profile, "defaultDeliveryMethod") as DeliveryMethod | null;
+  const defaultDeliveryMethod = readString(profile, "metodoEntregaPredeterminado", "defaultDeliveryMethod") as DeliveryMethod | null;
 
   return {
     user: user
       ? {
-          fullname: readString(user, "fullname"),
+          fullname: readString(user, "nombreCompleto", "fullname"),
           email: readString(user, "email"),
         }
       : null,
     profile: profile
       ? {
-          phone: readString(profile, "phone"),
+          phone: readString(profile, "telefono", "phone"),
           defaultDeliveryMethod,
-          notes: readString(profile, "notes"),
+          notes: readString(profile, "notas", "notes"),
         }
       : null,
     defaultAddress: defaultAddress
       ? {
-          recipientName: readString(defaultAddress, "recipientName"),
-          phone: readString(defaultAddress, "phone"),
-          department: readString(defaultAddress, "department"),
-          city: readString(defaultAddress, "city"),
-          zone: readString(defaultAddress, "zone"),
-          addressLine: readString(defaultAddress, "addressLine"),
-          reference: readString(defaultAddress, "reference"),
+          recipientName: readString(defaultAddress, "nombreDestinatario", "recipientName"),
+          phone: readString(defaultAddress, "telefono", "phone"),
+          department: readString(defaultAddress, "departamento", "department"),
+          city: readString(defaultAddress, "ciudad", "city"),
+          zone: readString(defaultAddress, "zona", "zone"),
+          addressLine: readString(defaultAddress, "direccion", "addressLine"),
+          reference: readString(defaultAddress, "referencia", "reference"),
         }
       : null,
   };
@@ -419,17 +510,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: "Debes iniciar sesion para continuar." }, { status: 401 });
   }
 
-  if (!API_URL) {
+  if (!CENTRAL_API_URL) {
     return NextResponse.json({ message: "La API principal no esta configurada." }, { status: 500 });
   }
 
   try {
-    const { response, data } = await fetchCentralJson("/customers/me", { method: "GET" }, auth);
+    const result = await fetchCentralJson(
+      [
+        { path: "/clientes/me", method: "GET" },
+        { path: "/customers/me", method: "GET" },
+      ],
+      auth,
+    );
 
-    if (!response.ok) {
+    const data = parseJsonRecord(result.data);
+    if (!result.response.ok) {
       return NextResponse.json(
         { message: extractErrorMessage(data, "No pude cargar tus datos de cliente.") },
-        { status: response.status },
+        { status: result.response.status },
       );
     }
 
@@ -446,7 +544,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "Debes iniciar sesion para finalizar la compra." }, { status: 401 });
   }
 
-  if (!API_URL) {
+  if (!CENTRAL_API_URL) {
     return NextResponse.json({ ok: false, message: "La API principal no esta configurada." }, { status: 500 });
   }
 
@@ -469,16 +567,32 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { response, data } = await fetchCentralJson(
-      "/orders/checkout",
-      {
-        method: "POST",
-        body: JSON.stringify(buildOrderCheckoutPayload(payload)),
-      },
+    const canonicalCheckoutPayload = buildCanonicalCheckoutPayload(payload);
+    const legacyCheckoutPayload = buildLegacyCheckoutPayload(payload);
+
+    const result = await fetchCentralJson(
+      [
+        {
+          path: "/pedidos/checkout",
+          method: "POST",
+          body: JSON.stringify(canonicalCheckoutPayload),
+        },
+        {
+          path: "/pedidos/checkout",
+          method: "POST",
+          body: JSON.stringify(legacyCheckoutPayload),
+        },
+        {
+          path: "/orders/checkout",
+          method: "POST",
+          body: JSON.stringify(legacyCheckoutPayload),
+        },
+      ],
       auth,
     );
 
-    if (!response.ok) {
+    const data = parseJsonRecord(result.data);
+    if (!result.response.ok) {
       return NextResponse.json(
         {
           ok: false,
@@ -489,7 +603,7 @@ export async function POST(request: NextRequest) {
               : "No pude registrar tu pedido en este momento. Intenta nuevamente.",
           ),
         },
-        { status: response.status },
+        { status: result.response.status },
       );
     }
 

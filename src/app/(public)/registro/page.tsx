@@ -40,10 +40,9 @@ export default function RegistroPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fullname: form.fullname,
+          nombreCompleto: form.fullname,
           email: form.email,
           password: form.password,
-          role: "CLIENTE",
         }),
       });
 
