@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth-options";
 import { buildCentralApiHeaders, type CentralApiRole } from "@/lib/central-api";
+import { firstZodIssueMessage } from "@/lib/schemas/common";
+import { deliveryOptionsSchema } from "@/lib/schemas/delivery-options.schema";
 import type { DeliveryOptionsConfig } from "@/types/checkout";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL;
@@ -95,12 +97,19 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ message: "La API principal no esta configurada." }, { status: 500 });
   }
 
-  let payload: DeliveryOptionsConfig;
+  let rawPayload: unknown;
   try {
-    payload = (await request.json()) as DeliveryOptionsConfig;
+    rawPayload = await request.json();
   } catch {
     return NextResponse.json({ message: "No pude leer la configuracion enviada." }, { status: 400 });
   }
+
+  const parsedPayload = deliveryOptionsSchema.safeParse(rawPayload);
+  if (!parsedPayload.success) {
+    return NextResponse.json({ message: firstZodIssueMessage(parsedPayload.error) }, { status: 400 });
+  }
+
+  const payload: DeliveryOptionsConfig = parsedPayload.data;
 
   try {
     const response = await fetch(`${API_URL}/admin/delivery-options`, {

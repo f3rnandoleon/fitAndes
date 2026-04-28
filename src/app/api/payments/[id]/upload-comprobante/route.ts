@@ -20,6 +20,8 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+const MAX_RECEIPT_SIZE_BYTES = 5 * 1024 * 1024;
+
 function cloneFormData(source: FormData) {
   const cloned = new FormData();
 
@@ -74,6 +76,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
     formData = await request.formData();
   } catch {
     return NextResponse.json({ message: "No pude leer el archivo enviado." }, { status: 400 });
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File)) {
+    return NextResponse.json({ message: "Debes adjuntar una imagen de comprobante." }, { status: 400 });
+  }
+
+  if (!file.type.startsWith("image/")) {
+    return NextResponse.json({ message: "Solo se permiten imagenes como comprobante." }, { status: 400 });
+  }
+
+  if (file.size > MAX_RECEIPT_SIZE_BYTES) {
+    return NextResponse.json({ message: "El comprobante no puede superar los 5 MB." }, { status: 400 });
   }
 
   try {

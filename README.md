@@ -1,39 +1,192 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FitAndes
 
-## Getting Started
+Frontend/BFF en Next.js para la experiencia web de FitAndes. El proyecto expone:
 
-First, run the development server:
+- catalogo publico
+- login y registro de clientes
+- checkout con sincronizacion hacia el sistema central
+- portal de cliente con pedidos y comprobantes
+- chatbot de apoyo con reglas + Gemini
+
+## Arquitectura
+
+FitAndes no es un frontend estatico ni un backend completo. Funciona como **BFF (Backend for Frontend)** entre la UI web y el sistema central de ventas.
+
+### Vista de alto nivel
+
+```text
+Browser
+  |
+  v
+FitAndes (Next.js App Router + Route Handlers)
+  |
+  v
+API central de control de ventas
+```
+
+### Responsabilidades del BFF
+
+- proteger al cliente web de detalles del core
+- adaptar payloads y respuestas del sistema central
+- resolver autenticacion web con NextAuth
+- orquestar checkout, pedidos y carga de comprobantes
+- aplicar logica local de UI, carrito y chat
+
+### Estructura principal
+
+```text
+src/
+  app/
+    (public)/               rutas publicas
+    (portal)/               rutas autenticadas de cliente
+    api/                    route handlers del BFF
+  components/               componentes por dominio
+  lib/                      utilidades, integracion y logica transversal
+  services/                 acceso a datos/servicios del sistema central
+  types/                    tipos y helpers de dominio
+  data/                     fallbacks estaticos
+```
+
+## Requisitos
+
+- Node.js 20 o superior
+- npm 10 o superior
+
+## Setup local
+
+1. Instala dependencias:
+
+```bash
+npm install
+```
+
+2. Crea tu configuracion local a partir del ejemplo:
+
+```bash
+copy .env.example .env
+```
+
+3. Ajusta variables segun tu entorno.
+
+4. Inicia el servidor de desarrollo:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Abre `http://localhost:3000`
 
-If you enable Google Sign-In, register the exact frontend origin in Google Cloud Console.
-For example, `http://localhost:3000` and `http://localhost:3001` are different `Authorized JavaScript origins`.
+## Variables de entorno
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Requeridas
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Uso |
+|---|---|
+| `NEXTAUTH_SECRET` | firma de sesion NextAuth |
+| `NEXTAUTH_URL` | URL base del frontend |
+| `NEXT_PUBLIC_API_URL` | base URL publica de la API central |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | acceso a Gemini |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | login con Google en cliente |
 
-## Learn More
+### Recomendadas
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Uso |
+|---|---|
+| `API_URL` | base URL server-side de la API central si se quiere separar de la publica |
+| `GEMINI_CHAT_MODEL` | modelo Gemini a utilizar |
+| `WHATSAPP_NUMBER` | numero de atencion para checkout por WhatsApp |
+| `LOG_LEVEL` | nivel de logging para futuras fases |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run dev
+npm run lint
+npm run build
+npm run start
+```
 
-## Deploy on Vercel
+## Integracion con la API central
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+La documentacion de referencia del core esta en:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [API_DOCUMENTACION.md](API_DOCUMENTACION.md)
+
+Hoy el BFF convive con contratos heterogeneos del sistema central. Hay compatibilidad transitoria con rutas modernas y legacy, por ejemplo:
+
+- `/pedidos` y `/orders`
+- `/pagos` y `/payments`
+- `/clientes/me` y `/customers/me`
+
+Ese comportamiento existe para no romper flujos mientras se estabiliza el contrato del core. No debe multiplicarse fuera de la capa de integracion.
+
+## Flujos principales
+
+### Catalogo publico
+
+- obtiene productos desde la API central
+- renderiza catalogo y detalle de producto
+
+### Portal autenticado
+
+- inicia sesion con NextAuth
+- consulta pedidos del cliente
+- permite ciertas acciones del pedido y carga de comprobante
+
+### Checkout
+
+- sincroniza el carrito local con el carrito remoto
+- crea pedido en el sistema central
+- crea pago QR cuando aplica
+- redirige al detalle del pedido o a WhatsApp segun el flujo
+
+### Chat
+
+- parser basado en reglas
+- enriquecimiento opcional con Gemini
+- consulta catalogo y pedidos segun autenticacion
+
+## Estado actual del proyecto
+
+Baseline tecnico actual:
+
+- `npm run lint`: OK
+- `npm run build`: OK
+
+Riesgos conocidos hoy:
+
+- no hay testing automatizado
+- `/api/chat` aun no tiene rate limiting
+- la frontera con el core aun depende de compatibilidad ad hoc
+- falta observabilidad operativa real
+
+## Documentacion interna
+
+- [evaluation_report-fitandes.md](evaluation_report-fitandes.md)
+- [implementation_plan-fitandes.md](implementation_plan-fitandes.md)
+- [DOCUMENTACION_COMPLETA_PROYECTO.md](DOCUMENTACION_COMPLETA_PROYECTO.md)
+- [docs/adr/ADR-001-bff-core-boundary.md](docs/adr/ADR-001-bff-core-boundary.md)
+- [docs/adr/ADR-002-central-api-compatibility.md](docs/adr/ADR-002-central-api-compatibility.md)
+- [docs/adr/ADR-003-chat-cost-control.md](docs/adr/ADR-003-chat-cost-control.md)
+- [docs/adr/ADR-004-session-and-csrf-boundary.md](docs/adr/ADR-004-session-and-csrf-boundary.md)
+- [docs/operations/logging.md](docs/operations/logging.md)
+
+## Deploy
+
+Antes de desplegar:
+
+1. definir todas las variables de entorno
+2. validar `npm run lint`
+3. validar `npm run build`
+4. verificar conectividad con la API central
+5. validar login, checkout y consulta de pedidos
+
+## Limitaciones conocidas
+
+- el carrito vive en `localStorage`
+- la compatibilidad con el core aun no esta formalizada con contract tests
+- el chat todavia requiere endurecimiento operativo
+
+## Siguiente paso recomendado
+
+Ejecutar Fase 1 del plan: validacion runtime, rate limiting del chat y endurecimiento de seguridad basica.

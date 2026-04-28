@@ -10,6 +10,8 @@ import {
   readString,
   type CentralApiRole,
 } from "@/lib/central-api";
+import { firstZodIssueMessage } from "@/lib/schemas/common";
+import { orderPatchSchema } from "@/lib/schemas/order.schema";
 
 type OrderAuth = {
   id: string;
@@ -133,12 +135,18 @@ export async function PATCH(
     return NextResponse.json({ message: "No pude leer la actualizacion del pedido." }, { status: 400 });
   }
 
+  const parsedPayload = orderPatchSchema.safeParse(payload);
+  if (!parsedPayload.success) {
+    return NextResponse.json({ message: firstZodIssueMessage(parsedPayload.error) }, { status: 400 });
+  }
+
   const headers = buildCentralApiHeaders(
     { userId: auth.id, role: auth.role, accessToken: auth.accessToken },
     { includeJsonContentType: true },
   );
 
-  const canonicalPayload = buildCanonicalOrderPatchPayload(payload);
+  const validatedPayload = parsedPayload.data;
+  const canonicalPayload = buildCanonicalOrderPatchPayload(validatedPayload);
 
   try {
     const result = await fetchCentralApiWithFallback([
@@ -147,7 +155,7 @@ export async function PATCH(
         init: {
           method: "PATCH",
           headers,
-          body: JSON.stringify(canonicalPayload ?? payload),
+          body: JSON.stringify(canonicalPayload ?? validatedPayload),
         },
       },
       {
@@ -155,7 +163,7 @@ export async function PATCH(
         init: {
           method: "PATCH",
           headers,
-          body: JSON.stringify(payload),
+          body: JSON.stringify(validatedPayload),
         },
       },
       {
@@ -163,7 +171,7 @@ export async function PATCH(
         init: {
           method: "PATCH",
           headers,
-          body: JSON.stringify(payload),
+          body: JSON.stringify(validatedPayload),
         },
       },
     ]);

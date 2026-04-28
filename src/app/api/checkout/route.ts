@@ -17,8 +17,10 @@ import type {
   CheckoutSubmitPayload,
   DeliveryMethod,
 } from "@/types/checkout";
+import { checkoutPayloadSchema } from "@/lib/schemas/checkout.schema";
+import { firstZodIssueMessage } from "@/lib/schemas/common";
 
-const WHATSAPP_NUMBER = "59176574068";
+const WHATSAPP_NUMBER = process.env.WHATSAPP_NUMBER ?? "59176574068";
 
 type CheckoutAuth = {
   id: string;
@@ -548,13 +550,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "La API principal no esta configurada." }, { status: 500 });
   }
 
-  let payload: CheckoutSubmitPayload;
+  let rawPayload: unknown;
 
   try {
-    payload = (await request.json()) as CheckoutSubmitPayload;
+    rawPayload = await request.json();
   } catch {
     return NextResponse.json({ ok: false, message: "No pude leer los datos del checkout." }, { status: 400 });
   }
+
+  const parsedPayload = checkoutPayloadSchema.safeParse(rawPayload);
+  if (!parsedPayload.success) {
+    return NextResponse.json({ ok: false, message: firstZodIssueMessage(parsedPayload.error) }, { status: 400 });
+  }
+
+  const payload: CheckoutSubmitPayload = parsedPayload.data;
 
   const validationError = validatePayload(payload);
   if (validationError) {
