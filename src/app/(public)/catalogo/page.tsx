@@ -31,7 +31,7 @@ export default async function CatalogoPage() {
           <span>Menu</span>
           <span>{">"}</span>
           <Link href="/" className="transition-opacity hover:opacity-60" style={{ color: "#d04d37" }}>
-            Home
+            Catalogo
           </Link>
         </div>
 

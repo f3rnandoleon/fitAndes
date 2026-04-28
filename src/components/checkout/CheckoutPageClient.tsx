@@ -30,7 +30,7 @@ const DELIVERY_OPTIONS: Array<{ value: DeliveryMethod; label: string; descriptio
   },
   {
     value: "PICKUP_POINT",
-    label: "Punto de encuentro(La Paz)",
+    label: "Punto de encuentro (La Paz)",
     description: "Llena informacion para entrega directa en el punto de encuentro deseado",
   },
   {
@@ -298,11 +298,11 @@ export default function CheckoutPageClient() {
       }
 
       if (!senderCI.trim()) {
-        return "Ingresa el CI del remitente.";
+        return "Ingresa el CI del destinatario.";
       }
 
       if (normalizedSenderPhone.length < 8) {
-        return "Ingresa un celular valido del remitente.";
+        return "Ingresa un celular valido del destinatario.";
       }
     }
 
@@ -702,6 +702,15 @@ export default function CheckoutPageClient() {
                       ))}
                     </select>
                   </Field>
+                  <Field label="Nombre del remitente">
+                    <input
+                      type="text"
+                      value="FitAndes"
+                      readOnly
+                      className="w-full border px-4 py-3 text-sm"
+                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+                    />
+                  </Field>
                   <Field label="Nombre del destinatario">
                     <input
                       type="text"
@@ -712,16 +721,8 @@ export default function CheckoutPageClient() {
                       style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
                     />
                   </Field>
-                  <Field label="Nombre del remitente">
-                    <input
-                      type="text"
-                      value="FitAndes"
-                      readOnly
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    />
-                  </Field>
-                  <Field label="CI del remitente">
+                  
+                  <Field label="CI del destinatario">
                     <input
                       type="text"
                       value={senderCI}
@@ -731,7 +732,7 @@ export default function CheckoutPageClient() {
                       style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
                     />
                   </Field>
-                  <Field label="Celular del remitente">
+                  <Field label="Celular del destinatario">
                     <input
                       type="tel"
                       value={senderPhone}
@@ -795,7 +796,7 @@ export default function CheckoutPageClient() {
               ) : null}
 
             <section className="border p-5 sm:p-6" style={{ borderColor: "#e6ddd2", background: "rgba(255,255,255,0.95)" }}>
-              <Field label="Observaciones del pedido">
+              <Field label="Observaciones del pedido(Opcional)">
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
