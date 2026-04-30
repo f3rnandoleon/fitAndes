@@ -4,8 +4,8 @@ import CatalogoGrid from "@/components/catalogo/CatalogoGrid";
 import { catalogVariantIsAvailable, type CatalogProduct } from "@/types/catalogo";
 
 export const metadata = {
-  title: "Catalogo | FitAndes",
-  description: "Explora nuestros productos disponibles.",
+  title: "Catalogo de Chompas Andinas y Poleras",
+  description: "Descubre nuestra coleccion de chompas andinas tejidas y poleras exclusivas. Calidad y diseño boliviano.",
 };
 
 export default async function CatalogoPage() {

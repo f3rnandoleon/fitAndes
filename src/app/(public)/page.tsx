@@ -1,4 +1,4 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
@@ -118,14 +118,14 @@ export default async function HomePage() {
             className="text-6xl mb-6"
             style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, lineHeight: 1.05 }}
           >
-            Elegancia sin
+            Tradicion
             <br />
-            esfuerzo
+            y Estilo
           </h1>
           <p className="text-sm leading-relaxed mb-10 opacity-80 max-w-xs">
             {productos.length > 0
-              ? `${productos.length} productos activos listos para tu nueva seleccion.`
-              : "Piezas atemporales confeccionadas con los materiales mas nobles. Disenadas para perdurar."}
+              ? `Descubre nuestras ${productos.length} piezas exclusivas entre chompas andinas tejidas y poleras de diseño unico.`
+              : "Chompas andinas con historia y poleras diseñadas para tu dia a dia. Confeccionadas con pasion."}
           </p>
           <Link
             href="/catalogo"

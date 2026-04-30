@@ -4,15 +4,15 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "FitAndes | Ropa Deportiva y Estilo de Vida",
+    default: "FitAndes | Chompas Andinas y Poleras de Calidad",
     template: "%s | FitAndes"
   },
-  description: "Descubre el catalogo exclusivo de FitAndes. Ropa de alta calidad diseñada para tu rendimiento y comodidad.",
-  keywords: ["ropa deportiva", "fitandes", "moda bolivia", "entrenamiento", "fitness"],
+  description: "Explora nuestra coleccion exclusiva de chompas andinas tejidas con maestria y una amplia variedad de poleras modernas. Calidad boliviana para el mundo.",
+  keywords: ["chompas andinas", "poleras", "ropa de bolivia", "moda andina", "camisetas", "ropa artesanal", "fitandes"],
   authors: [{ name: "FitAndes Team" }],
   openGraph: {
-    title: "FitAndes",
-    description: "Catalogo exclusivo de ropa deportiva.",
+    title: "FitAndes - Chompas Andinas y Poleras",
+    description: "Lo mejor en chompas andinas y poleras modernas.",
     url: "https://fitandes.com",
     siteName: "FitAndes",
     locale: "es_BO",
