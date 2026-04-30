@@ -9,6 +9,8 @@ import {
 } from "@/lib/central-api";
 import { fetchCentralJson } from "@/lib/central-client";
 import { extractErrorMessage } from "@/lib/adapters/orders.adapter";
+import { logger } from "@/lib/logger";
+import { getRequestId } from "@/lib/request-context";
 
 type PaymentAuth = {
   userId: string;
@@ -56,6 +58,7 @@ async function getPaymentAuth(request: NextRequest): Promise<PaymentAuth | null>
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const requestId = await getRequestId();
   const auth = await getPaymentAuth(request);
 
   if (!auth || auth.role !== "CLIENTE") {
@@ -103,18 +106,22 @@ export async function POST(request: NextRequest, context: RouteContext) {
         method: "POST",
         body: cloneFormData(formData),
       },
-    ], auth);
+    ], auth, { requestId });
 
     const data = parseJsonRecord(result.data);
     if (!result.response.ok) {
+      logger.error("Payment receipt upload API failed", { status: result.response.status, requestId, paymentId: id, error: data });
       return NextResponse.json(
         { message: extractErrorMessage(data, "No pude subir el comprobante en este momento.") }, 
         { status: result.response.status }
       );
     }
 
+    logger.info("Payment receipt upload successful", { requestId, paymentId: id });
+
     return NextResponse.json(result.data);
-  } catch {
+  } catch (error) {
+    logger.error("Payment receipt upload critical failure", { error, requestId, paymentId: id });
     return NextResponse.json({ message: "No pude conectar con la API principal para subir el comprobante." }, { status: 502 });
   }
 }

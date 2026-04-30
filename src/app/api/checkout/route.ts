@@ -11,240 +11,24 @@ import { buildCanonicalCheckoutPayload, buildLegacyCheckoutPayload } from "@/lib
 import type { CheckoutDeliveryInput, CheckoutItemInput, CheckoutSubmitPayload } from "@/types/checkout";
 import { checkoutPayloadSchema } from "@/lib/schemas/checkout.schema";
 import { firstZodIssueMessage } from "@/lib/schemas/common";
+import { logger } from "@/lib/logger";
+import { getRequestId } from "@/lib/request-context";
+import { formatPrice } from "@/lib/format";
+import { normalizePhone, compactText } from "@/lib/text";
+import { validateCheckoutPayload } from "@/lib/checkout/validation";
+import { buildWhatsappUrl, getDeliveryLabel } from "@/lib/checkout/notifications";
+import { createQrPayment } from "@/lib/checkout/payment";
+import { getCheckoutAuth, type CheckoutAuth } from "@/lib/checkout/auth";
+import { extractErrorMessage } from "@/lib/adapters/orders.adapter";
 
 const WHATSAPP_NUMBER = process.env.WHATSAPP_NUMBER ?? "59176574068";
 
-type CheckoutAuth = {
-  userId: string;
-  role: CentralApiRole;
-  fullname?: string | null;
-  email?: string | null;
-  accessToken?: string | null;
-};
 
-function formatMoney(value: number) {
-  return new Intl.NumberFormat("es-BO", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 
-function normalizePhone(phone?: string) {
-  return (phone ?? "").replace(/\D/g, "").trim();
-}
 
-function compactText(value?: string | null) {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-}
-
-async function getCheckoutAuth(request: NextRequest): Promise<CheckoutAuth | null> {
-  const session = await getServerSession(authOptions);
-
-  if (session?.user?.id && session.user.role) {
-    return {
-      userId: session.user.id,
-      role: session.user.role,
-      fullname: session.user.fullname,
-      email: session.user.email,
-      accessToken: session.accessToken ?? null,
-    };
-  }
-
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-
-  if (!token || typeof token.id !== "string" || typeof token.role !== "string") {
-    return null;
-  }
-
-  return {
-    userId: token.id,
-    role: token.role as CentralApiRole,
-    fullname: typeof token.fullname === "string" ? token.fullname : null,
-    email: typeof token.email === "string" ? token.email : null,
-    accessToken: typeof token.accessToken === "string" ? token.accessToken : null,
-  };
-}
-
-function firstValidationMessage(data: Record<string, unknown> | null) {
-  const errors = data?.errors;
-  if (!Array.isArray(errors)) return null;
-
-  const firstError = errors.find((error) => error && typeof error === "object") as { message?: unknown } | undefined;
-  return typeof firstError?.message === "string" ? firstError.message : null;
-}
-
-function extractErrorMessage(data: Record<string, unknown> | null, fallback: string) {
-  return (
-    firstValidationMessage(data) ||
-    (typeof data?.message === "string" ? data.message : null) ||
-    (typeof data?.error === "string" ? data.error : null) ||
-    fallback
-  );
-}
-
-function deliveryLabel(delivery: CheckoutDeliveryInput) {
-  if (delivery.method === "WHATSAPP") return "Coordinacion por WhatsApp";
-
-  if (delivery.method === "PICKUP_POINT") {
-    return [delivery.recipientName, delivery.address, delivery.scheduledAt].filter(Boolean).join(" - ") || "Punto de encuentro";
-  }
-
-  const destination = [delivery.department, delivery.city].filter(Boolean).join(", ");
-  const carrier = [delivery.shippingCompany, delivery.branch].filter(Boolean).join(" - ");
-  return [destination, carrier].filter(Boolean).join(" / ") || "Envio nacional";
-}
-
-function buildWhatsappUrl({
-  customerName,
-  customerEmail,
-  items,
-  delivery,
-  total,
-  orderNumber,
-  notes,
-}: {
-  customerName: string;
-  customerEmail: string;
-  items: CheckoutItemInput[];
-  delivery: CheckoutDeliveryInput;
-  total: number;
-  orderNumber?: string | null;
-  notes?: string | null;
-}) {
-  const lines = [
-    "Hola FitAndes, quiero confirmar este pedido web:",
-    orderNumber ? `Pedido: ${orderNumber}` : "Pedido: nuevo registro web",
-    "",
-    `Cliente: ${customerName}`,
-    `Correo: ${customerEmail}`,
-    `Entrega: ${deliveryLabel(delivery)}`,
-  ];
-
-  if (delivery.phone) {
-    lines.push(`Celular de contacto: ${delivery.phone}`);
-  }
-
-  if (delivery.senderPhone) {
-    lines.push(`Celular remitente: ${delivery.senderPhone}`);
-  }
-
-  if (notes) {
-    lines.push(`Observaciones: ${notes}`);
-  }
-
-  lines.push("", "Productos:");
-
-  items.forEach((item, index) => {
-    lines.push(
-      `${index + 1}. ${item.nombre}${item.modelo ? ` / ${item.modelo}` : ""}`,
-      `   Variante: ${item.color}${item.colorSecundario ? ` / ${item.colorSecundario}` : ""} / ${item.talla}`,
-      `   Cantidad: ${item.cantidad}`,
-      `   Subtotal: Bs. ${formatMoney(item.cantidad * item.precio)}`
-    );
-  });
-
-  lines.push("", `Total: Bs. ${formatMoney(total)}`);
-
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
-}
-
-function validatePayload(payload: CheckoutSubmitPayload) {
-  if (!payload || !Array.isArray(payload.items) || payload.items.length === 0) {
-    return "No hay productos para registrar.";
-  }
-
-  if (!payload.delivery || !["WHATSAPP", "PICKUP_POINT", "SHIPPING_NATIONAL"].includes(payload.delivery.method)) {
-    return "Selecciona un metodo de entrega valido.";
-  }
-
-  if (!["EFECTIVO", "QR"].includes(payload.paymentMethod)) {
-    return "Selecciona un metodo de pago valido.";
-  }
-
-  const invalidItem = payload.items.find(
-    (item) => !item.productoId || !item.color || !item.talla || !Number.isInteger(item.cantidad) || item.cantidad < 1
-  );
-
-  if (invalidItem) {
-    return "Hay un producto sin datos suficientes para generar el pedido.";
-  }
-
-  if (payload.notes && payload.notes.trim().length > 300) {
-    return "Las observaciones no pueden superar los 300 caracteres.";
-  }
-
-  if (payload.delivery.method === "PICKUP_POINT") {
-    if (!compactText(payload.delivery.address)) {
-      return "Ingresa el punto de encuentro o direccion de referencia.";
-    }
-
-    if (normalizePhone(payload.delivery.phone).length < 8) {
-      return "Ingresa un celular valido para coordinar la entrega.";
-    }
-  }
-
-  if (payload.delivery.method === "SHIPPING_NATIONAL") {
-    if (payload.paymentMethod !== "QR") {
-      return "El envio nacional solo esta disponible con pago QR.";
-    }
-
-    if (!compactText(payload.delivery.department) || !compactText(payload.delivery.shippingCompany) || !compactText(payload.delivery.senderName)) {
-      return "Completa departamento, empresa de envio y nombre del remitente.";
-    }
-
-    if (!compactText(payload.delivery.senderCI)) {
-      return "Ingresa el CI del remitente.";
-    }
-
-    if (normalizePhone(payload.delivery.senderPhone).length < 8) {
-      return "Ingresa un celular valido del remitente.";
-    }
-  }
-
-  return null;
-}
-
-async function createQrPayment(auth: CheckoutAuth, orderId: string) {
-  const canonicalBody = {
-    pedidoId: orderId,
-    metodoPago: "QR",
-    idempotencyKey: `checkout-${orderId}`,
-  };
-
-  const legacyBody = {
-    orderId,
-    metodoPago: "QR",
-    idempotencyKey: `checkout-${orderId}`,
-  };
-
-  const result = await fetchCentralJson(
-    [
-      { path: "/pagos", method: "POST", body: JSON.stringify(canonicalBody) },
-      { path: "/pagos", method: "POST", body: JSON.stringify(legacyBody) },
-      { path: "/payments", method: "POST", body: JSON.stringify(legacyBody) },
-    ],
-    auth
-  );
-
-  const data = parseJsonRecord(result.data);
-  const paymentId = extractPaymentId(data);
-  if (result.response.ok || paymentId) {
-    return {
-      ok: true as const,
-      paymentId,
-      warning: result.response.ok ? null : extractErrorMessage(data, "No pude recuperar la transaccion QR existente."),
-    };
-  }
-
-  return {
-    ok: false as const,
-    paymentId: null,
-    warning: extractErrorMessage(data, "El pedido se creo, pero no pude preparar el pago QR."),
-  };
-}
 
 export async function GET(request: NextRequest) {
+  const requestId = await getRequestId();
   const auth = await getCheckoutAuth(request);
 
   if (!auth || auth.role !== "CLIENTE") {
@@ -261,7 +45,8 @@ export async function GET(request: NextRequest) {
         { path: "/clientes/me", method: "GET" },
         { path: "/customers/me", method: "GET" },
       ],
-      auth
+      auth,
+      { requestId }
     );
 
     const data = parseJsonRecord(result.data);
@@ -273,12 +58,14 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(normalizeCustomerContext(data));
-  } catch {
+  } catch (error) {
+    logger.error("Checkout GET customer profile failed", { error, requestId, userId: auth.userId });
     return NextResponse.json({ message: "No pude consultar tu perfil de cliente." }, { status: 502 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = await getRequestId();
   const auth = await getCheckoutAuth(request);
 
   if (!auth || auth.role !== "CLIENTE") {
@@ -299,18 +86,28 @@ export async function POST(request: NextRequest) {
 
   const parsedPayload = checkoutPayloadSchema.safeParse(rawPayload);
   if (!parsedPayload.success) {
+    logger.warn("Checkout validation failed (schema)", { error: parsedPayload.error.format(), requestId, userId: auth.userId });
     return NextResponse.json({ ok: false, message: firstZodIssueMessage(parsedPayload.error) }, { status: 400 });
   }
 
   const payload: CheckoutSubmitPayload = parsedPayload.data;
 
-  const validationError = validatePayload(payload);
+  const validationError = validateCheckoutPayload(payload);
   if (validationError) {
+    logger.warn("Checkout validation failed (business logic)", { validationError, requestId, userId: auth.userId });
     return NextResponse.json({ ok: false, message: validationError }, { status: 400 });
   }
 
-  const syncResult = await syncRemoteCart(auth, payload.items);
+  logger.info("Checkout started", { requestId, userId: auth.userId, itemsCount: payload.items.length, paymentMethod: payload.paymentMethod });
+
+  const syncResult = await syncRemoteCart(auth, payload.items, { requestId });
   if (!syncResult.ok) {
+    logger.error("Checkout cart sync failed", { 
+      phase: syncResult.phase, 
+      status: syncResult.result?.response.status,
+      requestId, 
+      userId: auth.userId 
+    });
     const errorData = parseJsonRecord(syncResult.result?.data);
     const itemName = "item" in syncResult && syncResult.item ? syncResult.item.nombre : "el producto";
     const msg = syncResult.phase === "clear"
@@ -341,11 +138,18 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify(legacyCheckoutPayload),
         },
       ],
-      auth
+      auth,
+      { requestId }
     );
 
     const data = parseJsonRecord(result.data);
     if (!result.response.ok) {
+      logger.error("Checkout API submission failed", { 
+        status: result.response.status, 
+        requestId, 
+        userId: auth.userId,
+        error: data
+      });
       return NextResponse.json(
         {
           ok: false,
@@ -379,10 +183,22 @@ export async function POST(request: NextRequest) {
     let warning: string | null = null;
 
     if (payload.paymentMethod === "QR" && orderId) {
-      const paymentSetup = await createQrPayment(auth, orderId);
+      const paymentSetup = await createQrPayment(auth, orderId, { requestId });
       paymentId = paymentSetup.paymentId;
       warning = paymentSetup.warning;
+
+      if (!paymentId) {
+        logger.warn("Checkout payment setup warning", { warning, requestId, orderId });
+      }
     }
+
+    logger.info("Checkout successful", { 
+      requestId, 
+      userId: auth.userId, 
+      orderId, 
+      orderNumber, 
+      hasPayment: !!paymentId 
+    });
 
     return NextResponse.json({
       ok: true,
@@ -397,7 +213,8 @@ export async function POST(request: NextRequest) {
           ? "Pedido registrado. El siguiente paso es subir tu comprobante QR."
           : "Pedido registrado correctamente.",
     });
-  } catch {
+  } catch (error) {
+    logger.error("Checkout process critical failure", { error, requestId, userId: auth.userId });
     return NextResponse.json(
       {
         ok: false,

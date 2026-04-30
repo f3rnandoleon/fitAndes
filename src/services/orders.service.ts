@@ -2,6 +2,8 @@ import type { CentralApiAuth } from "@/lib/central-api";
 import { fetchCentralJson } from "@/lib/central-client";
 import { parsePedidoArray, parsePedidoDetail } from "@/lib/adapters/orders.adapter";
 import type { Pedido } from "@/types/pedidos";
+import { logger } from "@/lib/logger";
+import { getRequestId } from "@/lib/request-context";
 
 async function fetchOrders(auth: CentralApiAuth): Promise<Pedido[] | null> {
   const result = await fetchCentralJson(
@@ -11,10 +13,13 @@ async function fetchOrders(auth: CentralApiAuth): Promise<Pedido[] | null> {
       { path: "/mis-pedidos" },
     ],
     auth,
-    { timeoutMs: 10000 }
+    { timeoutMs: 10000, requestId: await getRequestId() }
   );
 
-  if (!result.response.ok) return null;
+  if (!result.response.ok) {
+    logger.error("Fetch orders failed", { status: result.response.status, userId: auth.userId });
+    return null;
+  }
   return parsePedidoArray(result.data);
 }
 
@@ -26,11 +31,14 @@ async function fetchOrder(auth: CentralApiAuth, orderId: string): Promise<Pedido
       { path: `/mis-pedidos/${orderId}` },
     ],
     auth,
-    { timeoutMs: 10000 }
+    { timeoutMs: 10000, requestId: await getRequestId() }
   );
 
   if (result.response.status === 404 || result.response.status === 400) return null;
-  if (!result.response.ok) return undefined;
+  if (!result.response.ok) {
+    logger.error("Fetch order detail failed", { status: result.response.status, orderId, userId: auth.userId });
+    return undefined;
+  }
   return parsePedidoDetail(result.data);
 }
 

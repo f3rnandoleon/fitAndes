@@ -21,11 +21,18 @@ export const CENTRAL_API_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.AP
 
 const RETRYABLE_CENTRAL_STATUSES = new Set([400, 404, 405, 422]);
 
-export function buildCentralApiHeaders(auth: CentralApiAuth, options?: { includeJsonContentType?: boolean }) {
+export function buildCentralApiHeaders(
+  auth: CentralApiAuth,
+  options?: { includeJsonContentType?: boolean; requestId?: string }
+) {
   const headers: Record<string, string> = {
     "x-user-id": auth.userId,
     "x-user-role": auth.role,
   };
+
+  if (options?.requestId) {
+    headers["x-request-id"] = options.requestId;
+  }
 
   if (options?.includeJsonContentType) {
     headers["Content-Type"] = "application/json";

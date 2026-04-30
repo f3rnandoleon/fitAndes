@@ -2,8 +2,9 @@ import { primeraImagenDeProducto, primeraImagenDeVariante } from "@/lib/catalogo
 import type { ChatAction, OrderCardData, ProductCardData } from "@/lib/chat/types";
 import { filterCatalogAvailableVariants, type CatalogProduct } from "@/types/catalogo";
 import { getPedidoEstado, getPedidoItemColor, getPedidoItemNombre, getPedidoItemTalla, getPedidoNumero, getPedidoTotal, type Pedido } from "@/types/pedidos";
+import { formatPrice, formatDate } from "@/lib/format";
 
-function formatPrice(value: number): string {
+
   return `Bs. ${new Intl.NumberFormat("es-BO", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

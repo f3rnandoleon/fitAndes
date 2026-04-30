@@ -7,6 +7,8 @@ import { fetchCentralJson } from "@/lib/central-client";
 import { extractErrorMessage, buildCanonicalOrderPatchPayload } from "@/lib/adapters/orders.adapter";
 import { firstZodIssueMessage } from "@/lib/schemas/common";
 import { orderPatchSchema } from "@/lib/schemas/order.schema";
+import { logger } from "@/lib/logger";
+import { getRequestId } from "@/lib/request-context";
 
 type OrderAuth = {
   userId: string;
@@ -41,6 +43,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = await getRequestId();
   const auth = await getOrderAuth(request);
   if (!auth || auth.role !== "CLIENTE") {
     return NextResponse.json({ message: "Debes iniciar sesion para actualizar el pedido." }, { status: 401 });
@@ -64,6 +67,7 @@ export async function PATCH(
 
   const parsedPayload = orderPatchSchema.safeParse(payload);
   if (!parsedPayload.success) {
+    logger.warn("Order PATCH validation failed", { error: parsedPayload.error.format(), requestId, orderId: id });
     return NextResponse.json({ message: firstZodIssueMessage(parsedPayload.error) }, { status: 400 });
   }
 
@@ -87,18 +91,22 @@ export async function PATCH(
         method: "PATCH",
         body: JSON.stringify(validatedPayload),
       },
-    ], auth);
+    ], auth, { requestId });
 
     const data = parseJsonRecord(result.data);
     if (!result.response.ok) {
+      logger.error("Order PATCH API failed", { status: result.response.status, requestId, orderId: id, error: data });
       return NextResponse.json(
         { message: extractErrorMessage(data, "No pude actualizar el pedido.") },
         { status: result.response.status },
       );
     }
 
+    logger.info("Order PATCH successful", { requestId, orderId: id });
+
     return NextResponse.json(data ?? { ok: true });
-  } catch {
+  } catch (error) {
+    logger.error("Order PATCH critical failure", { error, requestId, orderId: id });
     return NextResponse.json({ message: "No pude conectar con la API principal." }, { status: 502 });
   }
 }

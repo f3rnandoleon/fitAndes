@@ -6,15 +6,19 @@ import { normalizeMemory } from "@/lib/chat/memory";
 import { checkRateLimit, resolveRequestIp } from "@/lib/rate-limit";
 import { firstZodIssueMessage } from "@/lib/schemas/common";
 import { chatRequestSchema } from "@/lib/schemas/chat.schema";
+import { logger } from "@/lib/logger";
+import { getRequestId } from "@/lib/request-context";
 
 const CHAT_RATE_LIMIT = 20;
 const CHAT_RATE_LIMIT_WINDOW_MS = 60_000;
 
 export async function POST(request: NextRequest) {
+  const requestId = await getRequestId();
   const ip = resolveRequestIp(request);
   const rateLimit = checkRateLimit(`chat:${ip}`, CHAT_RATE_LIMIT, CHAT_RATE_LIMIT_WINDOW_MS);
 
   if (!rateLimit.ok) {
+    logger.warn("Chat rate limit exceeded", { ip, requestId });
     return NextResponse.json(
       { message: "Demasiadas solicitudes. Intentalo nuevamente en un momento." },
       {
@@ -37,6 +41,7 @@ export async function POST(request: NextRequest) {
 
   const parsedBody = chatRequestSchema.safeParse(rawBody);
   if (!parsedBody.success) {
+    logger.warn("Chat validation failed", { error: parsedBody.error.format(), requestId });
     return NextResponse.json({ message: firstZodIssueMessage(parsedBody.error) }, { status: 400 });
   }
 
@@ -61,7 +66,8 @@ export async function POST(request: NextRequest) {
         "X-RateLimit-Remaining": String(rateLimit.remaining),
       },
     });
-  } catch {
+  } catch (error) {
+    logger.error("Chat engine failed", { error: error instanceof Error ? error.message : String(error), requestId, message: body.message });
     return NextResponse.json(
       {
         reply: "No pude procesar tu consulta en este momento. Intenta de nuevo en un momento.",
@@ -71,7 +77,7 @@ export async function POST(request: NextRequest) {
         suggestions: ["Quiero una polera negra", "Mostrar catalogo"],
       },
       {
-        status: 200,
+        status: 500,
         headers: {
           "X-RateLimit-Limit": String(rateLimit.limit),
           "X-RateLimit-Remaining": String(rateLimit.remaining),

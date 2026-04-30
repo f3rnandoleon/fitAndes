@@ -16,13 +16,16 @@ type CentralJsonAttempt = {
 export async function fetchCentralJson(
   attempts: CentralJsonAttempt[],
   auth: CentralApiAuth,
-  options?: { timeoutMs?: number }
+  options?: { timeoutMs?: number; requestId?: string }
 ): Promise<CentralApiResult> {
   return fetchCentralApiWithFallback(
     attempts.map((attempt) => {
       const body = attempt.body ?? undefined;
       const headers = new Headers(
-        buildCentralApiHeaders(auth, { includeJsonContentType: typeof body === "string" })
+        buildCentralApiHeaders(auth, {
+          includeJsonContentType: typeof body === "string",
+          requestId: options?.requestId,
+        })
       );
 
       new Headers(attempt.headers ?? undefined).forEach((value, key) => {
@@ -42,20 +45,24 @@ export async function fetchCentralJson(
   );
 }
 
-export async function syncRemoteCart(auth: CentralApiAuth, items: CheckoutItemInput[]) {
+export async function syncRemoteCart(
+  auth: CentralApiAuth,
+  items: CheckoutItemInput[],
+  options?: { requestId?: string }
+) {
   const clearCartResult = await fetchCentralApiWithFallback([
     {
       path: "/carrito",
       init: {
         method: "DELETE",
-        headers: buildCentralApiHeaders(auth),
+        headers: buildCentralApiHeaders(auth, { requestId: options?.requestId }),
       },
     },
     {
       path: "/cart",
       init: {
         method: "DELETE",
-        headers: buildCentralApiHeaders(auth),
+        headers: buildCentralApiHeaders(auth, { requestId: options?.requestId }),
       },
     },
   ]);
@@ -65,7 +72,10 @@ export async function syncRemoteCart(auth: CentralApiAuth, items: CheckoutItemIn
   }
 
   for (const item of items) {
-    const headers = buildCentralApiHeaders(auth, { includeJsonContentType: true });
+    const headers = buildCentralApiHeaders(auth, {
+      includeJsonContentType: true,
+      requestId: options?.requestId,
+    });
 
     const canonicalItemBody = {
       productoId: item.productoId,

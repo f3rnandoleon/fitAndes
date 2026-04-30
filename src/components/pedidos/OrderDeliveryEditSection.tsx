@@ -12,23 +12,12 @@ import {
 } from "@/lib/delivery-options";
 import type { DeliveryOptionsConfig } from "@/types/checkout";
 import { canPedidoBeEditedByClient, getPedidoDelivery, type Pedido } from "@/types/pedidos";
-
-function normalizePhone(phone?: string | null) {
-  return (phone ?? "").replace(/\D/g, "").trim();
-}
-
-function compactText(value?: string | null) {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-}
-
-function normalizeText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
+import { normalizePhone, compactText, removeAccents } from "@/lib/text";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 
 function mergeStringOptions(options: string[], currentValue: string) {
   if (!currentValue || options.includes(currentValue)) return options;
@@ -43,12 +32,12 @@ function mergeNamedOptions<T extends { name: string }>(options: T[], currentValu
 function resolvePickupSelection(scheduledAt: string | null | undefined, config: DeliveryOptionsConfig) {
   if (!scheduledAt) return { pickupScheduleId: "", pickupTime: "" };
 
-  const normalizedScheduledAt = normalizeText(scheduledAt);
+  const normalizedScheduledAt = removeAccents(scheduledAt);
   const timeMatch = scheduledAt.match(/\b\d{2}:\d{2}\b/);
   const pickupTime = timeMatch?.[0] ?? "";
 
   const schedule = config.pickupSchedules.find((option) => {
-    if (!normalizedScheduledAt.includes(normalizeText(option.day))) return false;
+    if (!normalizedScheduledAt.includes(removeAccents(option.day))) return false;
     if (!pickupTime) return true;
     return getPickupScheduleTimeSlots(option.id, config).includes(pickupTime);
   });
@@ -59,6 +48,10 @@ function resolvePickupSelection(scheduledAt: string | null | undefined, config: 
   };
 }
 
+/**
+ * Component to edit the delivery details of an existing order.
+ * Only accessible if the order is in a state that allows editing.
+ */
 export default function OrderDeliveryEditSection({ pedido }: { pedido: Pedido }) {
   const router = useRouter();
   const delivery = getPedidoDelivery(pedido);
@@ -212,20 +205,18 @@ export default function OrderDeliveryEditSection({ pedido }: { pedido: Pedido })
     return null;
   }
 
-  const editableDelivery = delivery;
-
   function validateForm() {
     if (optionsLoading) {
       return "Espera a que terminen de cargar las opciones de entrega.";
     }
 
-    if (editableDelivery.method === "PICKUP_POINT") {
+    if (delivery?.method === "PICKUP_POINT") {
       if (!address.trim()) return "Selecciona un punto de encuentro.";
       if (normalizePhone(phone).length < 8) return "Ingresa un celular valido para coordinar la entrega.";
       if (!pickupScheduleId || !pickupTime) return "Selecciona un horario valido para la entrega.";
     }
 
-    if (editableDelivery.method === "SHIPPING_NATIONAL") {
+    if (delivery?.method === "SHIPPING_NATIONAL") {
       if (!department.trim() || !shippingCompany.trim()) {
         return "Selecciona departamento y empresa de envio.";
       }
@@ -252,19 +243,19 @@ export default function OrderDeliveryEditSection({ pedido }: { pedido: Pedido })
     setError("");
     setMessage("");
 
-    const scheduledAt =
-      editableDelivery.method === "PICKUP_POINT"
+    const scheduledAtValue =
+      delivery?.method === "PICKUP_POINT"
         ? [getPickupScheduleById(pickupScheduleId, deliveryConfig)?.day, pickupTime].filter(Boolean).join(" ")
         : undefined;
 
     const deliverySnapshot =
-      editableDelivery.method === "PICKUP_POINT"
+      delivery?.method === "PICKUP_POINT"
         ? {
             method: "PICKUP_POINT",
             address: address.trim(),
             phone: normalizePhone(phone),
             recipientName: compactText(recipientName),
-            scheduledAt: compactText(scheduledAt),
+            scheduledAt: compactText(scheduledAtValue),
           }
         : {
             method: "SHIPPING_NATIONAL",
@@ -302,211 +293,133 @@ export default function OrderDeliveryEditSection({ pedido }: { pedido: Pedido })
   }
 
   return (
-    <div className="border p-5 space-y-4" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-      <div>
-        <p className="text-xs uppercase mb-2" style={{ letterSpacing: "0.14em", color: "var(--subtle)" }}>
-          Editar entrega
-        </p>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
-          Puedes actualizar los datos de entrega mientras el pedido siga pendiente y dentro de los primeros 30 minutos.
-        </p>
-      </div>
+    <Card className="space-y-6">
+      <header className="flex justify-between items-start">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-subtle mb-1">
+            Editar entrega
+          </p>
+          <p className="text-sm text-muted max-w-md">
+            Puedes actualizar los datos mientras el pedido siga pendiente (max. 30 min).
+          </p>
+        </div>
+        <Badge variant="warning">Editable</Badge>
+      </header>
 
-      {optionsError ? (
-        <p className="border px-4 py-3 text-sm" style={{ borderColor: "#d9b2ac", background: "#f6e8e5", color: "#8b3f36" }}>
+      {optionsError && (
+        <div className="border border-danger/20 bg-danger/5 px-4 py-3 text-xs text-danger">
           {optionsError}
-        </p>
-      ) : null}
+        </div>
+      )}
 
-      {editableDelivery.method === "PICKUP_POINT" ? (
-        <div className="space-y-3">
-          <Field label="Punto de encuentro">
-            <select
+      {delivery?.method === "PICKUP_POINT" && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <Select
+              label="Punto de encuentro"
               value={address}
-              onChange={(event) => setAddress(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            >
-              {pickupPointOptions.map((option) => (
-                <option key={option.id} value={option.name}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Celular de contacto">
-            <input
-              type="tel"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+              onChange={(e) => setAddress(e.target.value)}
+              options={pickupPointOptions.map(p => ({ value: p.name, label: p.name }))}
             />
-          </Field>
-          <Field label="Nombre de quien recibe">
-            <input
-              type="text"
-              value={recipientName}
-              onChange={(event) => setRecipientName(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            />
-          </Field>
-          <Field label="Horario disponible">
-            <select
-              value={pickupScheduleId}
-              onChange={(event) => setPickupScheduleId(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            >
-              {pickupScheduleOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Hora especifica">
-            <select
-              value={pickupTime}
-              onChange={(event) => setPickupTime(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            >
-              {pickupTimeOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </Field>
+          </div>
+          <Input
+            label="Celular de contacto"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+          <Input
+            label="Nombre de quien recibe"
+            value={recipientName}
+            onChange={(e) => setRecipientName(e.target.value)}
+          />
+          <Select
+            label="Dia disponible"
+            value={pickupScheduleId}
+            onChange={(e) => setPickupScheduleId(e.target.value)}
+            options={pickupScheduleOptions.map(s => ({ value: s.id, label: s.label }))}
+          />
+          <Select
+            label="Hora especifica"
+            value={pickupTime}
+            onChange={(e) => setPickupTime(e.target.value)}
+            options={pickupTimeOptions.map(t => ({ value: t, label: t }))}
+          />
         </div>
-      ) : null}
+      )}
 
-      {editableDelivery.method === "SHIPPING_NATIONAL" ? (
-        <div className="space-y-3">
-          <Field label="Departamento">
-            <select
-              value={department}
-              onChange={(event) => setDepartment(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            >
-              {shippingDepartments.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Ciudad">
-            <input
-              type="text"
-              value={city}
-              onChange={(event) => setCity(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            />
-          </Field>
-          <Field label="Empresa de envio">
-            <select
-              value={shippingCompany}
-              onChange={(event) => setShippingCompany(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            >
-              {shippingCompanies.map((option) => (
-                <option key={option.id} value={option.name}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Sucursal o terminal">
-            <select
-              value={branch}
-              onChange={(event) => setBranch(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            >
-              {shippingBranches.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Nombre del destinatario">
-            <input
-              type="text"
-              value={recipientName}
-              onChange={(event) => setRecipientName(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            />
-          </Field>
-          <Field label="Nombre del remitente">
-            <input
-              type="text"
-              value={senderName}
-              onChange={(event) => setSenderName(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            />
-          </Field>
-          <Field label="CI del remitente">
-            <input
-              type="text"
-              value={senderCI}
-              onChange={(event) => setSenderCI(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            />
-          </Field>
-          <Field label="Celular del remitente">
-            <input
-              type="tel"
-              value={senderPhone}
-              onChange={(event) => setSenderPhone(event.target.value)}
-              className="w-full border px-4 py-3 text-sm"
-              style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-            />
-          </Field>
+      {delivery?.method === "SHIPPING_NATIONAL" && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Select
+            label="Departamento"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            options={shippingDepartments.map(d => ({ value: d, label: d }))}
+          />
+          <Input
+            label="Ciudad"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+          />
+          <Select
+            label="Empresa de envio"
+            value={shippingCompany}
+            onChange={(e) => setShippingCompany(e.target.value)}
+            options={shippingCompanies.map(c => ({ value: c.name, label: c.name }))}
+          />
+          <Select
+            label="Sucursal o terminal"
+            value={branch}
+            onChange={(e) => setBranch(e.target.value)}
+            options={shippingBranches.map(b => ({ value: b, label: b }))}
+          />
+          <Input
+            label="Nombre del destinatario"
+            value={recipientName}
+            onChange={(e) => setRecipientName(e.target.value)}
+          />
+          <Input
+            label="Nombre del remitente"
+            value={senderName}
+            onChange={(e) => setSenderName(e.target.value)}
+          />
+          <Input
+            label="CI del remitente"
+            value={senderCI}
+            onChange={(e) => setSenderCI(e.target.value)}
+          />
+          <Input
+            label="Celular del remitente"
+            type="tel"
+            value={senderPhone}
+            onChange={(e) => setSenderPhone(e.target.value)}
+          />
         </div>
-      ) : null}
+      )}
 
-      {message ? (
-        <p className="border px-4 py-3 text-sm" style={{ borderColor: "#c5d8c9", background: "#e7efe9", color: "#2f6b43" }}>
+      {message && (
+        <div className="border border-success/20 bg-success/5 px-4 py-3 text-xs text-success">
           {message}
-        </p>
-      ) : null}
+        </div>
+      )}
 
-      {error ? (
-        <p className="border px-4 py-3 text-sm" style={{ borderColor: "#d9b2ac", background: "#f6e8e5", color: "#8b3f36" }}>
+      {error && (
+        <div className="border border-danger/20 bg-danger/5 px-4 py-3 text-xs text-danger">
           {error}
-        </p>
-      ) : null}
+        </div>
+      )}
 
-      <button
-        type="button"
-        onClick={handleSaveDelivery}
-        disabled={saving || optionsLoading}
-        className="inline-flex items-center justify-center bg-[#111111] px-5 py-3 text-xs uppercase text-white transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-60"
-        style={{ letterSpacing: "0.16em" }}
-      >
-        {saving ? "Guardando..." : "Guardar entrega"}
-      </button>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="text-xs uppercase block mb-2" style={{ letterSpacing: "0.14em", color: "var(--subtle)" }}>
-        {label}
-      </label>
-      {children}
-    </div>
+      <footer className="pt-2">
+        <Button
+          variant="primary"
+          onClick={handleSaveDelivery}
+          disabled={saving || optionsLoading}
+          loading={saving}
+          className="w-full sm:w-auto"
+        >
+          Guardar entrega
+        </Button>
+      </footer>
+    </Card>
   );
 }

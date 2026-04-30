@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
+import { formatPrice } from "@/lib/format";
+import { Button } from "@/components/ui/Button";
 
 interface Props {
   authenticated?: boolean;
@@ -19,13 +21,6 @@ const NAV_LINKS = [
   { label: "Seleccion", href: "/#seleccion" },
   { label: "Nuevo", href: "/#nuevo" },
 ];
-
-function formatPrice(value: number): string {
-  return `Bs ${new Intl.NumberFormat("es-BO", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value)}`;
-}
 
 export default function SiteHeader({ authenticated = false, fullname, email }: Props) {
   const pathname = usePathname();
@@ -166,34 +161,28 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
                           </div>
                         ))}
                       </div>
-                      <div className="px-5 py-4">
+                      <div className="px-5 py-4 bg-surface/30">
                         <div className="flex items-center justify-between text-sm mb-4">
-                          <span style={{ color: "#5f564e" }}>Total reservado</span>
-                          <strong style={{ color: "#111111" }}>{formatPrice(totalAmount)}</strong>
+                          <span className="text-muted">Total reservado</span>
+                          <strong className="text-foreground font-medium">{formatPrice(totalAmount)}</strong>
                         </div>
                         <div className="grid gap-3">
-                          <Link
-                            href="/checkout"
-                            className="flex items-center justify-center bg-[#111111] text-white text-xs uppercase py-3 transition-opacity hover:opacity-85"
-                            style={{ letterSpacing: "0.16em" }}
-                          >
-                            Finalizar compra
+                          <Link href="/checkout" className="w-full">
+                            <Button variant="primary" size="md" className="w-full">
+                              Finalizar compra
+                            </Button>
                           </Link>
                           {authenticated ? (
-                            <Link
-                              href="/pedidos"
-                              className="flex items-center justify-center border text-xs uppercase py-3 transition-colors hover:bg-[#f8f4ee]"
-                              style={{ letterSpacing: "0.16em", borderColor: "#ddd5cb", color: "#5f564e" }}
-                            >
-                              Ver pedidos
+                            <Link href="/pedidos" className="w-full">
+                              <Button variant="secondary" size="md" className="w-full bg-white">
+                                Ver pedidos
+                              </Button>
                             </Link>
                           ) : (
-                            <Link
-                              href="/login?callbackUrl=%2Fcheckout"
-                              className="flex items-center justify-center border text-xs uppercase py-3 transition-colors hover:bg-[#f8f4ee]"
-                              style={{ letterSpacing: "0.16em", borderColor: "#ddd5cb", color: "#5f564e" }}
-                            >
-                              Iniciar sesion
+                            <Link href="/login?callbackUrl=%2Fcheckout" className="w-full">
+                              <Button variant="secondary" size="md" className="w-full bg-white">
+                                Iniciar sesion
+                              </Button>
                             </Link>
                           )}
                         </div>

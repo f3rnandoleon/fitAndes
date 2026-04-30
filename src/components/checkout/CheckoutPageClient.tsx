@@ -21,36 +21,13 @@ import type {
   DeliveryOptionsConfig,
   PaymentMethod,
 } from "@/types/checkout";
-
-const DELIVERY_OPTIONS: Array<{ value: DeliveryMethod; label: string; description: string }> = [
-  {
-    value: "WHATSAPP",
-    label: "WhatsApp",
-    description: "Enviar Mensaje con el pedido listo para coordinar entrega directamente.",
-  },
-  {
-    value: "PICKUP_POINT",
-    label: "Punto de encuentro (La Paz)",
-    description: "Llena informacion para entrega directa en el punto de encuentro deseado",
-  },
-  {
-    value: "SHIPPING_NATIONAL",
-    label: "Envio nacional",
-    description: "Envio a otro departamento mediante encomienda. Este flujo requiere  datos de entrega y pago QR para confirmar envio.",
-  },
-];
-
-const PAYMENT_OPTIONS: Array<{ value: PaymentMethod; label: string; description: string }> = [
-  { value: "EFECTIVO", label: "Efectivo", description: "Pago al momento de la entrega." },
-  { value: "QR", label: "QR", description: "Despues de crear pedido debe subir comprobante del pago para confirmar envio." },
-];
-
-function formatPrice(value: number) {
-  return `Bs. ${new Intl.NumberFormat("es-BO", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)}`;
-}
+import { formatPrice } from "@/lib/format";
+import { CheckoutCartSummary } from "@/components/checkout/CheckoutCartSummary";
+import { CheckoutDeliverySection } from "@/components/checkout/CheckoutDeliverySection";
+import { CheckoutSummarySidebar } from "@/components/checkout/CheckoutSummarySidebar";
+import { CheckoutAuthStatus } from "@/components/checkout/CheckoutAuthStatus";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 function sanitizeCallbackUrl(path: string) {
   return path.startsWith("/") ? path : "/checkout";
@@ -390,483 +367,152 @@ export default function CheckoutPageClient() {
 
   if (items.length === 0) {
     return (
-      <main className="min-h-[calc(100vh-82px)] px-4 sm:px-6 py-10 sm:py-14" style={{ background: "#f7f2eb" }}>
-        <div className="max-w-[860px] mx-auto border p-8 sm:p-12 text-center" style={{ borderColor: "#e6ddd2", background: "rgba(255,255,255,0.88)" }}>
-          <p className="text-xs uppercase mb-3" style={{ letterSpacing: "0.18em", color: "#8f8478" }}>
+      <main className="min-h-[calc(100vh-82px)] px-4 sm:px-6 py-10 sm:py-14 bg-background">
+        <Card className="max-w-[860px] mx-auto py-12 sm:py-20 text-center">
+          <p className="text-[10px] uppercase mb-4 tracking-[0.2em] text-subtle">
             Carrito
           </p>
-          <h1 className="text-4xl mb-3" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "#111111" }}>
+          <h1 className="text-4xl mb-4 font-serif text-foreground">
             Tu carrito esta vacio
           </h1>
-          <p className="text-sm max-w-md mx-auto" style={{ color: "#5f564e" }}>
+          <p className="text-sm max-w-md mx-auto text-muted">
             Agrega productos desde el catalogo para revisar variantes, entrega y confirmar tu pedido.
           </p>
-          <Link
-            href="/catalogo"
-            className="mt-8 inline-flex items-center justify-center bg-[#111111] px-6 py-3 text-xs uppercase text-white transition-opacity hover:opacity-85"
-            style={{ letterSpacing: "0.16em" }}
-          >
-            Ir al catalogo
-          </Link>
-        </div>
+          <div className="mt-10">
+            <Link href="/catalogo">
+              <Button variant="primary" size="lg">Ir al catalogo</Button>
+            </Link>
+          </div>
+        </Card>
       </main>
     );
   }
 
   return (
-    <main className="min-h-[calc(100vh-82px)] px-4 sm:px-6 py-8 sm:py-10" style={{ background: "linear-gradient(180deg, #f8f4ee 0%, #f3ece3 100%)" }}>
+    <main className="min-h-[calc(100vh-82px)] px-4 sm:px-6 py-8 sm:py-12 bg-gradient-to-b from-background to-surface/40">
       <div className="max-w-[1240px] mx-auto">
-        <div className="mb-8 flex items-start justify-between gap-6 flex-wrap">
-          <div>
-            <p className="text-xs uppercase mb-2" style={{ letterSpacing: "0.2em", color: "#8f8478" }}>
+        <header className="mb-10 flex flex-wrap items-start justify-between gap-6">
+          <div className="max-w-2xl">
+            <p className="text-[10px] uppercase mb-2 tracking-[0.2em] text-subtle">
               Revision final
             </p>
-            <h1 className="text-4xl sm:text-5xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "#111111" }}>
+            <h1 className="text-4xl sm:text-5xl font-serif text-foreground">
               Finalizar compra
             </h1>
-            <p className="mt-3 text-sm max-w-2xl" style={{ color: "#5f564e" }}>
+            <p className="mt-4 text-sm text-muted leading-relaxed">
               Tu carrito local se sincronizara con el sistema central para generar un pedido real y reservar stock.
             </p>
           </div>
 
-          <div className="border px-5 py-4 min-w-[260px]" style={{ borderColor: "#e6ddd2", background: "rgba(255,255,255,0.92)" }}>
-            <p className="text-xs uppercase mb-1" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
-              Estado de sesion
-            </p>
-            {authenticated ? (
-              <>
-                <p className="text-sm" style={{ color: "#111111" }}>{session.user.fullname}</p>
-                <p className="text-xs mt-1" style={{ color: "#6f6459" }}>{session.user.email}</p>
-                {prefillLoading ? (
-                  <p className="text-[11px] mt-3" style={{ color: "#8f8478" }}>
-                    Cargando datos de cliente...
-                  </p>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <p className="text-sm" style={{ color: "#111111" }}>Necesitas iniciar sesion para confirmar.</p>
-                <button
-                  type="button"
-                  onClick={goToLogin}
-                  className="mt-3 inline-flex items-center justify-center bg-[#111111] px-4 py-2.5 text-[11px] uppercase text-white transition-opacity hover:opacity-85"
-                  style={{ letterSpacing: "0.16em" }}
-                >
-                  Iniciar sesion
-                </button>
-              </>
+          <CheckoutAuthStatus
+            authenticated={authenticated}
+            user={session?.user}
+            loading={prefillLoading}
+            onLogin={goToLogin}
+          />
+        </header>
+
+        <div className="grid gap-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
+          <div className="space-y-8">
+            <section>
+              <h2 className="text-xs uppercase tracking-widest text-subtle mb-4 px-1">Productos en reserva</h2>
+              <CheckoutCartSummary
+                items={items}
+                updateQuantity={updateQuantity}
+                removeItem={removeItem}
+              />
+            </section>
+
+            <section>
+              <h2 className="text-xs uppercase tracking-widest text-subtle mb-4 px-1">Datos de entrega</h2>
+              <CheckoutDeliverySection
+                method={deliveryMethod}
+                setMethod={setDeliveryMethod}
+                config={deliveryConfig}
+                loading={deliveryOptionsLoading}
+                error={deliveryOptionsError}
+                address={address} setAddress={setAddress}
+                phone={phone} setPhone={setPhone}
+                recipientName={recipientName} setRecipientName={setRecipientName}
+                pickupScheduleId={pickupScheduleId} setPickupScheduleId={setPickupScheduleId}
+                pickupTime={pickupTime} setPickupTime={setPickupTime}
+                department={department} setDepartment={setDepartment}
+                shippingCompany={shippingCompany} setShippingCompany={setShippingCompany}
+                branch={branch} setBranch={setBranch}
+                senderCI={senderCI} setSenderCI={setSenderCI}
+                senderPhone={senderPhone} setSenderPhone={setSenderPhone}
+              />
+            </section>
+
+            {deliveryMethod !== "WHATSAPP" && (
+              <section>
+                <h2 className="text-xs uppercase tracking-widest text-subtle mb-4 px-1">Metodo de pago</h2>
+                <Card className="space-y-4">
+                  {[
+                    { value: "EFECTIVO", label: "Efectivo", description: "Pago al momento de la entrega." },
+                    { value: "QR", label: "QR", description: "Sube tu comprobante despues de crear el pedido." },
+                  ].map((option) => {
+                    const disabled = deliveryMethod === "SHIPPING_NATIONAL" && option.value !== "QR";
+                    return (
+                      <label
+                        key={option.value}
+                        className={`block border px-4 py-3 transition-colors ${
+                          disabled ? "opacity-50 cursor-not-allowed bg-surface/20" : "cursor-pointer"
+                        } ${paymentMethod === option.value ? "border-foreground bg-surface/30" : "border-border bg-white"}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="radio"
+                            name="payment-method"
+                            value={option.value}
+                            checked={paymentMethod === option.value}
+                            onChange={() => !disabled && setPaymentMethod(option.value as PaymentMethod)}
+                            disabled={disabled}
+                            className="mt-1 accent-foreground"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{option.label}</p>
+                            <p className="text-xs mt-1 text-muted">
+                              {disabled ? "No disponible para envio nacional." : option.description}
+                            </p>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </Card>
+              </section>
             )}
-          </div>
-        </div>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_390px] items-start">
-          <section className="border overflow-hidden" style={{ borderColor: "#e6ddd2", background: "rgba(255,255,255,0.92)" }}>
-            <div className="hidden md:grid grid-cols-[minmax(0,1fr)_120px_120px_48px] gap-4 px-6 py-4 border-b text-xs uppercase" style={{ borderColor: "#eee5da", letterSpacing: "0.14em", color: "#8f8478" }}>
-              <span>Producto</span>
-              <span className="text-center">Cantidad</span>
-              <span className="text-right">Precio</span>
-              <span className="sr-only">Acciones</span>
-            </div>
-
-            <div>
-              {items.map((item) => (
-                <article key={item.id} className="grid gap-4 md:grid-cols-[minmax(0,1fr)_120px_120px_48px] px-5 sm:px-6 py-5 border-b items-center" style={{ borderColor: "#f1e8de" }}>
-                  <div className="flex gap-4 min-w-0">
-                    <div className="relative h-24 w-20 shrink-0 overflow-hidden border" style={{ borderColor: "#ece2d6", background: "#f6f1ea" }}>
-                      {item.imagen ? (
-                        <Image src={item.imagen} alt={item.nombre} fill sizes="80px" unoptimized className="object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-[11px] uppercase" style={{ color: "#8f8478" }}>
-                          Sin foto
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium uppercase leading-snug" style={{ color: "#111111" }}>
-                        {item.nombre}
-                      </p>
-                      {item.modelo ? (
-                        <p className="text-xs mt-1 uppercase" style={{ letterSpacing: "0.08em", color: "#8f8478" }}>
-                          {item.modelo}
-                        </p>
-                      ) : null}
-                      <p className="text-xs mt-2" style={{ color: "#6f6459" }}>
-                        Variante: {item.color} / {item.talla}
-                      </p>
-                      <p className="text-xs mt-1" style={{ color: "#6f6459" }}>
-                        Stock disponible: {item.stockDisponible}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center md:justify-center">
-                    <div className="inline-flex items-center border" style={{ borderColor: "#d9d0c5" }}>
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.id, item.cantidad - 1)}
-                        className="h-10 w-10 text-base"
-                        aria-label={`Reducir cantidad de ${item.nombre}`}
-                      >
-                        -
-                      </button>
-                      <span className="flex h-10 min-w-10 items-center justify-center text-sm">{item.cantidad}</span>
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.id, item.cantidad + 1)}
-                        className="h-10 w-10 text-base"
-                        aria-label={`Aumentar cantidad de ${item.nombre}`}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="md:text-right">
-                    <p className="text-base" style={{ color: "#111111", fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                      {formatPrice(item.precio * item.cantidad)}
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: "#8f8478" }}>
-                      {formatPrice(item.precio)} c/u
-                    </p>
-                  </div>
-
-                  <div className="flex md:justify-end">
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.id)}
-                      className="flex h-10 w-10 items-center justify-center text-lg transition-opacity hover:opacity-55"
-                      style={{ color: "#8f8478" }}
-                      aria-label={`Quitar ${item.nombre}`}
-                    >
-                      ×
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <aside className="space-y-5 lg:sticky lg:top-24">
-            <section className="border p-5 sm:p-6" style={{ borderColor: "#e6ddd2", background: "rgba(255,255,255,0.95)" }}>
-              <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
-                Metodo de entrega
-              </p>
-              <div className="space-y-3">
-                {DELIVERY_OPTIONS.map((option) => (
-                  <label
-                    key={option.value}
-                    className="block border px-4 py-3 cursor-pointer transition-colors"
-                    style={{
-                      borderColor: deliveryMethod === option.value ? "#111111" : "#e6ddd2",
-                      background: deliveryMethod === option.value ? "#fcfaf7" : "#ffffff",
-                    }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="radio"
-                        name="delivery-method"
-                        value={option.value}
-                        checked={deliveryMethod === option.value}
-                        onChange={() => setDeliveryMethod(option.value)}
-                        className="mt-1"
-                      />
-                      <div>
-                        <p className="text-sm" style={{ color: "#111111" }}>{option.label}</p>
-                        <p className="text-xs mt-1" style={{ color: "#6f6459" }}>{option.description}</p>
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-
-              {deliveryOptionsLoading ? (
-                <p className="mt-4 text-xs" style={{ color: "#6f6459" }}>
-                  Cargando opciones de entrega del sistema central...
-                </p>
-              ) : null}
-
-              {deliveryOptionsError ? (
-                <p className="mt-4 border px-4 py-3 text-sm" style={{ borderColor: "#d9b2ac", background: "#f6e8e5", color: "#8b3f36" }}>
-                  {deliveryOptionsError}
-                </p>
-              ) : null}
-
-              {deliveryMethod === "PICKUP_POINT" ? (
-                <div className="mt-4 space-y-3">
-                  <Field label="Punto de encuentro">
-                    <select
-                      value={address}
-                      onChange={(event) => setAddress(event.target.value)}
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    >
-                      {pickupPointOptions.map((option) => (
-                        <option key={option.id} value={option.name}>
-                          {option.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Celular de contacto">
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(event) => setPhone(event.target.value)}
-                      placeholder="76543210"
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    />
-                  </Field>
-                  <Field label="Nombre de quien recibe">
-                    <input
-                      type="text"
-                      value={recipientName}
-                      onChange={(event) => setRecipientName(event.target.value)}
-                      placeholder="Nombre opcional"
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    />
-                  </Field>
-                  <Field label="Horario disponible">
-                    <select
-                      value={pickupScheduleId}
-                      onChange={(event) => setPickupScheduleId(event.target.value)}
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    >
-                      {pickupScheduleOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Hora especifica">
-                    <select
-                      value={pickupTime}
-                      onChange={(event) => setPickupTime(event.target.value)}
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    >
-                      {pickupTimeOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                </div>
-              ) : null}
-
-              {deliveryMethod === "SHIPPING_NATIONAL" ? (
-                <div className="mt-4 space-y-3">
-                  <Field label="Departamento">
-                    <select
-                      value={department}
-                      onChange={(event) => setDepartment(event.target.value)}
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    >
-                      {shippingDepartments.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Empresa de envio">
-                    <select
-                      value={shippingCompany}
-                      onChange={(event) => setShippingCompany(event.target.value)}
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    >
-                      {shippingCompanies.map((option) => (
-                        <option key={option.id} value={option.name}>
-                          {option.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Sucursal o terminal">
-                    <select
-                      value={branch}
-                      onChange={(event) => setBranch(event.target.value)}
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    >
-                      {shippingBranches.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Nombre del remitente">
-                    <input
-                      type="text"
-                      value="FitAndes"
-                      readOnly
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    />
-                  </Field>
-                  <Field label="Nombre del destinatario">
-                    <input
-                      type="text"
-                      value={recipientName}
-                      onChange={(event) => setRecipientName(event.target.value)}
-                      placeholder="Opcional"
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    />
-                  </Field>
-                  
-                  <Field label="CI del destinatario">
-                    <input
-                      type="text"
-                      value={senderCI}
-                      onChange={(event) => setSenderCI(event.target.value)}
-                      placeholder="12345678"
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    />
-                  </Field>
-                  <Field label="Celular del destinatario">
-                    <input
-                      type="tel"
-                      value={senderPhone}
-                      onChange={(event) => setSenderPhone(event.target.value)}
-                      placeholder="76543210"
-                      className="w-full border px-4 py-3 text-sm"
-                      style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
-                    />
-                  </Field>
-                </div>
-              ) : null}
-
-              {deliveryMethod === "WHATSAPP" ? (
-                <p className="mt-4 text-xs"  style={{ color: "#6f6459" }}>
-                  Al confirmar, abriremos un mensaje estructurado al numero +591 76574068 con el detalle del pedido y el stock quedara reservado.
-                </p>
-              ) : null}
-            </section>
-              {deliveryMethod !== "WHATSAPP" ? (
-            <section className="border p-5 sm:p-6" style={{ borderColor: "#e6ddd2", background: "rgba(255,255,255,0.95)" }}>
-              <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
-                Metodo de pago
-              </p>
-              <div className="space-y-3">
-                {PAYMENT_OPTIONS.map((option) => {
-                  const disabled = deliveryMethod === "SHIPPING_NATIONAL" && option.value !== "QR";
-
-                  return (
-                    <label
-                      key={option.value}
-                      className="block border px-4 py-3 transition-colors"
-                      style={{
-                        borderColor: paymentMethod === option.value ? "#111111" : "#e6ddd2",
-                        background: disabled ? "#f6f1ea" : paymentMethod === option.value ? "#fcfaf7" : "#ffffff",
-                        opacity: disabled ? 0.55 : 1,
-                        cursor: disabled ? "not-allowed" : "pointer",
-                      }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <input
-                          type="radio"
-                          name="payment-method"
-                          value={option.value}
-                          checked={paymentMethod === option.value}
-                          onChange={() => !disabled && setPaymentMethod(option.value)}
-                          disabled={disabled}
-                          className="mt-1"
-                        />
-                        <div>
-                          <p className="text-sm" style={{ color: "#111111" }}>{option.label}</p>
-                          <p className="text-xs mt-1" style={{ color: "#6f6459" }}>
-                            {disabled ? "No disponible para envio nacional." : option.description}
-                          </p>
-                        </div>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            </section>
-              ) : null}
-
-            <section className="border p-5 sm:p-6" style={{ borderColor: "#e6ddd2", background: "rgba(255,255,255,0.95)" }}>
-              <Field label="Observaciones del pedido(Opcional)">
+            <section>
+              <h2 className="text-xs uppercase tracking-widest text-subtle mb-4 px-1">Observaciones</h2>
+              <Card padding="none">
                 <textarea
                   value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  rows={3}
-                  placeholder="Indicaciones opcionales para la coordinacion o entrega"
-                  className="w-full border px-4 py-3 text-sm resize-none"
-                  style={{ borderColor: "#ddd3c8", background: "#ffffff" }}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={4}
+                  placeholder="Instrucciones especiales para tu entrega..."
+                  className="w-full p-4 text-sm bg-transparent outline-none resize-none placeholder:text-subtle/50"
                 />
-              </Field>
+              </Card>
             </section>
-            <section className="border p-5 sm:p-6" style={{ borderColor: "#e6ddd2", background: "rgba(255,255,255,0.98)" }}>
-              <div className="flex items-center justify-between text-sm">
-                <span style={{ color: "#5f564e" }}>Productos</span>
-                <span style={{ color: "#111111" }}>{totalItems}</span>
-              </div>
-              <div className="mt-3 flex items-center justify-between text-sm">
-                <span style={{ color: "#5f564e" }}>Subtotal</span>
-                <span style={{ color: "#111111" }}>{formatPrice(totalAmount)}</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between text-sm">
-                <span style={{ color: "#5f564e" }}>Entrega</span>
-                <span style={{ color: "#111111" }}>
-                  {DELIVERY_OPTIONS.find((option) => option.value === deliveryMethod)?.label}
-                </span>
-              </div>
-              <div className="mt-2 flex items-center justify-between text-sm">
-                <span style={{ color: "#5f564e" }}>Pago</span>
-                <span style={{ color: "#111111" }}>{paymentMethod}</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between text-sm">
-                <span style={{ color: "#5f564e" }}>Siguiente paso</span>
-                <span style={{ color: "#111111" }}>
-                  {paymentMethod === "QR" ? "Subir comprobante" : deliveryMethod === "WHATSAPP" ? "Abrir WhatsApp" : "Esperar confirmacion"}
-                </span>
-              </div>
+          </div>
 
-              <div className="mt-5 border-t pt-5" style={{ borderColor: "#eee5da" }}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xl" style={{ color: "#111111", fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                    Total
-                  </span>
-                  <strong className="text-2xl" style={{ color: "#0f56d9", fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                    {formatPrice(totalAmount)}
-                  </strong>
-                </div>
-              </div>
-
-              {error ? (
-                <p className="mt-4 border px-4 py-3 text-sm" style={{ borderColor: "#d9b2ac", background: "#f6e8e5", color: "#8b3f36" }}>
-                  {error}
-                </p>
-              ) : null}
-
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="mt-6 flex w-full items-center justify-center rounded-full bg-[#2bc233] px-6 py-4 text-sm font-medium text-white transition-transform hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? "Confirmando pedido..." : "Finalizar compra"}
-              </button>
-
-              <Link
-                href="/catalogo"
-                className="mt-4 inline-flex w-full items-center justify-center text-xs uppercase transition-opacity hover:opacity-60"
-                style={{ letterSpacing: "0.14em", color: "#6f6459" }}
-              >
-                Seguir comprando
+          <aside className="relative">
+            <CheckoutSummarySidebar
+              totalAmount={totalAmount}
+              totalItems={totalItems}
+              loading={loading}
+              error={error}
+              onSubmit={handleSubmit}
+              authenticated={authenticated}
+            />
+            
+            <div className="mt-6 px-4">
+              <Link href="/catalogo" className="text-[10px] uppercase tracking-widest text-subtle hover:text-foreground transition-colors block text-center">
+                ← Volver al catalogo
               </Link>
-            </section>
+            </div>
           </aside>
         </div>
       </div>
@@ -876,8 +522,8 @@ export default function CheckoutPageClient() {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="text-xs uppercase block mb-2" style={{ letterSpacing: "0.14em", color: "#8f8478" }}>
+    <div className="space-y-2">
+      <label className="text-[10px] uppercase tracking-widest text-subtle px-1">
         {label}
       </label>
       {children}
