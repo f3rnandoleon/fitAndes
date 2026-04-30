@@ -3,8 +3,21 @@ import AppProviders from "@/components/providers/AppProviders";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "FitAndes",
-  description: "Catalogo y portal de clientes de FitAndes.",
+  title: {
+    default: "FitAndes | Ropa Deportiva y Estilo de Vida",
+    template: "%s | FitAndes"
+  },
+  description: "Descubre el catalogo exclusivo de FitAndes. Ropa de alta calidad diseñada para tu rendimiento y comodidad.",
+  keywords: ["ropa deportiva", "fitandes", "moda bolivia", "entrenamiento", "fitness"],
+  authors: [{ name: "FitAndes Team" }],
+  openGraph: {
+    title: "FitAndes",
+    description: "Catalogo exclusivo de ropa deportiva.",
+    url: "https://fitandes.com",
+    siteName: "FitAndes",
+    locale: "es_BO",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
