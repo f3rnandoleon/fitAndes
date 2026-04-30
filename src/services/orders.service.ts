@@ -1,57 +1,32 @@
-import { buildCentralApiHeaders, fetchCentralApiWithFallback, parseJsonRecord, type CentralApiAuth } from "@/lib/central-api";
+import type { CentralApiAuth } from "@/lib/central-api";
+import { fetchCentralJson } from "@/lib/central-client";
+import { parsePedidoArray, parsePedidoDetail } from "@/lib/adapters/orders.adapter";
 import type { Pedido } from "@/types/pedidos";
 
-function parsePedidoArray(data: unknown): Pedido[] {
-  if (Array.isArray(data)) return data as Pedido[];
-
-  const record = parseJsonRecord(data);
-  if (record) {
-    const pedidos = record.pedidos;
-    if (Array.isArray(pedidos)) return pedidos as Pedido[];
-
-    const orders = record.orders;
-    if (Array.isArray(orders)) return orders as Pedido[];
-  }
-
-  return [];
-}
-
 async function fetchOrders(auth: CentralApiAuth): Promise<Pedido[] | null> {
-  const result = await fetchCentralApiWithFallback(
+  const result = await fetchCentralJson(
     [
-      { path: "/pedidos", init: { headers: buildCentralApiHeaders(auth) } },
-      { path: "/orders", init: { headers: buildCentralApiHeaders(auth) } },
-      { path: "/mis-pedidos", init: { headers: buildCentralApiHeaders(auth) } },
+      { path: "/pedidos" },
+      { path: "/orders" },
+      { path: "/mis-pedidos" },
     ],
-    { timeoutMs: 10000 },
+    auth,
+    { timeoutMs: 10000 }
   );
 
   if (!result.response.ok) return null;
   return parsePedidoArray(result.data);
 }
 
-function parsePedidoDetail(data: unknown): Pedido | null {
-  const record = parseJsonRecord(data);
-
-  if (record) {
-    const pedido = record.pedido;
-    if (pedido && typeof pedido === "object") return pedido as Pedido;
-
-    const order = record.order;
-    if (order && typeof order === "object") return order as Pedido;
-  }
-
-  return record ? (record as unknown as Pedido) : null;
-}
-
 async function fetchOrder(auth: CentralApiAuth, orderId: string): Promise<Pedido | null | undefined> {
-  const result = await fetchCentralApiWithFallback(
+  const result = await fetchCentralJson(
     [
-      { path: `/pedidos/${orderId}`, init: { headers: buildCentralApiHeaders(auth) } },
-      { path: `/orders/${orderId}`, init: { headers: buildCentralApiHeaders(auth) } },
-      { path: `/mis-pedidos/${orderId}`, init: { headers: buildCentralApiHeaders(auth) } },
+      { path: `/pedidos/${orderId}` },
+      { path: `/orders/${orderId}` },
+      { path: `/mis-pedidos/${orderId}` },
     ],
-    { timeoutMs: 10000 },
+    auth,
+    { timeoutMs: 10000 }
   );
 
   if (result.response.status === 404 || result.response.status === 400) return null;

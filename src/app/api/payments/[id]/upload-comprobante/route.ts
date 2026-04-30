@@ -3,15 +3,15 @@ import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth-options";
 import {
-  buildCentralApiHeaders,
   CENTRAL_API_URL,
-  fetchCentralApiWithFallback,
   parseJsonRecord,
   type CentralApiRole,
 } from "@/lib/central-api";
+import { fetchCentralJson } from "@/lib/central-client";
+import { extractErrorMessage } from "@/lib/adapters/orders.adapter";
 
 type PaymentAuth = {
-  id: string;
+  userId: string;
   role: CentralApiRole;
   accessToken?: string | null;
 };
@@ -37,7 +37,7 @@ async function getPaymentAuth(request: NextRequest): Promise<PaymentAuth | null>
 
   if (session?.user?.id && session.user.role) {
     return {
-      id: session.user.id,
+      userId: session.user.id,
       role: session.user.role,
       accessToken: session.accessToken ?? null,
     };
@@ -49,7 +49,7 @@ async function getPaymentAuth(request: NextRequest): Promise<PaymentAuth | null>
   }
 
   return {
-    id: token.id,
+    userId: token.id,
     role: token.role as CentralApiRole,
     accessToken: typeof token.accessToken === "string" ? token.accessToken : null,
   };
@@ -92,38 +92,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const headers = buildCentralApiHeaders({
-      userId: auth.id,
-      role: auth.role,
-      accessToken: auth.accessToken,
-    });
-
-    const result = await fetchCentralApiWithFallback([
+    const result = await fetchCentralJson([
       {
         path: `/pagos/${id}/upload-comprobante`,
-        init: {
-          method: "POST",
-          headers,
-          body: cloneFormData(formData),
-        },
+        method: "POST",
+        body: cloneFormData(formData),
       },
       {
         path: `/payments/${id}/upload-comprobante`,
-        init: {
-          method: "POST",
-          headers,
-          body: cloneFormData(formData),
-        },
+        method: "POST",
+        body: cloneFormData(formData),
       },
-    ]);
+    ], auth);
 
     const data = parseJsonRecord(result.data);
     if (!result.response.ok) {
-      const message =
-        (data && typeof data.message === "string" && data.message) ||
-        "No pude subir el comprobante en este momento.";
-
-      return NextResponse.json({ message }, { status: result.response.status });
+      return NextResponse.json(
+        { message: extractErrorMessage(data, "No pude subir el comprobante en este momento.") }, 
+        { status: result.response.status }
+      );
     }
 
     return NextResponse.json(result.data);

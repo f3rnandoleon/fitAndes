@@ -2,42 +2,32 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth-options";
-import {
-  buildCentralApiHeaders,
-  CENTRAL_API_URL,
-  fetchCentralApiWithFallback,
-  parseJsonRecord,
-  readString,
-  type CentralApiRole,
-} from "@/lib/central-api";
-import type {
-  CheckoutCustomerContext,
-  CheckoutDeliveryInput,
-  CheckoutItemInput,
-  CheckoutSubmitPayload,
-  DeliveryMethod,
-} from "@/types/checkout";
+import { CENTRAL_API_URL, parseJsonRecord, type CentralApiRole } from "@/lib/central-api";
+import { fetchCentralJson, syncRemoteCart } from "@/lib/central-client";
+import { extractOrderInfo } from "@/lib/adapters/orders.adapter";
+import { extractPaymentId } from "@/lib/adapters/payments.adapter";
+import { normalizeCustomerContext } from "@/lib/adapters/customers.adapter";
+import { buildCanonicalCheckoutPayload, buildLegacyCheckoutPayload } from "@/lib/adapters/checkout.adapter";
+import type { CheckoutDeliveryInput, CheckoutItemInput, CheckoutSubmitPayload } from "@/types/checkout";
 import { checkoutPayloadSchema } from "@/lib/schemas/checkout.schema";
 import { firstZodIssueMessage } from "@/lib/schemas/common";
 
 const WHATSAPP_NUMBER = process.env.WHATSAPP_NUMBER ?? "59176574068";
 
 type CheckoutAuth = {
-  id: string;
+  userId: string;
   role: CentralApiRole;
   fullname?: string | null;
   email?: string | null;
   accessToken?: string | null;
 };
 
-type JsonRecord = Record<string, unknown>;
-
-type CentralJsonAttempt = {
-  path: string;
-  method?: string;
-  body?: BodyInit | null;
-  headers?: HeadersInit;
-};
+function formatMoney(value: number) {
+  return new Intl.NumberFormat("es-BO", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
 
 function normalizePhone(phone?: string) {
   return (phone ?? "").replace(/\D/g, "").trim();
@@ -48,19 +38,12 @@ function compactText(value?: string | null) {
   return trimmed ? trimmed : undefined;
 }
 
-function formatMoney(value: number) {
-  return new Intl.NumberFormat("es-BO", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
 async function getCheckoutAuth(request: NextRequest): Promise<CheckoutAuth | null> {
   const session = await getServerSession(authOptions);
 
   if (session?.user?.id && session.user.role) {
     return {
-      id: session.user.id,
+      userId: session.user.id,
       role: session.user.role,
       fullname: session.user.fullname,
       email: session.user.email,
@@ -75,7 +58,7 @@ async function getCheckoutAuth(request: NextRequest): Promise<CheckoutAuth | nul
   }
 
   return {
-    id: token.id,
+    userId: token.id,
     role: token.role as CentralApiRole,
     fullname: typeof token.fullname === "string" ? token.fullname : null,
     email: typeof token.email === "string" ? token.email : null,
@@ -83,38 +66,7 @@ async function getCheckoutAuth(request: NextRequest): Promise<CheckoutAuth | nul
   };
 }
 
-async function fetchCentralJson(attempts: CentralJsonAttempt[], auth: CheckoutAuth) {
-  return fetchCentralApiWithFallback(
-    attempts.map((attempt) => {
-      const body = attempt.body ?? undefined;
-      const headers = new Headers(
-        buildCentralApiHeaders(
-          {
-            userId: auth.id,
-            role: auth.role,
-            accessToken: auth.accessToken,
-          },
-          { includeJsonContentType: typeof body === "string" },
-        ),
-      );
-
-      new Headers(attempt.headers ?? undefined).forEach((value, key) => {
-        headers.set(key, value);
-      });
-
-      return {
-        path: attempt.path,
-        init: {
-          method: attempt.method ?? "GET",
-          headers,
-          body,
-        },
-      };
-    }),
-  );
-}
-
-function firstValidationMessage(data: JsonRecord | null) {
+function firstValidationMessage(data: Record<string, unknown> | null) {
   const errors = data?.errors;
   if (!Array.isArray(errors)) return null;
 
@@ -122,7 +74,7 @@ function firstValidationMessage(data: JsonRecord | null) {
   return typeof firstError?.message === "string" ? firstError.message : null;
 }
 
-function extractErrorMessage(data: JsonRecord | null, fallback: string) {
+function extractErrorMessage(data: Record<string, unknown> | null, fallback: string) {
   return (
     firstValidationMessage(data) ||
     (typeof data?.message === "string" ? data.message : null) ||
@@ -188,7 +140,7 @@ function buildWhatsappUrl({
       `${index + 1}. ${item.nombre}${item.modelo ? ` / ${item.modelo}` : ""}`,
       `   Variante: ${item.color}${item.colorSecundario ? ` / ${item.colorSecundario}` : ""} / ${item.talla}`,
       `   Cantidad: ${item.cantidad}`,
-      `   Subtotal: Bs. ${formatMoney(item.cantidad * item.precio)}`,
+      `   Subtotal: Bs. ${formatMoney(item.cantidad * item.precio)}`
     );
   });
 
@@ -211,7 +163,7 @@ function validatePayload(payload: CheckoutSubmitPayload) {
   }
 
   const invalidItem = payload.items.find(
-    (item) => !item.productoId || !item.color || !item.talla || !Number.isInteger(item.cantidad) || item.cantidad < 1,
+    (item) => !item.productoId || !item.color || !item.talla || !Number.isInteger(item.cantidad) || item.cantidad < 1
   );
 
   if (invalidItem) {
@@ -253,185 +205,6 @@ function validatePayload(payload: CheckoutSubmitPayload) {
   return null;
 }
 
-function buildCanonicalDeliveryPayload(delivery: CheckoutDeliveryInput) {
-  if (delivery.method === "WHATSAPP") {
-    return { metodo: "WHATSAPP" as const };
-  }
-
-  if (delivery.method === "PICKUP_POINT") {
-    return {
-      metodo: "PICKUP_POINT" as const,
-      direccion: compactText(delivery.address),
-      telefono: normalizePhone(delivery.phone),
-      nombreDestinatario: compactText(delivery.recipientName),
-      programadoPara: compactText(delivery.scheduledAt),
-    };
-  }
-
-  return {
-    metodo: "SHIPPING_NATIONAL" as const,
-    departamento: compactText(delivery.department),
-    ciudad: compactText(delivery.city),
-    empresaEnvio: compactText(delivery.shippingCompany),
-    sucursal: compactText(delivery.branch),
-    nombreDestinatario: compactText(delivery.recipientName),
-    nombreRemitente: compactText(delivery.senderName),
-    ciRemitente: compactText(delivery.senderCI),
-    telefonoRemitente: normalizePhone(delivery.senderPhone),
-  };
-}
-
-function buildLegacyDeliveryPayload(delivery: CheckoutDeliveryInput) {
-  if (delivery.method === "WHATSAPP") {
-    return { method: "WHATSAPP" as const };
-  }
-
-  if (delivery.method === "PICKUP_POINT") {
-    return {
-      method: "PICKUP_POINT" as const,
-      address: compactText(delivery.address),
-      phone: normalizePhone(delivery.phone),
-      recipientName: compactText(delivery.recipientName),
-      scheduledAt: compactText(delivery.scheduledAt),
-    };
-  }
-
-  return {
-    method: "SHIPPING_NATIONAL" as const,
-    department: compactText(delivery.department),
-    city: compactText(delivery.city),
-    shippingCompany: compactText(delivery.shippingCompany),
-    branch: compactText(delivery.branch),
-    recipientName: compactText(delivery.recipientName),
-    senderName: compactText(delivery.senderName),
-    senderCI: compactText(delivery.senderCI),
-    senderPhone: normalizePhone(delivery.senderPhone),
-  };
-}
-
-function buildCanonicalCheckoutPayload(payload: CheckoutSubmitPayload) {
-  return {
-    metodoPago: payload.paymentMethod,
-    entrega: buildCanonicalDeliveryPayload(payload.delivery),
-    notas: compactText(payload.notes),
-  };
-}
-
-function buildLegacyCheckoutPayload(payload: CheckoutSubmitPayload) {
-  return {
-    metodoPago: payload.paymentMethod,
-    delivery: buildLegacyDeliveryPayload(payload.delivery),
-    notes: compactText(payload.notes),
-  };
-}
-
-async function syncRemoteCart(auth: CheckoutAuth, items: CheckoutItemInput[]) {
-  const clearCartResult = await fetchCentralApiWithFallback([
-    {
-      path: "/carrito",
-      init: {
-        method: "DELETE",
-        headers: buildCentralApiHeaders({ userId: auth.id, role: auth.role, accessToken: auth.accessToken }),
-      },
-    },
-    {
-      path: "/cart",
-      init: {
-        method: "DELETE",
-        headers: buildCentralApiHeaders({ userId: auth.id, role: auth.role, accessToken: auth.accessToken }),
-      },
-    },
-  ]);
-
-  if (!clearCartResult.response.ok) {
-    const data = parseJsonRecord(clearCartResult.data);
-    return {
-      ok: false as const,
-      status: clearCartResult.response.status,
-      message: extractErrorMessage(data, "No pude sincronizar tu carrito con el sistema central."),
-    };
-  }
-
-  for (const item of items) {
-    const headers = buildCentralApiHeaders(
-      { userId: auth.id, role: auth.role, accessToken: auth.accessToken },
-      { includeJsonContentType: true },
-    );
-
-    const canonicalItemBody = {
-      productoId: item.productoId,
-      varianteId: item.variantId ?? undefined,
-      color: item.color,
-      colorSecundario: item.colorSecundario ?? undefined,
-      talla: item.talla,
-      cantidad: item.cantidad,
-    };
-
-    const legacyItemBody = {
-      productoId: item.productoId,
-      variantId: item.variantId ?? undefined,
-      color: item.color,
-      colorSecundario: item.colorSecundario ?? undefined,
-      talla: item.talla,
-      cantidad: item.cantidad,
-    };
-
-    const addItemResult = await fetchCentralApiWithFallback([
-      {
-        path: "/carrito/items",
-        init: {
-          method: "POST",
-          headers,
-          body: JSON.stringify(canonicalItemBody),
-        },
-      },
-      {
-        path: "/carrito/items",
-        init: {
-          method: "POST",
-          headers,
-          body: JSON.stringify(legacyItemBody),
-        },
-      },
-      {
-        path: "/cart/items",
-        init: {
-          method: "POST",
-          headers,
-          body: JSON.stringify(legacyItemBody),
-        },
-      },
-    ]);
-
-    if (!addItemResult.response.ok) {
-      const data = parseJsonRecord(addItemResult.data);
-      return {
-        ok: false as const,
-        status: addItemResult.response.status,
-        message: extractErrorMessage(data, `No pude agregar ${item.nombre} al carrito del sistema central.`),
-      };
-    }
-  }
-
-  return { ok: true as const };
-}
-
-function extractOrderInfo(data: JsonRecord | null) {
-  const order = parseJsonRecord(data?.pedido) ?? parseJsonRecord(data?.order) ?? data;
-
-  return {
-    orderId: readString(order, "_id", "id") ?? readString(data, "orderId", "pedidoId"),
-    orderNumber:
-      readString(order, "numeroPedido", "orderNumber", "numeroVenta") ??
-      readString(data, "orderNumber", "numeroPedido"),
-  };
-}
-
-function extractPaymentId(data: JsonRecord | null) {
-  const payment = parseJsonRecord(data?.pago) ?? parseJsonRecord(data?.payment) ?? data;
-  return readString(payment, "_id", "id") ?? readString(data, "paymentId", "pagoId");
-}
-
 async function createQrPayment(auth: CheckoutAuth, orderId: string) {
   const canonicalBody = {
     pedidoId: orderId,
@@ -451,7 +224,7 @@ async function createQrPayment(auth: CheckoutAuth, orderId: string) {
       { path: "/pagos", method: "POST", body: JSON.stringify(legacyBody) },
       { path: "/payments", method: "POST", body: JSON.stringify(legacyBody) },
     ],
-    auth,
+    auth
   );
 
   const data = parseJsonRecord(result.data);
@@ -468,40 +241,6 @@ async function createQrPayment(auth: CheckoutAuth, orderId: string) {
     ok: false as const,
     paymentId: null,
     warning: extractErrorMessage(data, "El pedido se creo, pero no pude preparar el pago QR."),
-  };
-}
-
-function normalizeCheckoutContext(data: JsonRecord | null): CheckoutCustomerContext {
-  const user = parseJsonRecord(data?.user);
-  const profile = parseJsonRecord(data?.profile);
-  const defaultAddress = parseJsonRecord(data?.defaultAddress);
-  const defaultDeliveryMethod = readString(profile, "metodoEntregaPredeterminado", "defaultDeliveryMethod") as DeliveryMethod | null;
-
-  return {
-    user: user
-      ? {
-          fullname: readString(user, "nombreCompleto", "fullname"),
-          email: readString(user, "email"),
-        }
-      : null,
-    profile: profile
-      ? {
-          phone: readString(profile, "telefono", "phone"),
-          defaultDeliveryMethod,
-          notes: readString(profile, "notas", "notes"),
-        }
-      : null,
-    defaultAddress: defaultAddress
-      ? {
-          recipientName: readString(defaultAddress, "nombreDestinatario", "recipientName"),
-          phone: readString(defaultAddress, "telefono", "phone"),
-          department: readString(defaultAddress, "departamento", "department"),
-          city: readString(defaultAddress, "ciudad", "city"),
-          zone: readString(defaultAddress, "zona", "zone"),
-          addressLine: readString(defaultAddress, "direccion", "addressLine"),
-          reference: readString(defaultAddress, "referencia", "reference"),
-        }
-      : null,
   };
 }
 
@@ -522,18 +261,18 @@ export async function GET(request: NextRequest) {
         { path: "/clientes/me", method: "GET" },
         { path: "/customers/me", method: "GET" },
       ],
-      auth,
+      auth
     );
 
     const data = parseJsonRecord(result.data);
     if (!result.response.ok) {
       return NextResponse.json(
         { message: extractErrorMessage(data, "No pude cargar tus datos de cliente.") },
-        { status: result.response.status },
+        { status: result.response.status }
       );
     }
 
-    return NextResponse.json(normalizeCheckoutContext(data));
+    return NextResponse.json(normalizeCustomerContext(data));
   } catch {
     return NextResponse.json({ message: "No pude consultar tu perfil de cliente." }, { status: 502 });
   }
@@ -572,7 +311,12 @@ export async function POST(request: NextRequest) {
 
   const syncResult = await syncRemoteCart(auth, payload.items);
   if (!syncResult.ok) {
-    return NextResponse.json({ ok: false, message: syncResult.message }, { status: syncResult.status });
+    const errorData = parseJsonRecord(syncResult.result?.data);
+    const itemName = "item" in syncResult && syncResult.item ? syncResult.item.nombre : "el producto";
+    const msg = syncResult.phase === "clear"
+      ? extractErrorMessage(errorData, "No pude sincronizar tu carrito con el sistema central.")
+      : extractErrorMessage(errorData, `No pude agregar ${itemName} al carrito del sistema central.`);
+    return NextResponse.json({ ok: false, message: msg }, { status: syncResult.result?.response.status ?? 502 });
   }
 
   try {
@@ -597,7 +341,7 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify(legacyCheckoutPayload),
         },
       ],
-      auth,
+      auth
     );
 
     const data = parseJsonRecord(result.data);
@@ -609,10 +353,10 @@ export async function POST(request: NextRequest) {
             data,
             !auth.accessToken
               ? "Tu sesion actual no tiene el token del backend. Cierra sesion e inicia de nuevo para finalizar la compra."
-              : "No pude registrar tu pedido en este momento. Intenta nuevamente.",
+              : "No pude registrar tu pedido en este momento. Intenta nuevamente."
           ),
         },
-        { status: result.response.status },
+        { status: result.response.status }
       );
     }
 
@@ -659,7 +403,7 @@ export async function POST(request: NextRequest) {
         ok: false,
         message: "No pude conectar con la API principal para guardar el pedido.",
       },
-      { status: 502 },
+      { status: 502 }
     );
   }
 }

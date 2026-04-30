@@ -2,41 +2,24 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth-options";
-import {
-  buildCentralApiHeaders,
-  CENTRAL_API_URL,
-  fetchCentralApiWithFallback,
-  parseJsonRecord,
-  readString,
-  type CentralApiRole,
-} from "@/lib/central-api";
+import { CENTRAL_API_URL, parseJsonRecord, type CentralApiRole } from "@/lib/central-api";
+import { fetchCentralJson } from "@/lib/central-client";
+import { extractErrorMessage, buildCanonicalOrderPatchPayload } from "@/lib/adapters/orders.adapter";
 import { firstZodIssueMessage } from "@/lib/schemas/common";
 import { orderPatchSchema } from "@/lib/schemas/order.schema";
 
 type OrderAuth = {
-  id: string;
+  userId: string;
   role: CentralApiRole;
   accessToken?: string | null;
 };
-
-function extractErrorMessage(data: Record<string, unknown> | null, fallback: string) {
-  const errors = data?.errors;
-  if (Array.isArray(errors)) {
-    const firstError = errors.find((error) => error && typeof error === "object") as { message?: unknown } | undefined;
-    if (typeof firstError?.message === "string") return firstError.message;
-  }
-
-  if (typeof data?.message === "string") return data.message;
-  if (typeof data?.error === "string") return data.error;
-  return fallback;
-}
 
 async function getOrderAuth(request: NextRequest): Promise<OrderAuth | null> {
   const session = await getServerSession(authOptions);
 
   if (session?.user?.id && session.user.role) {
     return {
-      id: session.user.id,
+      userId: session.user.id,
       role: session.user.role,
       accessToken: session.accessToken ?? null,
     };
@@ -48,66 +31,10 @@ async function getOrderAuth(request: NextRequest): Promise<OrderAuth | null> {
   }
 
   return {
-    id: token.id,
+    userId: token.id,
     role: token.role as CentralApiRole,
     accessToken: typeof token.accessToken === "string" ? token.accessToken : null,
   };
-}
-
-function buildCentralDeliveryPayload(source: Record<string, unknown>) {
-  const metodo = readString(source, "metodo", "method");
-  if (!metodo) return null;
-
-  if (metodo === "PICKUP_POINT") {
-    return {
-      metodo,
-      direccion: readString(source, "direccion", "address", "puntoRecojo"),
-      telefono: readString(source, "telefono", "phone"),
-      nombreDestinatario: readString(source, "nombreDestinatario", "recipientName"),
-      programadoPara: readString(source, "programadoPara", "scheduledAt"),
-    };
-  }
-
-  if (metodo === "SHIPPING_NATIONAL") {
-    return {
-      metodo,
-      departamento: readString(source, "departamento", "department"),
-      ciudad: readString(source, "ciudad", "city"),
-      empresaEnvio: readString(source, "empresaEnvio", "shippingCompany"),
-      sucursal: readString(source, "sucursal", "branch"),
-      nombreDestinatario: readString(source, "nombreDestinatario", "recipientName"),
-      nombreRemitente: readString(source, "nombreRemitente", "senderName"),
-      ciRemitente: readString(source, "ciRemitente", "senderCI"),
-      telefonoRemitente: readString(source, "telefonoRemitente", "senderPhone"),
-    };
-  }
-
-  return { metodo };
-}
-
-function buildCanonicalOrderPatchPayload(payload: unknown) {
-  const source = parseJsonRecord(payload);
-  if (!source) return null;
-
-  const canonical: Record<string, unknown> = {};
-  const estadoPedido = readString(source, "estadoPedido", "orderStatus");
-  if (estadoPedido) {
-    canonical.estadoPedido = estadoPedido;
-  }
-
-  const entregaSource =
-    parseJsonRecord(source.entrega) ??
-    parseJsonRecord(source.deliverySnapshot) ??
-    parseJsonRecord(source.delivery);
-
-  if (entregaSource) {
-    const entrega = buildCentralDeliveryPayload(entregaSource);
-    if (entrega) {
-      canonical.entrega = entrega;
-    }
-  }
-
-  return Object.keys(canonical).length > 0 ? canonical : source;
 }
 
 export async function PATCH(
@@ -140,41 +67,27 @@ export async function PATCH(
     return NextResponse.json({ message: firstZodIssueMessage(parsedPayload.error) }, { status: 400 });
   }
 
-  const headers = buildCentralApiHeaders(
-    { userId: auth.id, role: auth.role, accessToken: auth.accessToken },
-    { includeJsonContentType: true },
-  );
-
   const validatedPayload = parsedPayload.data;
   const canonicalPayload = buildCanonicalOrderPatchPayload(validatedPayload);
 
   try {
-    const result = await fetchCentralApiWithFallback([
+    const result = await fetchCentralJson([
       {
         path: `/pedidos/${id}`,
-        init: {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify(canonicalPayload ?? validatedPayload),
-        },
+        method: "PATCH",
+        body: JSON.stringify(canonicalPayload ?? validatedPayload),
       },
       {
         path: `/pedidos/${id}`,
-        init: {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify(validatedPayload),
-        },
+        method: "PATCH",
+        body: JSON.stringify(validatedPayload),
       },
       {
         path: `/orders/${id}`,
-        init: {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify(validatedPayload),
-        },
+        method: "PATCH",
+        body: JSON.stringify(validatedPayload),
       },
-    ]);
+    ], auth);
 
     const data = parseJsonRecord(result.data);
     if (!result.response.ok) {
