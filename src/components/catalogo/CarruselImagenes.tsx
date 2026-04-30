@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -64,7 +64,7 @@ export default function CarruselImagenes({
       >
         {imagenes.map((imagen, index) => (
           <div key={`${imagen}-${index}`} className="relative h-full shrink-0" style={{ width: `${100 / imagenes.length}%` }}>
-            <Image src={imagen} alt={alt} fill unoptimized sizes="(max-width: 768px) 100vw, 50vw" className={`object-cover ${imgClassName}`.trim()} />
+            <Image src={imagen} alt={alt} fill sizes="(max-width: 768px) 100vw, 50vw" className={`object-cover ${imgClassName}`.trim()} />
           </div>
         ))}
       </div>

@@ -41,7 +41,7 @@ export function CheckoutCartSummary({ items, updateQuantity, removeItem }: Props
             <div className="flex gap-4 min-w-0">
               <div className="relative h-24 w-20 shrink-0 overflow-hidden border border-border/50 bg-surface/30">
                 {item.imagen ? (
-                  <Image src={item.imagen} alt={item.nombre} fill sizes="80px" unoptimized className="object-cover" />
+                  <Image src={item.imagen} alt={item.nombre} fill sizes="80px" className="object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-[10px] uppercase text-subtle">
                     Sin foto

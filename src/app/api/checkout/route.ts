@@ -1,31 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { getToken } from "next-auth/jwt";
-import { authOptions } from "@/lib/auth-options";
-import { CENTRAL_API_URL, parseJsonRecord, type CentralApiRole } from "@/lib/central-api";
+import { CENTRAL_API_URL, parseJsonRecord } from "@/lib/central-api";
 import { fetchCentralJson, syncRemoteCart } from "@/lib/central-client";
 import { extractOrderInfo } from "@/lib/adapters/orders.adapter";
-import { extractPaymentId } from "@/lib/adapters/payments.adapter";
 import { normalizeCustomerContext } from "@/lib/adapters/customers.adapter";
 import { buildCanonicalCheckoutPayload, buildLegacyCheckoutPayload } from "@/lib/adapters/checkout.adapter";
-import type { CheckoutDeliveryInput, CheckoutItemInput, CheckoutSubmitPayload } from "@/types/checkout";
+import type { CheckoutSubmitPayload } from "@/types/checkout";
 import { checkoutPayloadSchema } from "@/lib/schemas/checkout.schema";
 import { firstZodIssueMessage } from "@/lib/schemas/common";
 import { logger } from "@/lib/logger";
 import { getRequestId } from "@/lib/request-context";
-import { formatPrice } from "@/lib/format";
-import { normalizePhone, compactText } from "@/lib/text";
 import { validateCheckoutPayload } from "@/lib/checkout/validation";
-import { buildWhatsappUrl, getDeliveryLabel } from "@/lib/checkout/notifications";
+import { buildWhatsappUrl } from "@/lib/checkout/notifications";
 import { createQrPayment } from "@/lib/checkout/payment";
-import { getCheckoutAuth, type CheckoutAuth } from "@/lib/checkout/auth";
+import { getCheckoutAuth } from "@/lib/checkout/auth";
 import { extractErrorMessage } from "@/lib/adapters/orders.adapter";
-
-const WHATSAPP_NUMBER = process.env.WHATSAPP_NUMBER ?? "59176574068";
-
-
-
-
 
 export async function GET(request: NextRequest) {
   const requestId = await getRequestId();
@@ -109,7 +97,7 @@ export async function POST(request: NextRequest) {
       userId: auth.userId 
     });
     const errorData = parseJsonRecord(syncResult.result?.data);
-    const itemName = "item" in syncResult && syncResult.item ? syncResult.item.nombre : "el producto";
+    const itemName = "item" in syncResult && syncResult.item ? (syncResult.item as { nombre: string }).nombre : "el producto";
     const msg = syncResult.phase === "clear"
       ? extractErrorMessage(errorData, "No pude sincronizar tu carrito con el sistema central.")
       : extractErrorMessage(errorData, `No pude agregar ${itemName} al carrito del sistema central.`);

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -60,7 +60,7 @@ export default function ProductCardMessage({ card, onAction, onAdd }: Props) {
     <article className="overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_35px_rgba(17,17,17,0.06)]" style={{ borderColor: "#ece6dc" }}>
       <div className="grid gap-0 sm:grid-cols-[120px_minmax(0,1fr)]">
         <div className="relative h-full min-h-[160px] overflow-hidden" style={{ background: "#f3eee8" }}>
-          {card.image ? <Image src={card.image} alt={card.title} fill unoptimized sizes="120px" className="object-cover" /> : null}
+          {card.image ? <Image src={card.image} alt={card.title} fill sizes="120px" className="object-cover" /> : null}
         </div>
 
         <div className="p-4 sm:p-5">

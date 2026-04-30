@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { 
-  getPickupScheduleById, 
   getPickupScheduleTimeSlots, 
   getShippingDepartments, 
   getShippingCompaniesByDepartment, 
@@ -42,7 +41,7 @@ interface Props {
   setSenderPhone: (v: string) => void;
 }
 
-const DELIVERY_OPTIONS: Array<{ value: DeliveryMethod; label: string; description: string }> = [
+export const DELIVERY_OPTIONS: Array<{ value: DeliveryMethod; label: string; description: string }> = [
   {
     value: "WHATSAPP",
     label: "WhatsApp",

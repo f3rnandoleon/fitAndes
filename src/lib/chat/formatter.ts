@@ -4,23 +4,6 @@ import { filterCatalogAvailableVariants, type CatalogProduct } from "@/types/cat
 import { getPedidoEstado, getPedidoItemColor, getPedidoItemNombre, getPedidoItemTalla, getPedidoNumero, getPedidoTotal, type Pedido } from "@/types/pedidos";
 import { formatPrice, formatDate } from "@/lib/format";
 
-
-  return `Bs. ${new Intl.NumberFormat("es-BO", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)}`;
-}
-
-function formatDate(value: string): string {
-  const parsed = new Date(value);
-  if (!Number.isFinite(parsed.getTime())) return value;
-  return parsed.toLocaleDateString("es-BO", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
-
 export function buildProductCard(
   product: CatalogProduct,
   options: {

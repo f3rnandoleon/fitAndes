@@ -157,7 +157,7 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
                     }}
                     aria-label={`Ver imagen ${index + 1} de ${producto.nombre}`}
                   >
-                    <Image src={imagen} alt={`${producto.nombre} miniatura ${index + 1}`} fill unoptimized sizes="80px" className="object-contain" />
+                    <Image src={imagen} alt={`${producto.nombre} miniatura ${index + 1}`} fill sizes="80px" className="object-contain" />
                   </button>
                 );
               })}
@@ -173,7 +173,6 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
                   src={imagenPrincipal}
                   alt={producto.nombre}
                   fill
-                  unoptimized
                   priority
                   sizes="(max-width: 1024px) 100vw, 420px"
                   className="object-contain object-center"

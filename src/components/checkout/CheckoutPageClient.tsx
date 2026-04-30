@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -21,9 +20,8 @@ import type {
   DeliveryOptionsConfig,
   PaymentMethod,
 } from "@/types/checkout";
-import { formatPrice } from "@/lib/format";
 import { CheckoutCartSummary } from "@/components/checkout/CheckoutCartSummary";
-import { CheckoutDeliverySection } from "@/components/checkout/CheckoutDeliverySection";
+import { CheckoutDeliverySection, DELIVERY_OPTIONS } from "@/components/checkout/CheckoutDeliverySection";
 import { CheckoutSummarySidebar } from "@/components/checkout/CheckoutSummarySidebar";
 import { CheckoutAuthStatus } from "@/components/checkout/CheckoutAuthStatus";
 import { Card } from "@/components/ui/Card";
@@ -303,34 +301,48 @@ export default function CheckoutPageClient() {
       pendingWhatsappWindow.opener = null;
     }
 
-    try {
-      const pickupScheduleValue =
-        deliveryMethod === "PICKUP_POINT" && selectedPickupSchedule && pickupTime
-          ? `${selectedPickupSchedule.day} ${pickupTime}`
-          : "";
+    const pickupScheduleValue =
+      deliveryMethod === "PICKUP_POINT" && selectedPickupSchedule && pickupTime
+        ? `${selectedPickupSchedule.day} ${pickupTime}`
+        : "";
 
+    const checkoutPayload = {
+      items,
+      paymentMethod,
+      delivery: {
+        method: deliveryMethod,
+        address: address.trim(),
+        phone: phone.trim(),
+        recipientName: recipientName.trim(),
+        scheduledAt: pickupScheduleValue,
+        department: department.trim(),
+        city: city.trim(),
+        shippingCompany: shippingCompany.trim(),
+        branch: branch.trim(),
+        senderName: senderName.trim(),
+        senderCI: senderCI.trim(),
+        senderPhone: senderPhone.trim(),
+      },
+      notes: notes.trim(),
+    };
+
+    if (paymentMethod === "QR") {
+      try {
+        window.localStorage.setItem("fitandes-pending-checkout", JSON.stringify(checkoutPayload));
+        router.push("/pagar/confirmar");
+        return;
+      } catch {
+        setError("No pude preparar el pago QR. Intenta nuevamente.");
+        setLoading(false);
+        return;
+      }
+    }
+
+    try {
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items,
-          paymentMethod,
-          delivery: {
-            method: deliveryMethod,
-            address: address.trim(),
-            phone: phone.trim(),
-            recipientName: recipientName.trim(),
-            scheduledAt: pickupScheduleValue,
-            department: department.trim(),
-            city: city.trim(),
-            shippingCompany: shippingCompany.trim(),
-            branch: branch.trim(),
-            senderName: senderName.trim(),
-            senderCI: senderCI.trim(),
-            senderPhone: senderPhone.trim(),
-          },
-          notes: notes.trim(),
-        }),
+        body: JSON.stringify(checkoutPayload),
       });
 
       const data = (await response.json().catch(() => null)) as CheckoutSubmitResponse | null;
@@ -355,8 +367,7 @@ export default function CheckoutPageClient() {
         pendingWhatsappWindow?.close();
       }
 
-      const query = data.paymentId ? `?paymentId=${encodeURIComponent(data.paymentId)}` : "";
-      router.push(data.orderId ? `/pedidos/${data.orderId}${query}` : "/pedidos");
+      router.push(data.orderId ? `/pedidos/${data.orderId}` : "/pedidos");
       router.refresh();
     } catch {
       pendingWhatsappWindow?.close();
@@ -517,16 +528,5 @@ export default function CheckoutPageClient() {
         </div>
       </div>
     </main>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-2">
-      <label className="text-[10px] uppercase tracking-widest text-subtle px-1">
-        {label}
-      </label>
-      {children}
-    </div>
   );
 }

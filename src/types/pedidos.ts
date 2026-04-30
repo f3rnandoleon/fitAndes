@@ -94,6 +94,11 @@ export interface Pedido {
   delivery?: PedidoDelivery | null;
   deliverySnapshot?: PedidoDelivery | null;
   totales?: PedidoTotales | null;
+  pago?: {
+    metodo?: string | null;
+    estado?: string | null;
+    comprobanteUrl?: string | null;
+  } | null;
 }
 
 const CLIENT_ORDER_EDIT_WINDOW_MS = 30 * 60 * 1000;

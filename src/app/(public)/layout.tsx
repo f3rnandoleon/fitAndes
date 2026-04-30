@@ -1,6 +1,6 @@
-﻿import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth";
 import SiteHeader from "@/components/layout/SiteHeader";
-import ChatWidget from "@/components/chat/ChatWidget";
+import ChatWidgetClient from "@/components/chat/ChatWidgetClient";
 import { authOptions } from "@/lib/auth-options";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -11,7 +11,7 @@ export default async function PublicLayout({ children }: { children: React.React
     <>
       <SiteHeader authenticated={authenticated} fullname={session?.user.fullname} email={session?.user.email} />
       {children}
-      <ChatWidget />
+      <ChatWidgetClient />
     </>
   );
 }

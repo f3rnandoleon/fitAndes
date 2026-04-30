@@ -1,4 +1,4 @@
-﻿import { primeraImagenDeProducto } from "@/lib/catalogo-imagenes";
+import { primeraImagenDeProducto } from "@/lib/catalogo-imagenes";
 import type { SearchProductsParams } from "@/lib/chat/types";
 import { catalogVariantIsAvailable, type CatalogProduct, type CatalogVariant, type ProductByCodeResponse } from "@/types/catalogo";
 
@@ -64,7 +64,7 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T | null>
   try {
     const res = await fetch(`${API_URL}${path}`, {
       ...init,
-      cache: "no-store",
+      next: { revalidate: 60 },
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;

@@ -10,7 +10,6 @@ import {
   getPedidoDelivery,
   getPedidoDescuento,
   getPedidoEstado,
-  getPedidoEstadoPago,
   getPedidoEstadoTone,
   getPedidoItemColor,
   getPedidoItemModelo,
@@ -196,9 +195,7 @@ export default async function PedidoDetallePage({
       </div>
 
       <PaymentReceiptSection
-        orderId={pedido._id}
-        paymentMethod={getPedidoMetodoPago(pedido)}
-        paymentStatus={getPedidoEstadoPago(pedido)}
+        pedido={pedido}
         defaultPaymentId={paymentId ?? null}
       />
 
