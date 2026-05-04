@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
+import logo from "../../../public/FitAndes.png";
 
 interface Props {
   authenticated?: boolean;
@@ -55,7 +56,7 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
       className="sticky top-0 z-40 border-b"
       style={{
         borderColor: "#ece6dc",
-        background: "rgba(251,249,245,0.96)",
+        background: "white",
         backdropFilter: "blur(12px)",
       }}
     >
@@ -70,22 +71,24 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
               ))}
             </nav>
 
-            <Link
-              href="/catalogo"
-              className="inline-flex items-center rounded-full border px-3 py-2 text-[10px] uppercase md:hidden"
-              style={{ letterSpacing: "0.16em", borderColor: "#ddd5cb", color: "#5f564e", background: "rgba(255,255,255,0.78)" }}
-            >
-              Ver catalogo
-            </Link>
+
           </div>
 
           <div className="flex justify-center md:justify-self-center">
             <Link
               href="/"
+
               className="text-lg uppercase font-bold sm:text-xl md:text-2xl"
               style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.24em", color: "#111111" }}
             >
-              FitAndes
+              <Image
+                src={logo}
+                alt="Nueva Colección"
+                width={350}
+                height={150}
+                sizes="100vw"
+                className="pointer-events-none object-cover object-center lg:object-right"
+              />
             </Link>
           </div>
 

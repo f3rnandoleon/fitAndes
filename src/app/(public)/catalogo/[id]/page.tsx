@@ -57,7 +57,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
             Detalle de producto
           </p>
           <h1 className="text-2xl leading-tight sm:text-3xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            Mira la prenda, elige variante y reserva desde el móvil sin perder contexto
+            Mira la prenda, elige variante y reserva.
           </h1>
         </section>
 

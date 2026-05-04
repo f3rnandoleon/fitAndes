@@ -7,11 +7,10 @@ import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor, sortProductColors } from "@/lib/product-colors";
 import { catalogVariantIsAvailable, getCatalogProductAvailableStock, type CatalogProduct } from "@/types/catalogo";
 
-type OrdenKey = "fecha" | "relevancia" | "ventas" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
+type OrdenKey = "fecha" | "ventas" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
 
 const ORDENES: Array<{ key: OrdenKey; label: string }> = [
-  { key: "relevancia", label: "Relevancia" },
-  { key: "ventas", label: "Ventas" },
+  { key: "ventas", label: "Popular" },
   { key: "fecha", label: "Fecha de release" },
   { key: "descuento", label: "Descuento" },
   { key: "precio-desc", label: "Precio: mayor a menor" },
@@ -119,7 +118,7 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
           <p className="text-[10px] uppercase" style={{ letterSpacing: "0.2em", color: "#8f8478" }}>
             Vista catálogo
           </p>
-          
+
           <p className="mt-3 text-sm leading-6" style={{ color: "#8f8478" }}>
             {productosConStock.length} producto{productosConStock.length !== 1 ? "s" : ""} disponibles listos para reserva.
           </p>
@@ -357,10 +356,10 @@ function ProductoCard({ producto }: { producto: CatalogProduct }) {
 
         <div className="p-4 sm:p-5">
           <p className="text-[10px] uppercase" style={{ letterSpacing: "0.14em", color: "#8f8478" }}>
-            {(producto.categoria ?? producto.modelo).toUpperCase()}
+            {(producto.nombre ?? '').toUpperCase()}
           </p>
           <h3 className="mt-2 min-h-[42px] text-sm leading-6 sm:min-h-[50px] sm:text-[0.98rem]" style={{ color: "#111111" }}>
-            {producto.nombre}
+            {producto.modelo}
           </h3>
           <p className="mt-4 text-xl font-semibold sm:text-2xl" style={{ color: "#111111" }}>
             {formatearPrecio(producto.precioVenta)}

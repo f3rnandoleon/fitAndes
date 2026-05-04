@@ -241,10 +241,10 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-[10px] uppercase" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
-              {(producto.categoria ?? "Catálogo").toUpperCase()} {producto.modelo ? `· ${producto.modelo.toUpperCase()}` : ""}
+              {(producto.categoria ?? "Catálogo").toUpperCase()} {producto.nombre ? `· ${producto.nombre.toUpperCase()}` : ""}
             </p>
             <h1 className="mt-3 text-[2.1rem] leading-[1.02] sm:text-[2.7rem]" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "#201a16" }}>
-              {producto.nombre}
+              {producto.modelo}
             </h1>
           </div>
 

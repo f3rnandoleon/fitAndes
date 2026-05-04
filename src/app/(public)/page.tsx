@@ -102,7 +102,7 @@ export default async function HomePage() {
     { icon: <BiHistory />, title: "Historial de pedidos", desc: "Consulta cada compra desde tu cuenta sin perder el hilo." },
     { icon: <GrSecure />, title: "Cuenta segura", desc: "Sesión protegida y flujo simple para volver a comprar rápido." },
     { icon: <BiLogIn />, title: "Registro en segundos", desc: "Sin formularios largos ni pasos innecesarios." },
-    { icon: <BiDevices />, title: "Diseño mobile-first", desc: "Navega el catálogo y reserva con una sola mano." },
+    { icon: <BiDevices />, title: "Catalogo actualizado", desc: "Navega el catálogo y reserva tus productos favoritos." },
   ];
 
   return (
@@ -118,7 +118,7 @@ export default async function HomePage() {
           priority
           fill
           sizes="100vw"
-          className="pointer-events-none object-cover object-center opacity-35 lg:object-right"
+          className="pointer-events-none object-cover object-center  lg:object-right"
         />
         <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(245,242,238,0.94)_0%,rgba(245,242,238,0.78)_34%,rgba(245,242,238,0.16)_100%)]" />
         <div className="absolute -left-20 top-12 h-56 w-56 rounded-full bg-white/20 blur-3xl" />
@@ -126,7 +126,7 @@ export default async function HomePage() {
 
         <div className="relative z-10 mx-auto grid max-w-[1240px] gap-8 px-5 py-14 sm:px-6 sm:py-18 lg:grid-cols-[minmax(0,1.05fr)_360px] lg:items-end lg:py-24">
           <div className="max-w-2xl">
-            
+
 
             <h1
               className="max-w-xl text-[2.9rem] leading-[0.95] sm:text-[4.2rem] lg:text-[5.4rem]"
@@ -134,15 +134,15 @@ export default async function HomePage() {
             >
               Tradición
               <br />
-              andina con
+              y estilo para
               <br />
-              compra fluida
+              tu dia a dia
             </h1>
 
             <p className="mt-5 max-w-lg text-base leading-7 sm:text-lg" style={{ color: "#4f463d" }}>
               {productos.length > 0
-                ? `Descubre ${productosDisponibles.length} prendas listas para reserva: chompas andinas y poleras con una experiencia pensada para verse bien.`
-                : "Chompas andinas con historia y poleras diseñadas para tu día a día, presentadas como un catálogo simple, claro y fácil de compartir."}
+                ? `Descubre las ${productosDisponibles.length} prendas listas para reserva: chompas y poleras con una experiencia pensada para verse bien.`
+                : "Chompas y poleras diseñadas para tu día a día, presentadas como un catálogo simple, claro y fácil de compartir."}
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -165,7 +165,7 @@ export default async function HomePage() {
 
           </div>
 
-          
+
         </div>
       </section>
 
@@ -180,7 +180,7 @@ export default async function HomePage() {
                 Recién llegados
               </h2>
             </div>
-            
+
           </div>
 
           {recienLlegados.length === 0 ? (
@@ -248,7 +248,7 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[minmax(0,1fr)_480px] lg:items-start">
           <div className="max-w-xl">
             <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.25em", color: "#9c8f82" }}>
-              Tu cuenta de cliente
+              Crea tu cuenta
             </p>
             <h2 className="text-4xl font-normal leading-tight sm:text-5xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
               Sigue tus pedidos
@@ -256,7 +256,7 @@ export default async function HomePage() {
               desde cualquier pantalla
             </h2>
             <p className="mt-5 text-sm leading-7 sm:text-base" style={{ color: "#6b6058" }}>
-              Crea tu cuenta gratis y accede al historial completo de tus compras, estado del pedido y reservas guardadas con un flujo más cómodo desde el móvil.
+              Crea tu cuenta gratis y accede al historial completo de tus compras, estado del pedido y reservas guardadas con un flujo más cómodo.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -302,7 +302,7 @@ export default async function HomePage() {
                 Selección destacada
               </p>
               <h2 className="text-3xl font-normal sm:text-4xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                Lo más compartible
+                Lo más popular
               </h2>
             </div>
             <Link
@@ -368,7 +368,8 @@ export default async function HomePage() {
                         </div>
                       </div>
                       <div className="px-4 py-4 sm:px-5 sm:py-5">
-                        <p className="text-sm font-normal leading-6" style={{ color: "#1a1a1a" }}>{item.nombre}</p>
+                        <p className="text-sm font-semibold leading-6" style={{ color: "#1a1a1a" }}>{item.nombre}</p>
+                        <p className="text-sm font-normal leading-6" style={{ color: "#6e6c6cff" }}>{item.modelo}</p>
                         <p className="mt-1 text-sm" style={{ color: "#1a1a1a" }}>{formatearPrecio(item.precioVenta)}</p>
                       </div>
                     </article>
@@ -390,7 +391,7 @@ export default async function HomePage() {
               FitAndes
             </p>
             <p className="text-sm leading-7" style={{ color: "#b9aea1" }}>
-              Moda de alta calidad con un catálogo visual, claro y fácil de navegar desde el celular.
+              Moda de alta calidad con un catálogo visual, claro y fácil de usar.
             </p>
           </div>
 
@@ -423,7 +424,7 @@ export default async function HomePage() {
               ))}
             </div>
           </div>
-
+          {/*
           <div>
             <p className="text-xs uppercase font-semibold mb-5" style={{ letterSpacing: "0.2em", color: "#9c8f82" }}>
               Atención al cliente
@@ -434,6 +435,7 @@ export default async function HomePage() {
               ))}
             </div>
           </div>
+            */}
         </div>
 
         <div className="border-t px-5 py-5 text-center sm:px-6" style={{ borderColor: "#2e2e2e" }}>
