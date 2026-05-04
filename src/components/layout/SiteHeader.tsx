@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
-import logo from "../../../public/FitAndes.png";
+import logo from "../../../public/fitAndes.png";
 
 interface Props {
   authenticated?: boolean;

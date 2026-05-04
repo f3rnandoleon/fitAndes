@@ -92,12 +92,12 @@ export default async function HomePage() {
   });
 
   const seleccion = (seleccionBase.length > 0 ? seleccionBase : productos).slice(0, 4);
-  const categorias = Array.from(new Set(productosDisponibles.map((producto) => producto.categoria).filter(Boolean)));
+  /*const categorias = Array.from(new Set(productosDisponibles.map((producto) => producto.categoria).filter(Boolean)));
   const heroStats = [
     { label: "Piezas activas", value: `${productosDisponibles.length}` },
     { label: "Categorías", value: `${categorias.length || 1}` },
     { label: "Compra guiada", value: "WhatsApp + web" },
-  ];
+  ];*/
   const beneficios = [
     { icon: <BiHistory />, title: "Historial de pedidos", desc: "Consulta cada compra desde tu cuenta sin perder el hilo." },
     { icon: <GrSecure />, title: "Cuenta segura", desc: "Sesión protegida y flujo simple para volver a comprar rápido." },

@@ -64,7 +64,6 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
   const tallas = Array.from(new Set(productosConStock.flatMap((producto) => variantesConStock(producto).map((variante) => variante.talla)))).sort(
     (a, b) => a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }),
   );
-  const categoriaPrincipal = categorias.length === 1 ? categorias[0]?.toUpperCase() : productosConStock[0]?.categoria?.toUpperCase() ?? "CATÁLOGO";
 
   const termino = busqueda.trim().toLowerCase();
   const filtrados = productosConStock.filter((producto) => {
