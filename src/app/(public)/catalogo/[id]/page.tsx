@@ -39,18 +39,27 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
 
   return (
     <main className="min-h-screen bg-[#fbf9f5] text-[#111111]">
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <div className="flex items-center gap-2 text-[11px] uppercase mb-8" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
+      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-5 sm:py-8 lg:py-10">
+        <div className="mb-6 flex flex-wrap items-center gap-2 text-[10px] uppercase sm:mb-8" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
           <Link href="/" className="transition-opacity hover:opacity-60">
-            Home
+            Inicio
           </Link>
           <span>{">"}</span>
           <Link href="/catalogo" className="transition-opacity hover:opacity-60">
-            Catalogo
+            Catálogo
           </Link>
           <span>{">"}</span>
-          <span style={{ color: "#d04d37" }}>{producto.nombre}</span>
+          <span className="max-w-[14rem] truncate sm:max-w-none" style={{ color: "#d04d37" }}>{producto.nombre}</span>
         </div>
+
+        <section className="mb-8 rounded-[28px] border px-5 py-5 sm:px-6 sm:py-6" style={{ borderColor: "#ece6dc", background: "linear-gradient(135deg, #f9f5ef 0%, #f4ede3 100%)" }}>
+          <p className="text-[10px] uppercase mb-3" style={{ letterSpacing: "0.22em", color: "#8f8478" }}>
+            Detalle de producto
+          </p>
+          <h1 className="text-2xl leading-tight sm:text-3xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+            Mira la prenda, elige variante y reserva desde el móvil sin perder contexto
+          </h1>
+        </section>
 
         <ProductoDetalleCliente producto={producto} colores={colores} tallas={tallas} />
       </div>

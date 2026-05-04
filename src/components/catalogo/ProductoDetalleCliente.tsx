@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor } from "@/lib/product-colors";
@@ -13,7 +14,6 @@ import {
   type CatalogProduct,
   type CatalogVariant,
 } from "@/types/catalogo";
-import { useSession } from "next-auth/react";
 
 interface Props {
   producto: CatalogProduct;
@@ -28,7 +28,7 @@ function formatPrice(value: number) {
   }).format(value)}`;
 }
 
-export default function ProductoDetalleCliente({ producto, colores }: Props) {
+export default function ProductoDetalleCliente({ producto, colores, tallas }: Props) {
   const { addItem } = useReservationCart();
   const productoDisponible = filterCatalogAvailableVariants(producto);
   const variantesDisponibles = productoDisponible.variantes;
@@ -64,6 +64,11 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
   const precioAnterior = descuento > 0 ? producto.precioVenta / (1 - descuento / 100) : null;
   const imagenPrincipal = imagenesActivas[indiceImagenActual] ?? null;
   const imagenesActivasKey = imagenesActivas.join("|");
+  const resumenRapido = [
+    { label: "Colores", value: `${new Set(variantesDisponibles.map((variante) => variante.color)).size}` },
+    { label: "Tallas", value: `${new Set([...tallas, ...tallasDisponibles]).size}` },
+    { label: "Stock", value: stockActual > 0 ? `${stockActual}` : "Agotado" },
+  ];
 
   useEffect(() => {
     setIndiceImagenActual(0);
@@ -93,10 +98,10 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
     setMensaje("");
   }
 
-  function seleccionarTalla(talla: string) {
+  function seleccionarTalla(tallaSeleccionada: string) {
     const siguiente =
       variantesDisponibles.find(
-        (variante) => variante.color === colorSeleccionado && variante.colorSecundario === colorSecundarioSeleccionado && variante.talla === talla,
+        (variante) => variante.color === colorSeleccionado && variante.colorSecundario === colorSecundarioSeleccionado && variante.talla === tallaSeleccionada,
       ) ?? null;
 
     setVarianteSeleccionada(siguiente);
@@ -138,113 +143,139 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,460px)_minmax(520px,1fr)] gap-8 lg:gap-8 items-start ">
-      <section className="grid gap-4 md:grid-cols-[68px_minmax(0,1fr)] lg:grid-cols-[70px_minmax(0,1fr)]">
-        {imagenesActivas.length > 1 ? (
-          <div className="order-2 md:order-1">
-            <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-visible pb-1">
-              {imagenesActivas.map((imagen, index) => {
-                const activa = index === indiceImagenActual;
-                return (
-                  <button
-                    key={`${imagen}-${index}`}
-                    type="button"
-                    onClick={() => setIndiceImagenActual(index)}
-                    className="relative h-24 w-[3.7rem] md:h-24 md:w-full shrink-0 overflow-hidden border transition-all"
-                    style={{
-                      borderColor: activa ? "#101010" : "#e3ddd4",
-                      background: "#f7f3ed",
-                    }}
-                    aria-label={`Ver imagen ${index + 1} de ${producto.nombre}`}
-                  >
-                    <Image src={imagen} alt={`${producto.nombre} miniatura ${index + 1}`} fill sizes="80px" className="object-contain" />
-                  </button>
-                );
-              })}
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)] xl:gap-10">
+      <section className="rounded-[30px] border bg-white p-3 sm:p-4 lg:sticky lg:top-24 lg:self-start" style={{ borderColor: "#ece6dc" }}>
+        <div className="grid gap-3 lg:grid-cols-[84px_minmax(0,1fr)]">
+          {imagenesActivas.length > 1 ? (
+            <div className="order-2 lg:order-1">
+              <div className="flex gap-3 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
+                {imagenesActivas.map((imagen, index) => {
+                  const activa = index === indiceImagenActual;
+                  return (
+                    <button
+                      key={`${imagen}-${index}`}
+                      type="button"
+                      onClick={() => setIndiceImagenActual(index)}
+                      className="relative h-20 w-16 shrink-0 overflow-hidden rounded-[18px] border transition-all sm:h-24 sm:w-20 lg:h-24 lg:w-full"
+                      style={{
+                        borderColor: activa ? "#101010" : "#e3ddd4",
+                        background: "#f7f3ed",
+                      }}
+                      aria-label={`Ver imagen ${index + 1} de ${producto.nombre}`}
+                    >
+                      <Image src={imagen} alt={`${producto.nombre} miniatura ${index + 1}`} fill sizes="80px" className="object-contain" />
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        <div className={`order-1 md:order-2 overflow-hidden relative ${imagenesActivas.length <= 1 ? "md:col-span-2" : ""}`}>
-          <div className="relative w-full aspect-[2/3]">
-            {imagenPrincipal ? (
-              <div className="relative h-full w-full ">
-                <Image
-                  src={imagenPrincipal}
-                  alt={producto.nombre}
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 420px"
-                  className="object-contain object-center"
-                />
-
-                {imagenesActivas.length > 1 ? (
-                  <>
-                    <button
-                      type="button"
-                      aria-label="Imagen anterior"
-                      onClick={() => moverImagen(-1)}
-                      className="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
-                      style={{ background: "rgba(255,255,255,0.94)", borderColor: "#ddd4c9", color: "#111111" }}
-                    >
-                      {"\u2039"}
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Imagen siguiente"
-                      onClick={() => moverImagen(1)}
-                      className="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
-                      style={{ background: "rgba(255,255,255,0.94)", borderColor: "#ddd4c9", color: "#111111" }}
-                    >
-                      {"\u203A"}
-                    </button>
-                    <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5">
-                      {imagenesActivas.map((_, index) => (
-                        <span
-                          key={index}
-                          className="h-2.5 w-2.5 rounded-full border transition-all duration-300"
-                          style={{
-                            background: index === indiceImagenActual ? "#e45754" : "transparent",
-                            borderColor: index === indiceImagenActual ? "#e45754" : "#d3c8bc",
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-2" style={{ color: "#968d82" }}>
-                <svg className="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+          <div className={`order-1 overflow-hidden rounded-[26px] ${imagenesActivas.length <= 1 ? "lg:col-span-2" : "lg:order-2"}`} style={{ background: "#f8f4ee" }}>
+            <div className="relative aspect-[4/5] w-full">
+              {imagenPrincipal ? (
+                <div className="relative h-full w-full">
+                  <Image
+                    src={imagenPrincipal}
+                    alt={producto.nombre}
+                    fill
+                    priority
+                    sizes="(max-width: 1024px) 100vw, 520px"
+                    className="object-contain object-center"
                   />
-                </svg>
-                <p className="text-sm">Sin imagen</p>
-              </div>
-            )}
+
+                  {imagenesActivas.length > 1 ? (
+                    <>
+                      <button
+                        type="button"
+                        aria-label="Imagen anterior"
+                        onClick={() => moverImagen(-1)}
+                        className="absolute left-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
+                        style={{ background: "rgba(255,255,255,0.94)", borderColor: "#ddd4c9", color: "#111111" }}
+                      >
+                        {"\u2039"}
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Imagen siguiente"
+                        onClick={() => moverImagen(1)}
+                        className="absolute right-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
+                        style={{ background: "rgba(255,255,255,0.94)", borderColor: "#ddd4c9", color: "#111111" }}
+                      >
+                        {"\u203A"}
+                      </button>
+                      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/80 px-3 py-2 backdrop-blur-sm">
+                        {imagenesActivas.map((_, index) => (
+                          <span
+                            key={index}
+                            className="h-2.5 w-2.5 rounded-full border transition-all duration-300"
+                            style={{
+                              background: index === indiceImagenActual ? "#e45754" : "transparent",
+                              borderColor: index === indiceImagenActual ? "#e45754" : "#d3c8bc",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-2" style={{ color: "#968d82" }}>
+                  <svg className="h-20 w-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <p className="text-sm">Sin imagen</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="px-2 py-2 sm:px-3 lg:px-2 ">
-        <div className="flex items-start justify-between gap-4">
+      <section className="rounded-[30px] border bg-white px-5 py-6 sm:px-6 lg:px-7 lg:py-7" style={{ borderColor: "#ece6dc" }}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-[11px] uppercase mb-2" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
-              {(producto.categoria ?? "Catalogo").toUpperCase()} {producto.modelo ? `- ${producto.modelo.toUpperCase()}` : ""}
+            <p className="text-[10px] uppercase" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
+              {(producto.categoria ?? "Catálogo").toUpperCase()} {producto.modelo ? `· ${producto.modelo.toUpperCase()}` : ""}
             </p>
-            <h1 className="text-[2.05rem] leading-[1.08]" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "#201a16" }}>
+            <h1 className="mt-3 text-[2.1rem] leading-[1.02] sm:text-[2.7rem]" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "#201a16" }}>
               {producto.nombre}
             </h1>
           </div>
-          
+
+          <span
+            className="inline-flex w-fit rounded-full border px-4 py-2 text-[10px] uppercase"
+            style={{
+              letterSpacing: "0.18em",
+              color: stockActual > 0 ? "#4f7a57" : "#a54a3f",
+              borderColor: stockActual > 0 ? "rgba(79,122,87,0.18)" : "rgba(165,74,63,0.18)",
+              background: stockActual > 0 ? "rgba(79,122,87,0.08)" : "rgba(165,74,63,0.08)",
+            }}
+          >
+            {stockActual > 0 ? "Disponible" : "Sin stock"}
+          </span>
         </div>
 
-        <div className="mt-4 flex items-end gap-3">
-          <p className="text-[1.85rem] leading-none" style={{ color: "#201a16", fontFamily: "Georgia, 'Times New Roman', serif" }}>
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {resumenRapido.map((item) => (
+            <div key={item.label} className="rounded-[22px] border px-4 py-4" style={{ borderColor: "#eee5da", background: "#fbf8f3" }}>
+              <p className="text-[10px] uppercase" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
+                {item.label}
+              </p>
+              <p className="mt-2 text-lg" style={{ color: "#201a16", fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-end gap-3">
+          <p className="text-[1.9rem] leading-none sm:text-[2.2rem]" style={{ color: "#201a16", fontFamily: "Georgia, 'Times New Roman', serif" }}>
             {formatPrice(producto.precioVenta)}
           </p>
           {precioAnterior ? (
@@ -252,38 +283,53 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
               {formatPrice(precioAnterior)}
             </p>
           ) : null}
+          {descuento > 0 ? (
+            <span className="inline-flex rounded-full bg-[#f6ebe8] px-3 py-1 text-[10px] uppercase" style={{ letterSpacing: "0.14em", color: "#b14f43" }}>
+              Ahorra {descuento}%
+            </span>
+          ) : null}
         </div>
 
         {descripcionActual ? (
-          <p className="mt-5 text-[14px] leading-7" style={{ color: "#6b6258" }}>
+          <p className="mt-5 max-w-2xl text-sm leading-7 sm:text-[15px]" style={{ color: "#6b6258" }}>
             {descripcionActual}
           </p>
         ) : null}
 
-        <div className="mt-7">
-          <p className="text-[11px] uppercase mb-3" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
-            Color - <span style={{ color: "#201a16" }}>{colorSeleccionado || "-"}{colorSecundarioSeleccionado ? ` / ${colorSecundarioSeleccionado}` : ""}</span>
-          </p>
-        <div className="flex flex-wrap gap-3">
-          {Array.from(
-            new Map(
+        <div className="mt-8 rounded-[26px] border px-4 py-5 sm:px-5" style={{ borderColor: "#eee5da", background: "#fbf8f3" }}>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-[10px] uppercase" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
+              Color actual
+            </p>
+            <span className="text-xs" style={{ color: "#201a16" }}>
+              {colorSeleccionado || "-"}{colorSecundarioSeleccionado ? ` / ${colorSecundarioSeleccionado}` : ""}
+            </span>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            {Array.from(
+              new Map(
                 variantesDisponibles.map((v) => [
                   `${v.color}-${v.colorSecundario || ""}`,
                   { color: v.color, colorSecundario: v.colorSecundario },
                 ]),
-              ).values()
+              ).values(),
             ).map(({ color, colorSecundario }) => {
               const activo = color === colorSeleccionado && colorSecundario === colorSecundarioSeleccionado;
               const colorBase = getProductColorValue(color);
               const colorSec = colorSecundario ? getProductColorValue(colorSecundario) : null;
               const coloresClaros = isLightProductColor(color) && (!colorSecundario || isLightProductColor(colorSecundario));
-              
+
               return (
                 <button
                   key={`${color}-${colorSecundario || ""}`}
                   type="button"
                   onClick={() => seleccionarColor(color, colorSecundario)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-full border px-3 py-2 transition-colors hover:bg-white"
+                  style={{
+                    borderColor: activo ? "#111111" : "#e2d8cc",
+                    background: activo ? "#ffffff" : "transparent",
+                  }}
                   aria-label={`Seleccionar color ${color}${colorSecundario ? ` y ${colorSecundario}` : ""}`}
                   title={`${color}${colorSecundario ? ` / ${colorSecundario}` : ""}`}
                 >
@@ -295,43 +341,51 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
                       boxShadow: activo ? "0 0 0 2px rgba(17,17,17,0.08)" : "none",
                     }}
                   />
+                  <span className="text-[11px] uppercase" style={{ letterSpacing: "0.12em", color: "#5f564e" }}>
+                    {colorSecundario ? `${color} / ${colorSecundario}` : color}
+                  </span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="mt-6">
-          <div className="flex items-center justify-between gap-4 mb-3">
-            <p className="text-[11px] uppercase" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
+        <div className="mt-5 rounded-[26px] border px-4 py-5 sm:px-5" style={{ borderColor: "#eee5da", background: "#fbf8f3" }}>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-[10px] uppercase" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
               Talla
             </p>
-            
+            {varianteSeleccionada ? (
+              <span className="text-xs" style={{ color: "#201a16" }}>
+                {varianteSeleccionada.talla}
+              </span>
+            ) : null}
           </div>
-          <div className="flex flex-wrap gap-2.5">
-            {Array.from(new Set(tallasDisponibles)).map((talla) => {
-              const activa = talla === varianteSeleccionada?.talla;
+
+          <div className="mt-4 flex flex-wrap gap-2.5">
+            {Array.from(new Set(tallasDisponibles)).map((tallaDisponible) => {
+              const activa = tallaDisponible === varianteSeleccionada?.talla;
               return (
                 <button
-                  key={talla}
+                  key={tallaDisponible}
                   type="button"
-                  onClick={() => seleccionarTalla(talla)}
-                  className="min-w-11 border px-4 py-2.5 text-sm transition-colors"
+                  onClick={() => seleccionarTalla(tallaDisponible)}
+                  className="min-w-12 rounded-full border px-4 py-2.5 text-sm transition-colors"
                   style={{
                     borderColor: activa ? "#111111" : "#e2d8cc",
                     background: activa ? "#111111" : "#ffffff",
                     color: activa ? "#ffffff" : "#4f463d",
                   }}
                 >
-                  {talla}
+                  {tallaDisponible}
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="mt-7 flex gap-3">
-          <div className="inline-flex items-center border" style={{ borderColor: "#ddd4c9" }}>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="inline-flex items-center justify-center rounded-full border" style={{ borderColor: "#ddd4c9" }}>
             <button
               type="button"
               onClick={() => setCantidad((actual) => Math.max(1, actual - 1))}
@@ -358,43 +412,45 @@ export default function ProductoDetalleCliente({ producto, colores }: Props) {
             type="button"
             onClick={reservarSeleccion}
             disabled={!varianteSeleccionada || stockActual <= 0}
-            className="flex-1 inline-flex items-center justify-center text-[11px] uppercase text-white px-6 transition-opacity disabled:opacity-45 disabled:cursor-not-allowed hover:opacity-88"
+            className="inline-flex flex-1 items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-45 hover:opacity-88"
             style={{ background: "#1a1a1a", letterSpacing: "0.24em" }}
           >
-            Anadir al carrito
+            Añadir a reserva
           </button>
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-xs" style={{ color: "#8f8478" }}>
+        <div className="mt-4 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between" style={{ color: "#8f8478" }}>
           <span>{stockActual > 0 ? `${stockActual} unidades disponibles` : "Sin stock"}</span>
           {varianteSeleccionada ? <span>{varianteSeleccionada.color}{varianteSeleccionada.colorSecundario ? ` / ${varianteSeleccionada.colorSecundario}` : ""} / {varianteSeleccionada.talla}</span> : null}
         </div>
 
         {mensaje ? (
-          <p className="mt-4 border px-4 py-3 text-sm" style={{ borderColor: "#d8cdc0", background: "#f6f1ea", color: "#6b6058" }}>
+          <p className="mt-4 rounded-[20px] border px-4 py-3 text-sm" style={{ borderColor: "#d8cdc0", background: "#f6f1ea", color: "#6b6058" }}>
             {mensaje}
           </p>
         ) : null}
 
-        
-          <div className="mt-6 border-t " style={{ borderColor: "#efe7dd" }}>
-            
-          </div>
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          {!authenticated ? (
+            <Link
+              href="/login"
+              className="rounded-[22px] border px-4 py-4 text-sm transition-colors hover:bg-[#f8f4ee]"
+              style={{ borderColor: "#ece6dc", color: "var(--muted)" }}
+            >
+              Inicia sesión para guardar tu reserva y seguir tus pedidos.
+            </Link>
+          ) : (
+            <div className="rounded-[22px] border px-4 py-4 text-sm" style={{ borderColor: "#ece6dc", color: "var(--muted)", background: "#fbf8f3" }}>
+              Tu reserva quedará disponible en tu cuenta para completar la compra cuando quieras.
+            </div>
+          )}
 
-        <div className="mt-6 flex flex-col gap-3">
-          {authenticated ? (
-              <>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="text-sm hover:opacity-60 transition-opacity" style={{ color: "var(--muted)" }}>
-                  Inicia sesion para guardar tu reserva y seguir tus pedidos
-                </Link>
-              </>
-            )}
-          
-          <Link href="/catalogo" className="text-sm hover:opacity-60 transition-opacity" style={{ color: "var(--muted)" }}>
-            Volver al catalogo
+          <Link
+            href="/catalogo"
+            className="rounded-[22px] border px-4 py-4 text-sm transition-colors hover:bg-[#f8f4ee]"
+            style={{ borderColor: "#ece6dc", color: "var(--muted)" }}
+          >
+            Volver al catálogo para seguir explorando más modelos.
           </Link>
         </div>
       </section>

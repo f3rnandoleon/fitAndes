@@ -378,12 +378,12 @@ export default function CheckoutPageClient() {
 
   if (items.length === 0) {
     return (
-      <main className="min-h-[calc(100vh-82px)] px-4 sm:px-6 py-10 sm:py-14 bg-background">
-        <Card className="max-w-[860px] mx-auto py-12 sm:py-20 text-center">
+      <main className="min-h-[calc(100vh-82px)] bg-background px-4 py-10 sm:px-6 sm:py-14">
+        <Card className="max-w-[860px] mx-auto rounded-[30px] py-12 text-center sm:py-20">
           <p className="text-[10px] uppercase mb-4 tracking-[0.2em] text-subtle">
             Carrito
           </p>
-          <h1 className="text-4xl mb-4 font-serif text-foreground">
+          <h1 className="mb-4 text-3xl font-serif text-foreground sm:text-4xl">
             Tu carrito esta vacio
           </h1>
           <p className="text-sm max-w-md mx-auto text-muted">
@@ -400,33 +400,35 @@ export default function CheckoutPageClient() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-82px)] px-4 sm:px-6 py-8 sm:py-12 bg-gradient-to-b from-background to-surface/40">
+    <main className="min-h-[calc(100vh-82px)] bg-gradient-to-b from-background to-surface/40 px-4 py-6 pb-28 sm:px-6 sm:py-8 sm:pb-32 lg:py-12 lg:pb-12">
       <div className="max-w-[1240px] mx-auto">
-        <header className="mb-10 flex flex-wrap items-start justify-between gap-6">
-          <div className="max-w-2xl">
-            <p className="text-[10px] uppercase mb-2 tracking-[0.2em] text-subtle">
-              Revision final
-            </p>
-            <h1 className="text-4xl sm:text-5xl font-serif text-foreground">
-              Finalizar compra
-            </h1>
-            <p className="mt-4 text-sm text-muted leading-relaxed">
-              Tu carrito local se sincronizara con el sistema central para generar un pedido real y reservar stock.
-            </p>
-          </div>
+        <header className="mb-8 rounded-[28px] border bg-white px-5 py-6 sm:mb-10 sm:px-6" style={{ borderColor: "#ece6dc" }}>
+          <div className="flex flex-wrap items-start justify-between gap-6">
+            <div className="max-w-2xl">
+              <p className="text-[10px] uppercase mb-2 tracking-[0.2em] text-subtle">
+                Revision final
+              </p>
+              <h1 className="text-3xl font-serif text-foreground sm:text-5xl">
+                Finalizar compra
+              </h1>
+              <p className="mt-4 text-sm text-muted leading-relaxed">
+                Tu carrito local se sincronizara con el sistema central para generar un pedido real y reservar stock.
+              </p>
+            </div>
 
-          <CheckoutAuthStatus
-            authenticated={authenticated}
-            user={session?.user}
-            loading={prefillLoading}
-            onLogin={goToLogin}
-          />
+            <CheckoutAuthStatus
+              authenticated={authenticated}
+              user={session?.user}
+              loading={prefillLoading}
+              onLogin={goToLogin}
+            />
+          </div>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             <section>
-              <h2 className="text-xs uppercase tracking-widest text-subtle mb-4 px-1">Productos en reserva</h2>
+              <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle">Productos en reserva</h2>
               <CheckoutCartSummary
                 items={items}
                 updateQuantity={updateQuantity}
@@ -435,30 +437,40 @@ export default function CheckoutPageClient() {
             </section>
 
             <section>
-              <h2 className="text-xs uppercase tracking-widest text-subtle mb-4 px-1">Datos de entrega</h2>
+              <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle">Datos de entrega</h2>
               <CheckoutDeliverySection
                 method={deliveryMethod}
                 setMethod={setDeliveryMethod}
                 config={deliveryConfig}
                 loading={deliveryOptionsLoading}
                 error={deliveryOptionsError}
-                address={address} setAddress={setAddress}
-                phone={phone} setPhone={setPhone}
-                recipientName={recipientName} setRecipientName={setRecipientName}
-                pickupScheduleId={pickupScheduleId} setPickupScheduleId={setPickupScheduleId}
-                pickupTime={pickupTime} setPickupTime={setPickupTime}
-                department={department} setDepartment={setDepartment}
-                shippingCompany={shippingCompany} setShippingCompany={setShippingCompany}
-                branch={branch} setBranch={setBranch}
-                senderCI={senderCI} setSenderCI={setSenderCI}
-                senderPhone={senderPhone} setSenderPhone={setSenderPhone}
+                address={address}
+                setAddress={setAddress}
+                phone={phone}
+                setPhone={setPhone}
+                recipientName={recipientName}
+                setRecipientName={setRecipientName}
+                pickupScheduleId={pickupScheduleId}
+                setPickupScheduleId={setPickupScheduleId}
+                pickupTime={pickupTime}
+                setPickupTime={setPickupTime}
+                department={department}
+                setDepartment={setDepartment}
+                shippingCompany={shippingCompany}
+                setShippingCompany={setShippingCompany}
+                branch={branch}
+                setBranch={setBranch}
+                senderCI={senderCI}
+                setSenderCI={setSenderCI}
+                senderPhone={senderPhone}
+                setSenderPhone={setSenderPhone}
               />
             </section>
 
             {deliveryMethod !== "WHATSAPP" && (
               <section>
-                <h2 className="text-xs uppercase tracking-widest text-subtle mb-4 px-1">Metodo de pago</h2>
-                <Card className="space-y-4">
+                <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle">Metodo de pago</h2>
+                <Card className="space-y-4 rounded-[28px]">
                   {[
                     { value: "EFECTIVO", label: "Efectivo", description: "Pago al momento de la entrega." },
                     { value: "QR", label: "QR", description: "Sube tu comprobante despues de crear el pedido." },
@@ -467,8 +479,8 @@ export default function CheckoutPageClient() {
                     return (
                       <label
                         key={option.value}
-                        className={`block border px-4 py-3 transition-colors ${
-                          disabled ? "opacity-50 cursor-not-allowed bg-surface/20" : "cursor-pointer"
+                        className={`block rounded-[20px] border px-4 py-3 transition-colors ${
+                          disabled ? "cursor-not-allowed bg-surface/20 opacity-50" : "cursor-pointer"
                         } ${paymentMethod === option.value ? "border-foreground bg-surface/30" : "border-border bg-white"}`}
                       >
                         <div className="flex items-start gap-3">
@@ -483,7 +495,7 @@ export default function CheckoutPageClient() {
                           />
                           <div>
                             <p className="text-sm font-medium text-foreground">{option.label}</p>
-                            <p className="text-xs mt-1 text-muted">
+                            <p className="mt-1 text-xs text-muted">
                               {disabled ? "No disponible para envio nacional." : option.description}
                             </p>
                           </div>
@@ -496,20 +508,20 @@ export default function CheckoutPageClient() {
             )}
 
             <section>
-              <h2 className="text-xs uppercase tracking-widest text-subtle mb-4 px-1">Observaciones</h2>
-              <Card padding="none">
+              <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle">Observaciones</h2>
+              <Card padding="none" className="overflow-hidden rounded-[28px]">
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
                   placeholder="Instrucciones especiales para tu entrega..."
-                  className="w-full p-4 text-sm bg-transparent outline-none resize-none placeholder:text-subtle/50"
+                  className="w-full resize-none bg-transparent p-4 text-sm outline-none placeholder:text-subtle/50"
                 />
               </Card>
             </section>
           </div>
 
-          <aside className="relative">
+          <aside className="relative lg:pl-2">
             <CheckoutSummarySidebar
               totalAmount={totalAmount}
               totalItems={totalItems}
@@ -518,10 +530,10 @@ export default function CheckoutPageClient() {
               onSubmit={handleSubmit}
               authenticated={authenticated}
             />
-            
-            <div className="mt-6 px-4">
-              <Link href="/catalogo" className="text-[10px] uppercase tracking-widest text-subtle hover:text-foreground transition-colors block text-center">
-                ← Volver al catalogo
+
+            <div className="mt-6 px-2 sm:px-4">
+              <Link href="/catalogo" className="block text-center text-[10px] uppercase tracking-widest text-subtle transition-colors hover:text-foreground">
+                Volver al catalogo
               </Link>
             </div>
           </aside>

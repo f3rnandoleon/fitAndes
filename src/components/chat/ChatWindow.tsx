@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, type CSSProperties } from "react";
 import ChatInput from "@/components/chat/ChatInput";
@@ -27,23 +27,16 @@ interface Props {
 }
 
 function shellClass(mode: WindowMode): string {
-  if (mode === "full") return "inset-0 h-screen w-screen rounded-none";
-  if (mode === "wide") return "bottom-6 right-6 h-[min(86vh,820px)] w-[min(760px,calc(100vw-2rem))] rounded-[32px]";
-  return "bottom-24 right-4 h-[min(78vh,680px)] w-[min(420px,calc(100vw-2rem))] rounded-[32px]";
+  if (mode === "full") return "inset-0 h-[100dvh] w-screen rounded-none";
+  if (mode === "wide") {
+    return "inset-x-3 bottom-4 top-20 rounded-[28px] sm:inset-x-auto sm:bottom-6 sm:right-6 sm:top-auto sm:h-[min(86vh,820px)] sm:w-[min(760px,calc(100vw-2rem))] sm:rounded-[32px]";
+  }
+  return "inset-x-3 bottom-24 top-24 rounded-[28px] sm:inset-x-auto sm:bottom-24 sm:right-4 sm:top-auto sm:h-[min(78vh,680px)] sm:w-[min(420px,calc(100vw-2rem))] sm:rounded-[32px]";
 }
 
-function shellStyle(mode: WindowMode): CSSProperties {
-  if (mode === "full") {
-    return { borderColor: "#ece6dc" };
-  }
-
+function shellStyle(): CSSProperties {
   return {
     borderColor: "#ece6dc",
-    resize: "both",
-    minWidth: 340,
-    minHeight: 480,
-    maxWidth: "calc(100vw - 1rem)",
-    maxHeight: "calc(100vh - 1rem)",
   };
 }
 
@@ -80,25 +73,25 @@ export default function ChatWindow({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-[rgba(17,17,17,0.18)] backdrop-blur-[2px]" onClick={onClose} />
-      <section className={`fixed z-50 flex flex-col overflow-hidden border bg-[#fbf9f5] shadow-[0_30px_70px_rgba(17,17,17,0.18)] ${shellClass(mode)}`} style={shellStyle(mode)}>
-        <header className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "#ece6dc" }}>
-          <div>
-            <p className="text-[11px] uppercase" style={{ letterSpacing: "0.18em", color: "#8f8478" }}>
+      <section className={`fixed z-50 flex flex-col overflow-hidden border bg-[#fbf9f5] shadow-[0_30px_70px_rgba(17,17,17,0.18)] ${shellClass(mode)}`} style={shellStyle()}>
+        <header className="flex items-start justify-between gap-3 border-b px-4 py-4 sm:px-5" style={{ borderColor: "#ece6dc" }}>
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase" style={{ letterSpacing: "0.18em", color: "#8f8478" }}>
               FitAndes Chat
             </p>
-            <h2 className="mt-1 text-xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+            <h2 className="mt-1 text-lg sm:text-xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
               Asistente de productos
             </h2>
-            <p className="mt-1 text-xs" style={{ color: "#8f8478" }}>
-              Consulta comoda por texto, imagen, similares y pedidos
+            <p className="mt-1 max-w-xs text-xs leading-5" style={{ color: "#8f8478" }}>
+              Consulta por texto, imagen, productos similares o pedidos.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={onCycleSize}
-              className="flex h-10 w-10 items-center justify-center rounded-full border transition-colors hover:bg-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-white sm:h-10 sm:w-10"
               style={iconButtonStyle()}
               aria-label={mode === "compact" ? "Ampliar chat" : "Compactar chat"}
               title={mode === "compact" ? "Ampliar" : "Compactar"}
@@ -108,7 +101,7 @@ export default function ChatWindow({
             <button
               type="button"
               onClick={onToggleFullscreen}
-              className="flex h-10 w-10 items-center justify-center rounded-full border transition-colors hover:bg-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-white sm:h-10 sm:w-10"
               style={iconButtonStyle()}
               aria-label={mode === "full" ? "Salir de pantalla completa" : "Pantalla completa"}
               title={mode === "full" ? "Minimizar" : "Maximizar"}
@@ -118,7 +111,7 @@ export default function ChatWindow({
             <button
               type="button"
               onClick={onClearChat}
-              className="flex h-10 w-10 items-center justify-center rounded-full border transition-colors hover:bg-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-white sm:h-10 sm:w-10"
               style={iconButtonStyle()}
               aria-label="Limpiar chat"
               title="Limpiar chat"
@@ -128,7 +121,7 @@ export default function ChatWindow({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full border transition-colors hover:bg-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-white sm:h-10 sm:w-10"
               style={iconButtonStyle()}
               aria-label="Cerrar chat"
               title="Cerrar"

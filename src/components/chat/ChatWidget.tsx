@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -259,7 +259,7 @@ export default function ChatWidget() {
       />
 
       {hintVisible && !open ? (
-        <div className="fixed bottom-20 right-24 z-50 max-w-[260px] rounded-[22px] border bg-white px-4 py-3 text-sm leading-relaxed shadow-[0_20px_45px_rgba(17,17,17,0.12)]" style={{ borderColor: "#ece6dc", color: "#5f564e" }}>
+        <div className="fixed bottom-24 right-24 z-50 hidden max-w-[260px] rounded-[22px] border bg-white px-4 py-3 text-sm leading-relaxed shadow-[0_20px_45px_rgba(17,17,17,0.12)] sm:block" style={{ borderColor: "#ece6dc", color: "#5f564e" }}>
           Consulta productos, tallas, similares o tus pedidos de forma comoda.
           <span className="absolute -bottom-2 right-6 h-4 w-4 rotate-45 border-r border-b bg-white" style={{ borderColor: "#ece6dc" }} />
         </div>
@@ -268,7 +268,7 @@ export default function ChatWidget() {
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="fixed bottom-4 right-4 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-[#111111] text-white shadow-[0_20px_45px_rgba(17,17,17,0.25)] transition-transform hover:-translate-y-1"
+        className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#111111] text-white shadow-[0_20px_45px_rgba(17,17,17,0.25)] transition-transform hover:-translate-y-1 sm:bottom-4 sm:h-16 sm:w-16"
         aria-label="Abrir asistente de FitAndes"
       >
         <MessageIcon />

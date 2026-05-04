@@ -27,19 +27,19 @@ interface Props {
  */
 export function CheckoutCartSummary({ items, updateQuantity, removeItem }: Props) {
   return (
-    <Card padding="none" className="overflow-hidden">
-      <div className="hidden md:grid grid-cols-[minmax(0,1fr)_120px_120px_48px] gap-4 px-6 py-4 border-b text-[10px] uppercase tracking-[0.14em] text-subtle border-border/60">
+    <Card padding="none" className="overflow-hidden rounded-[28px]">
+      <div className="hidden border-b border-border/60 px-6 py-4 text-[10px] uppercase tracking-[0.14em] text-subtle md:grid md:grid-cols-[minmax(0,1fr)_120px_120px_88px] md:gap-4">
         <span>Producto</span>
         <span className="text-center">Cantidad</span>
         <span className="text-right">Precio</span>
-        <span className="sr-only">Acciones</span>
+        <span className="text-right">Acciones</span>
       </div>
 
       <div className="divide-y divide-border/40">
         {items.map((item) => (
-          <article key={item.id} className="grid gap-4 md:grid-cols-[minmax(0,1fr)_120px_120px_48px] px-5 sm:px-6 py-5 items-center">
+          <article key={item.id} className="grid gap-4 px-4 py-5 sm:px-6 md:grid-cols-[minmax(0,1fr)_120px_120px_88px] md:items-center">
             <div className="flex gap-4 min-w-0">
-              <div className="relative h-24 w-20 shrink-0 overflow-hidden border border-border/50 bg-surface/30">
+              <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-[18px] border border-border/50 bg-surface/30">
                 {item.imagen ? (
                   <Image src={item.imagen} alt={item.nombre} fill sizes="80px" className="object-cover" />
                 ) : (
@@ -53,23 +53,24 @@ export function CheckoutCartSummary({ items, updateQuantity, removeItem }: Props
                   {item.nombre}
                 </p>
                 {item.modelo && (
-                  <p className="text-[10px] mt-1 uppercase tracking-wider text-subtle">
+                  <p className="mt-1 text-[10px] uppercase tracking-wider text-subtle">
                     {item.modelo}
                   </p>
                 )}
-                <p className="text-[11px] mt-2 text-muted">
+                <p className="mt-2 text-[11px] text-muted">
                   Variante: {item.color} / {item.talla}
                 </p>
                 {item.stockDisponible !== undefined && (
-                  <p className="text-[11px] mt-1 text-muted">
+                  <p className="mt-1 text-[11px] text-muted">
                     Stock disponible: {item.stockDisponible}
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center md:justify-center">
-              <div className="inline-flex items-center border border-border bg-white">
+            <div className="flex items-center justify-between gap-3 md:justify-center">
+              <span className="text-[10px] uppercase tracking-[0.14em] text-subtle md:hidden">Cantidad</span>
+              <div className="inline-flex items-center rounded-full border border-border bg-white">
                 <button
                   type="button"
                   onClick={() => updateQuantity(item.id, item.cantidad - 1)}
@@ -92,23 +93,34 @@ export function CheckoutCartSummary({ items, updateQuantity, removeItem }: Props
               </div>
             </div>
 
-            <div className="md:text-right">
-              <p className="text-base text-foreground font-serif">
-                {formatPrice(item.precio * item.cantidad)}
-              </p>
-              <p className="text-[11px] mt-1 text-subtle">
-                {formatPrice(item.precio)} c/u
-              </p>
-            </div>
-
-            <div className="flex md:justify-end">
+            <div className="flex items-end justify-between gap-3 md:block md:text-right">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.14em] text-subtle md:hidden">Precio</p>
+                <p className="mt-1 text-base font-serif text-foreground md:mt-0">
+                  {formatPrice(item.precio * item.cantidad)}
+                </p>
+                <p className="text-[11px] mt-1 text-subtle">
+                  {formatPrice(item.precio)} c/u
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => removeItem(item.id)}
-                className="flex h-10 w-10 items-center justify-center text-lg transition-opacity hover:opacity-50 text-subtle"
+                className="inline-flex items-center justify-center rounded-full border px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-subtle transition-colors hover:bg-surface md:hidden"
                 aria-label={`Quitar ${item.nombre}`}
               >
-                ×
+                Quitar
+              </button>
+            </div>
+
+            <div className="hidden md:flex md:justify-end">
+              <button
+                type="button"
+                onClick={() => removeItem(item.id)}
+                className="inline-flex items-center justify-center rounded-full border border-border px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-subtle transition-colors hover:bg-surface"
+                aria-label={`Quitar ${item.nombre}`}
+              >
+                Quitar
               </button>
             </div>
           </article>

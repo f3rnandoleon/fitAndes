@@ -57,7 +57,7 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [tallaFiltro, setTallaFiltro] = useState("");
   const [orden, setOrden] = useState<OrdenKey>("fecha");
-  const [ordenAbierto, setOrdenAbierto] = useState(false);
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
 
   const productosConStock = productos.filter(productoTieneStock);
   const colores = sortProductColors(Array.from(new Set(productosConStock.flatMap((producto) => variantesConStock(producto).map((variante) => variante.color)))));
@@ -65,7 +65,7 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
   const tallas = Array.from(new Set(productosConStock.flatMap((producto) => variantesConStock(producto).map((variante) => variante.talla)))).sort(
     (a, b) => a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }),
   );
-  const categoriaPrincipal = categorias.length === 1 ? categorias[0]?.toUpperCase() : productosConStock[0]?.categoria?.toUpperCase() ?? "CATALOGO";
+  const categoriaPrincipal = categorias.length === 1 ? categorias[0]?.toUpperCase() : productosConStock[0]?.categoria?.toUpperCase() ?? "CATÁLOGO";
 
   const termino = busqueda.trim().toLowerCase();
   const filtrados = productosConStock.filter((producto) => {
@@ -103,43 +103,81 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
     }
   });
 
-  const ordenSeleccionado = ORDENES.find((item) => item.key === orden)?.label ?? "Fecha de release";
+  const filtrosActivos = [termino, colorFiltro, categoriaFiltro, tallaFiltro].filter(Boolean).length;
+
+  function limpiarFiltros() {
+    setBusqueda("");
+    setColorFiltro("");
+    setCategoriaFiltro("");
+    setTallaFiltro("");
+  }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-10 lg:gap-12">
-      <aside className="lg:sticky lg:top-28 self-start">
-        <div className="mb-10">
-          <h1 className="text-3xl sm:text-4xl uppercase" style={{ fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, letterSpacing: "-0.04em" }}>
-            {categoriaPrincipal}
-          </h1>
-          <p className="text-sm mt-3" style={{ color: "#a49a8f" }}>
-            {productosConStock.length} productos
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
+      <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+        <div className="rounded-[28px] border bg-white px-5 py-5 sm:px-6" style={{ borderColor: "#ece6dc" }}>
+          <p className="text-[10px] uppercase" style={{ letterSpacing: "0.2em", color: "#8f8478" }}>
+            Vista catálogo
           </p>
+          
+          <p className="mt-3 text-sm leading-6" style={{ color: "#8f8478" }}>
+            {productosConStock.length} producto{productosConStock.length !== 1 ? "s" : ""} disponibles listos para reserva.
+          </p>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setFiltrosAbiertos((actual) => !actual)}
+              className="inline-flex items-center rounded-full border px-4 py-3 text-[11px] uppercase lg:hidden"
+              style={{ letterSpacing: "0.16em", borderColor: "#ddd5cb", color: "#4d433b", background: "#fbf8f3" }}
+            >
+              {filtrosAbiertos ? "Ocultar filtros" : `Ver filtros${filtrosActivos ? ` (${filtrosActivos})` : ""}`}
+            </button>
+            {filtrosActivos > 0 ? (
+              <button
+                type="button"
+                onClick={limpiarFiltros}
+                className="inline-flex items-center rounded-full border px-4 py-3 text-[11px] uppercase"
+                style={{ letterSpacing: "0.16em", borderColor: "#ddd5cb", color: "#8f8478" }}
+              >
+                Limpiar filtros
+              </button>
+            ) : null}
+          </div>
         </div>
 
-        <div className="border-t pt-8" style={{ borderColor: "#ece6dc" }}>
+        <div className={`${filtrosAbiertos ? "block" : "hidden"} rounded-[28px] border bg-white px-5 py-5 sm:px-6 lg:block`} style={{ borderColor: "#ece6dc" }}>
           <div>
-            <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.16em", color: "#111111" }}>
+            <p className="text-[10px] uppercase mb-3" style={{ letterSpacing: "0.18em", color: "#8f8478" }}>
               Buscar
             </p>
             <input
               type="text"
               value={busqueda}
               onChange={(event) => setBusqueda(event.target.value)}
-              placeholder="Nombre, modelo..."
-              className="w-full border px-4 py-3 text-sm focus:outline-none"
-              style={{ borderColor: "#ece6dc", background: "white" }}
+              placeholder="Nombre, modelo o categoría"
+              className="w-full rounded-[18px] border px-4 py-3 text-sm focus:outline-none"
+              style={{ borderColor: "#ece6dc", background: "#fbf8f3" }}
             />
           </div>
-          <p className="text-[11px] uppercase mb-8 mt-8" style={{ letterSpacing: "0.18em", color: "#111111" }}>
-            Filtrado por
-          </p>
 
-          <div className="mb-10">
-            <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.16em", color: "#111111" }}>
-              Color
-            </p>
-            <div className="grid grid-cols-4 gap-3">
+          <div className="mt-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <p className="text-[10px] uppercase" style={{ letterSpacing: "0.18em", color: "#8f8478" }}>
+                Color
+              </p>
+              {colorFiltro ? (
+                <button
+                  type="button"
+                  onClick={() => setColorFiltro("")}
+                  className="text-[10px] uppercase"
+                  style={{ letterSpacing: "0.14em", color: "#8f8478" }}
+                >
+                  Limpiar
+                </button>
+              ) : null}
+            </div>
+            <div className="grid grid-cols-5 gap-3">
               {colores.map((color) => {
                 const activo = colorFiltro === color;
                 return (
@@ -148,37 +186,27 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
                     type="button"
                     title={color}
                     onClick={() => setColorFiltro((actual) => (actual === color ? "" : color))}
-                    className="h-8 w-8 border transition-transform hover:scale-105"
+                    className="h-10 w-10 rounded-full border transition-transform hover:scale-105"
                     style={{
                       ...colorStyle(color),
                       borderColor: activo ? "#111111" : isLightProductColor(color) ? "#b8afa2" : "#ddd5cb",
-                      boxShadow: activo ? "0 0 0 2px rgba(17,17,17,0.12)" : "none",
+                      boxShadow: activo ? "0 0 0 3px rgba(17,17,17,0.12)" : "none",
                     }}
                   />
                 );
               })}
             </div>
-            {colorFiltro && (
-              <button
-                type="button"
-                onClick={() => setColorFiltro("")}
-                className="mt-4 text-[11px] uppercase transition-opacity hover:opacity-60"
-                style={{ letterSpacing: "0.16em", color: "#8f8478" }}
-              >
-                Limpiar color
-              </button>
-            )}
           </div>
 
-          <div className="mb-10">
-            <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.16em", color: "#111111" }}>
-              Categoria
+          <div className="mt-6">
+            <p className="text-[10px] uppercase mb-3" style={{ letterSpacing: "0.18em", color: "#8f8478" }}>
+              Categoría
             </p>
             <select
               value={categoriaFiltro}
               onChange={(event) => setCategoriaFiltro(event.target.value)}
-              className="w-full border px-4 py-3 text-sm focus:outline-none"
-              style={{ borderColor: "#ece6dc", background: "white" }}
+              className="w-full rounded-[18px] border px-4 py-3 text-sm focus:outline-none"
+              style={{ borderColor: "#ece6dc", background: "#fbf8f3" }}
             >
               <option value="">Todas</option>
               {categorias.map((categoria) => (
@@ -187,22 +215,24 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
                 </option>
               ))}
             </select>
-            {categoriaFiltro && (
-              <button
-                type="button"
-                onClick={() => setCategoriaFiltro("")}
-                className="mt-4 text-[11px] uppercase transition-opacity hover:opacity-60"
-                style={{ letterSpacing: "0.16em", color: "#8f8478" }}
-              >
-                Limpiar categoria
-              </button>
-            )}
           </div>
 
-          <div className="mb-10">
-            <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.16em", color: "#111111" }}>
-              Talla
-            </p>
+          <div className="mt-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <p className="text-[10px] uppercase" style={{ letterSpacing: "0.18em", color: "#8f8478" }}>
+                Talla
+              </p>
+              {tallaFiltro ? (
+                <button
+                  type="button"
+                  onClick={() => setTallaFiltro("")}
+                  className="text-[10px] uppercase"
+                  style={{ letterSpacing: "0.14em", color: "#8f8478" }}
+                >
+                  Limpiar
+                </button>
+              ) : null}
+            </div>
             <div className="flex flex-wrap gap-2">
               {tallas.map((talla) => {
                 const activa = tallaFiltro === talla;
@@ -211,11 +241,11 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
                     key={talla}
                     type="button"
                     onClick={() => setTallaFiltro((actual) => (actual === talla ? "" : talla))}
-                    className="min-w-10 border px-3 py-2 text-xs uppercase transition-colors hover:bg-[#f2eee8]"
+                    className="min-w-11 rounded-full border px-4 py-2.5 text-[11px] uppercase transition-colors"
                     style={{
                       letterSpacing: "0.12em",
                       borderColor: activa ? "#111111" : "#ddd5cb",
-                      background: activa ? "#111111" : "white",
+                      background: activa ? "#111111" : "#ffffff",
                       color: activa ? "#ffffff" : "#5f564e",
                     }}
                   >
@@ -224,73 +254,49 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
                 );
               })}
             </div>
-            {tallaFiltro && (
-              <button
-                type="button"
-                onClick={() => setTallaFiltro("")}
-                className="mt-4 text-[11px] uppercase transition-opacity hover:opacity-60"
-                style={{ letterSpacing: "0.16em", color: "#8f8478" }}
-              >
-                Limpiar talla
-              </button>
-            )}
           </div>
         </div>
       </aside>
 
       <section>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <p className="text-sm" style={{ color: "#8f8478" }}>
-            {productosVisibles.length} resultado{productosVisibles.length !== 1 ? "s" : ""}
-          </p>
+        <div className="mb-6 flex flex-col gap-4 rounded-[28px] border bg-white px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6" style={{ borderColor: "#ece6dc" }}>
+          <div>
+            <p className="text-[10px] uppercase" style={{ letterSpacing: "0.18em", color: "#8f8478" }}>
+              Resultado actual
+            </p>
+            <p className="mt-2 text-sm leading-6" style={{ color: "#5f564e" }}>
+              {productosVisibles.length} resultado{productosVisibles.length !== 1 ? "s" : ""} para explorar.
+            </p>
+          </div>
 
-          <div className="relative self-start sm:self-auto">
-            <button
-              type="button"
-              onClick={() => setOrdenAbierto((actual) => !actual)}
-              className="text-xs uppercase border px-5 py-4 min-w-[260px] text-left flex items-center justify-between"
-              style={{ letterSpacing: "0.14em", borderColor: "#ece6dc", background: "white", color: "#4d433b" }}
+          <div className="w-full sm:w-[280px]">
+            <label className="mb-2 block text-[10px] uppercase" style={{ letterSpacing: "0.18em", color: "#8f8478" }}>
+              Ordenar por
+            </label>
+            <select
+              value={orden}
+              onChange={(event) => setOrden(event.target.value as OrdenKey)}
+              className="w-full rounded-[18px] border px-4 py-3 text-sm focus:outline-none"
+              style={{ borderColor: "#ece6dc", background: "#fbf8f3", color: "#4d433b" }}
             >
-              <span>
-                Ordenar por <strong>{ordenSeleccionado}</strong>
-              </span>
-              <span>{ordenAbierto ? "^" : "v"}</span>
-            </button>
-
-            {ordenAbierto && (
-              <div className="absolute right-0 mt-1 w-full border bg-white z-20" style={{ borderColor: "#ece6dc" }}>
-                {ORDENES.map((opcion) => (
-                  <button
-                    key={opcion.key}
-                    type="button"
-                    onClick={() => {
-                      setOrden(opcion.key);
-                      setOrdenAbierto(false);
-                    }}
-                    className="w-full text-left px-4 py-3 text-xs uppercase transition-colors hover:bg-[#f2eee8]"
-                    style={{
-                      letterSpacing: "0.08em",
-                      background: orden === opcion.key ? "#f0ece6" : "white",
-                      color: "#4d433b",
-                    }}
-                  >
-                    {opcion.label}
-                  </button>
-                ))}
-              </div>
-            )}
+              {ORDENES.map((opcion) => (
+                <option key={opcion.key} value={opcion.key}>
+                  {opcion.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
         {productosVisibles.length === 0 ? (
-          <div className="border bg-white px-8 py-20 text-center" style={{ borderColor: "#ece6dc" }}>
+          <div className="rounded-[28px] border bg-white px-6 py-16 text-center" style={{ borderColor: "#ece6dc" }}>
             <p className="text-xl uppercase" style={{ letterSpacing: "0.18em", color: "#111111" }}>Sin resultados</p>
             <p className="text-sm mt-3" style={{ color: "#8f8478" }}>
-              Prueba con otro termino o selecciona un color diferente.
+              Prueba con otro término o limpia los filtros para ver más productos.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 xl:grid-cols-3">
             {productosVisibles.map((producto) => (
               <ProductoCard key={producto._id} producto={producto} />
             ))}
@@ -306,19 +312,24 @@ function ProductoCard({ producto }: { producto: CatalogProduct }) {
   const nuevo = esNuevo(producto.createdAt);
   const descuento = producto.descuento ?? 0;
   const stock = totalStock(producto);
+  const variantesDisponibles = variantesConStock(producto);
+  const colores = sortProductColors(Array.from(new Set(variantesDisponibles.map((variante) => variante.color))));
+  const tallas = Array.from(new Set(variantesDisponibles.map((variante) => variante.talla))).sort((a, b) =>
+    a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }),
+  );
 
   return (
     <Link href={`/catalogo/${producto._id}`} className="group block">
-      <article className="border bg-white h-full transition-transform duration-300 hover:-translate-y-1" style={{ borderColor: "#ece6dc" }}>
+      <article className="h-full overflow-hidden rounded-[24px] border bg-white transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(17,17,17,0.06)]" style={{ borderColor: "#ece6dc" }}>
         <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#fbf8f3" }}>
           {descuento > 0 && (
-            <span className="absolute left-4 top-4 z-10 bg-[#f0ece6] px-2.5 py-1 text-[11px] uppercase" style={{ letterSpacing: "0.1em" }}>
+            <span className="absolute left-3 top-3 z-10 rounded-full bg-[#f0ece6] px-3 py-1 text-[10px] uppercase" style={{ letterSpacing: "0.12em" }}>
               -{descuento}%
             </span>
           )}
           {descuento === 0 && nuevo && (
-            <span className="absolute left-4 top-4 z-10 bg-[#f0ece6] px-2.5 py-1 text-[11px] uppercase" style={{ letterSpacing: "0.1em" }}>
-              Novedades
+            <span className="absolute left-3 top-3 z-10 rounded-full bg-[#f0ece6] px-3 py-1 text-[10px] uppercase" style={{ letterSpacing: "0.12em" }}>
+              Nuevo
             </span>
           )}
 
@@ -328,6 +339,7 @@ function ProductoCard({ producto }: { producto: CatalogProduct }) {
               alt={producto.nombre}
               imgClassName="group-hover:scale-105 transition-transform duration-500"
               duracionMs={2800}
+              mostrarControles={false}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center" style={{ color: "#bbb0a2" }}>
@@ -343,19 +355,40 @@ function ProductoCard({ producto }: { producto: CatalogProduct }) {
           )}
         </div>
 
-        <div className="p-5">
-          <h3 className="text-[0.98rem] leading-snug uppercase min-h-[52px]" style={{ color: "#111111" }}>
-            {producto.nombre}
-          </h3>
-          <p className="mt-5 text-3xl font-semibold" style={{ color: "#111111" }}>
-            {formatearPrecio(producto.precioVenta)}
-          </p>
-          <p className="text-[11px] uppercase mt-2" style={{ letterSpacing: "0.08em", color: "#8f8478" }}>
+        <div className="p-4 sm:p-5">
+          <p className="text-[10px] uppercase" style={{ letterSpacing: "0.14em", color: "#8f8478" }}>
             {(producto.categoria ?? producto.modelo).toUpperCase()}
           </p>
-          <p className="text-[11px] uppercase mt-1" style={{ letterSpacing: "0.08em", color: stock > 0 ? "#8f8478" : "#b14f43" }}>
+          <h3 className="mt-2 min-h-[42px] text-sm leading-6 sm:min-h-[50px] sm:text-[0.98rem]" style={{ color: "#111111" }}>
+            {producto.nombre}
+          </h3>
+          <p className="mt-4 text-xl font-semibold sm:text-2xl" style={{ color: "#111111" }}>
+            {formatearPrecio(producto.precioVenta)}
+          </p>
+          <p className="mt-2 text-[11px]" style={{ color: stock > 0 ? "#8f8478" : "#b14f43" }}>
             {stock > 0 ? `${stock} unidades disponibles` : "Sin stock"}
           </p>
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
+              {colores.slice(0, 4).map((color) => (
+                <span
+                  key={color}
+                  className="block h-4 w-4 rounded-full border"
+                  style={{
+                    ...colorStyle(color),
+                    borderColor: isLightProductColor(color) ? "#b8afa2" : "#ddd5cb",
+                  }}
+                />
+              ))}
+              {colores.length > 4 ? (
+                <span className="text-[10px]" style={{ color: "#8f8478" }}>+{colores.length - 4}</span>
+              ) : null}
+            </div>
+            <span className="text-[10px] uppercase" style={{ letterSpacing: "0.12em", color: "#8f8478" }}>
+              {tallas.length} talla{tallas.length !== 1 ? "s" : ""}
+            </span>
+          </div>
         </div>
       </article>
     </Link>

@@ -4,8 +4,8 @@ import CatalogoGrid from "@/components/catalogo/CatalogoGrid";
 import { catalogVariantIsAvailable, type CatalogProduct } from "@/types/catalogo";
 
 export const metadata = {
-  title: "Catalogo de Chompas Andinas y Poleras",
-  description: "Descubre nuestra coleccion de chompas andinas tejidas y poleras exclusivas. Calidad y diseño boliviano.",
+  title: "Catálogo de Chompas Andinas y Poleras",
+  description: "Descubre nuestra colección de chompas andinas tejidas y poleras exclusivas con una experiencia optimizada para móvil.",
 };
 
 export default async function CatalogoPage() {
@@ -26,14 +26,17 @@ export default async function CatalogoPage() {
 
   return (
     <main className="min-h-screen bg-[#fbf9f5] text-[#111111]">
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <div className="flex items-center gap-2 text-[11px] uppercase mb-8 sm:mb-10" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
-          <span>Menu</span>
-          <span>{">"}</span>
-          <Link href="/" className="transition-opacity hover:opacity-60" style={{ color: "#d04d37" }}>
-            Catalogo
+      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-5 sm:py-8 lg:py-10">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase mb-6 sm:mb-8" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
+          <Link href="/" className="transition-opacity hover:opacity-60">
+            Inicio
           </Link>
+          <span>{">"}</span>
+          <span style={{ color: "#d04d37" }}>
+            Catálogo
+          </span>
         </div>
+
 
         <Suspense fallback={<CatalogoSkeleton />}>
           <CatalogoGrid productos={productos} />
@@ -45,13 +48,13 @@ export default async function CatalogoPage() {
 
 function CatalogoSkeleton() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-10">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
       <div className="hidden lg:block" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 gap-4 sm:gap-6 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="border bg-white animate-pulse" style={{ borderColor: "#ece6dc" }}>
+          <div key={i} className="overflow-hidden rounded-[24px] border bg-white animate-pulse" style={{ borderColor: "#ece6dc" }}>
             <div className="aspect-[3/4]" style={{ background: "#f2ede6" }} />
-            <div className="p-5 flex flex-col gap-3">
+            <div className="p-4 sm:p-5 flex flex-col gap-3">
               <div className="h-4 w-2/3 rounded" style={{ background: "#e7ded2" }} />
               <div className="h-8 w-1/3 rounded" style={{ background: "#e7ded2" }} />
               <div className="h-3 w-1/2 rounded" style={{ background: "#e7ded2" }} />

@@ -7,13 +7,13 @@ export const metadata: Metadata = {
     default: "FitAndes | Chompas Andinas y Poleras de Calidad",
     template: "%s | FitAndes"
   },
-  description: "Explora nuestra coleccion exclusiva de chompas andinas tejidas con maestria y una amplia variedad de poleras modernas. Calidad boliviana para el mundo.",
+  description: "Explora nuestra coleccion exclusiva de chompas andinas tejidas con maestria y una amplia variedad de poleras modernas. Calidad boliviana.",
   keywords: ["chompas andinas", "poleras", "ropa de bolivia", "moda andina", "camisetas", "ropa artesanal", "fitandes"],
   authors: [{ name: "FitAndes Team" }],
   openGraph: {
     title: "FitAndes - Chompas Andinas y Poleras",
     description: "Lo mejor en chompas andinas y poleras modernas.",
-    url: "https://fitandes.com",
+    url: "https://fit-andes.vercel.app",
     siteName: "FitAndes",
     locale: "es_BO",
     type: "website",

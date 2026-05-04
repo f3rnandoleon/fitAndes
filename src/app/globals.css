@@ -32,6 +32,13 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 ::selection {
@@ -58,4 +65,8 @@ body {
 
 .skip-link:focus {
   top: 0;
+}
+
+.mobile-safe-bottom {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
 }
