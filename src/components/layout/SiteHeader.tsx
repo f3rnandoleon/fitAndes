@@ -65,7 +65,7 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
           <div className="flex items-center">
             <nav className="hidden md:flex items-center gap-6 text-[11px] uppercase" style={{ letterSpacing: "0.18em", color: "#5f564e" }}>
               {NAV_LINKS.map((item) => (
-                <Link key={item.label} href={item.href} className="transition-opacity hover:opacity-55">
+                <Link key={item.label} href={item.href} className="transition-opacity hover:opacity-55 ">
                   {item.label}
                 </Link>
               ))}
@@ -84,7 +84,7 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
               <Image
                 src={logo}
                 alt="Nueva Colección"
-                width={350}
+                width={400}
                 height={150}
                 sizes="100vw"
                 className="pointer-events-none object-cover object-center lg:object-right"
@@ -273,7 +273,7 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
             <Link
               key={item.label}
               href={item.href}
-              className="whitespace-nowrap rounded-full border px-3 py-2 text-[10px] uppercase transition-colors hover:bg-white"
+              className="whitespace-nowrap rounded-full border px-3 py-2 text-[10px] uppercase transition-colors hover:bg-white active:scale-95"
               style={{ letterSpacing: "0.14em", color: "#5f564e", borderColor: "#ddd5cb", background: "rgba(255,255,255,0.62)" }}
             >
               {item.label}

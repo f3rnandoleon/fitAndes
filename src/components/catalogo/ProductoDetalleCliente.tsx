@@ -261,18 +261,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
           </span>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {resumenRapido.map((item) => (
-            <div key={item.label} className="rounded-[22px] border px-4 py-4" style={{ borderColor: "#eee5da", background: "#fbf8f3" }}>
-              <p className="text-[10px] uppercase" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
-                {item.label}
-              </p>
-              <p className="mt-2 text-lg" style={{ color: "#201a16", fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                {item.value}
-              </p>
-            </div>
-          ))}
-        </div>
+
 
         <div className="mt-6 flex flex-wrap items-end gap-3">
           <p className="text-[1.9rem] leading-none sm:text-[2.2rem]" style={{ color: "#201a16", fontFamily: "Georgia, 'Times New Roman', serif" }}>

@@ -1,4 +1,4 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
 import { BiDevices, BiHistory, BiLogIn } from "react-icons/bi";
 import { FaWhatsapp } from "react-icons/fa";
@@ -198,8 +198,8 @@ export default async function HomePage() {
                 const badge = esNuevo(item.createdAt) ? "Nuevo" : "Disponible";
 
                 return (
-                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block">
-                    <article className="overflow-hidden rounded-[26px] border bg-white shadow-[0_14px_40px_rgba(17,17,17,0.04)] transition-transform duration-300 hover:-translate-y-1" style={{ borderColor: "#ece6dc" }}>
+                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block " >
+                    <article className="overflow-hidden rounded-[26px] border bg-white shadow-[0_14px_40px_rgba(17,17,17,0.04)] transition-transform duration-300 hover:-translate-y-1 active:scale-95" style={{ borderColor: "#ece6dc" }}>
                       <div className="relative mb-4 overflow-hidden" style={{ background: "#e8e4de", aspectRatio: "3 / 4" }}>
                         <div
                           className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white"
@@ -331,8 +331,8 @@ export default async function HomePage() {
                 const tag = descuento > 0 ? null : esNuevo(item.createdAt) ? "Nuevo" : null;
 
                 return (
-                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block">
-                    <article className="overflow-hidden rounded-[24px] border bg-white transition-transform duration-300 hover:-translate-y-1" style={{ borderColor: "#ece6dc" }}>
+                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block ">
+                    <article className="overflow-hidden rounded-[24px] border bg-white transition-transform duration-300 hover:-translate-y-1 active:scale-95" style={{ borderColor: "#ece6dc" }}>
                       <div className="relative overflow-hidden" style={{ background: "#e8e4de", aspectRatio: "3/4" }}>
                         {tag && (
                           <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white" style={{ background: "#b8965a", letterSpacing: "0.12em" }}>
@@ -473,7 +473,7 @@ export default async function HomePage() {
         href={WHATSAPP_LINK}
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
+        className="fixed bottom-6 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
         aria-label="Contactar por WhatsApp"
       >
         <FaWhatsapp size={30} />

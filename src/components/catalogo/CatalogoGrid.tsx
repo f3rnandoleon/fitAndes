@@ -126,7 +126,7 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
             <button
               type="button"
               onClick={() => setFiltrosAbiertos((actual) => !actual)}
-              className="inline-flex items-center rounded-full border px-4 py-3 text-[11px] uppercase lg:hidden"
+              className="inline-flex items-center rounded-full border px-4 py-3 text-[11px] uppercase lg:hidden active:scale-95"
               style={{ letterSpacing: "0.16em", borderColor: "#ddd5cb", color: "#4d433b", background: "#fbf8f3" }}
             >
               {filtrosAbiertos ? "Ocultar filtros" : `Ver filtros${filtrosActivos ? ` (${filtrosActivos})` : ""}`}
@@ -318,7 +318,7 @@ function ProductoCard({ producto }: { producto: CatalogProduct }) {
 
   return (
     <Link href={`/catalogo/${producto._id}`} className="group block">
-      <article className="h-full overflow-hidden rounded-[24px] border bg-white transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(17,17,17,0.06)]" style={{ borderColor: "#ece6dc" }}>
+      <article className="h-full overflow-hidden rounded-[24px] border bg-white transition-transform duration-300 hover:-translate-y-1 active:scale-95 hover:shadow-[0_18px_40px_rgba(17,17,17,0.06)]" style={{ borderColor: "#ece6dc" }}>
         <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#fbf8f3" }}>
           {descuento > 0 && (
             <span className="absolute left-3 top-3 z-10 rounded-full bg-[#f0ece6] px-3 py-1 text-[10px] uppercase" style={{ letterSpacing: "0.12em" }}>

@@ -1,10 +1,11 @@
-﻿"use client";
-
+"use client";
+import Image from "next/image";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
+import logo from "../../../../public/fitAndes.png";
 
 function sanitizeCallbackUrl(value: string | null) {
   if (!value || !value.startsWith("/")) return "/dashboard";
@@ -60,7 +61,14 @@ export default function LoginPage() {
             color: "#1a1a1a",
           }}
         >
-          FitAndes
+          <Image
+            src={logo}
+            alt="Nueva Colección"
+            width={400}
+            height={150}
+            sizes="100vw"
+            className="pointer-events-none object-cover object-center lg:object-right"
+          />
         </Link>
 
         <div className="z-10">
@@ -91,14 +99,21 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           <Link
             href="/"
-            className="inline-flex lg:hidden text-xl uppercase font-bold mb-10"
+            className="inline-flex lg:hidden text-xl uppercase font-bold mb-4"
             style={{
               fontFamily: "Georgia, 'Times New Roman', serif",
               letterSpacing: "0.2em",
               color: "#1a1a1a",
             }}
           >
-            FitAndes
+            <Image
+              src={logo}
+              alt="Nueva Colección"
+              width={400}
+              height={100}
+              sizes="100vw"
+              className="pointer-events-none object-cover object-center lg:object-right"
+            />
           </Link>
 
           <div className="mb-8">
@@ -113,7 +128,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          
+
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
@@ -159,7 +174,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 text-xs uppercase text-white py-3.5 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[48px]"
+              className="mt-1 text-xs uppercase text-white py-3.5 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[48px] active:scale-95"
               style={{ background: "#1a1a1a", letterSpacing: "0.18em" }}
             >
               {loading ? (
@@ -172,11 +187,11 @@ export default function LoginPage() {
 
           <p className="mt-6 text-center text-sm" style={{ color: "var(--muted)" }}>
             No tienes cuenta?{" "}
-            <Link href="/registro" className="hover:opacity-60 transition-opacity" style={{ color: "#1a1a1a" }}>
+            <Link href={`/registro${callbackUrl ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`} className="hover:opacity-60 transition-opacity" style={{ color: "#1a1a1a" }}>
               Registrate gratis
             </Link>
           </p>
-          <div className="mt-6">
+          <div className="mt-6 active:scale-95">
             <GoogleAuthButton callbackUrl={callbackUrl} text="signin_with" promptText="o entra con Google" />
           </div>
         </div>

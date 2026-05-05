@@ -1,15 +1,18 @@
 "use client";
-
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
+import logo from "../../../../public/fitAndes.png";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function RegistroPage() {
   const router = useRouter();
+  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const callbackUrl = searchParams?.get("callbackUrl") || "/dashboard";
   const [form, setForm] = useState({
     fullname: "",
     email: "",
@@ -71,7 +74,8 @@ export default function RegistroPage() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push(callbackUrl);
+      router.refresh();
     } catch {
       setError("Error de conexion. Intenta de nuevo.");
     } finally {
@@ -97,7 +101,14 @@ export default function RegistroPage() {
             color: "#1a1a1a",
           }}
         >
-          FitAndes
+          <Image
+            src={logo}
+            alt="Nueva Colección"
+            width={400}
+            height={150}
+            sizes="100vw"
+            className="pointer-events-none object-cover object-center lg:object-right"
+          />
         </Link>
 
         <div className="z-10">
@@ -143,14 +154,21 @@ export default function RegistroPage() {
         <div className="w-full max-w-sm">
           <Link
             href="/"
-            className="inline-flex lg:hidden text-xl uppercase font-bold mb-10"
+            className="inline-flex lg:hidden text-xl uppercase font-bold mb-4"
             style={{
               fontFamily: "Georgia, 'Times New Roman', serif",
               letterSpacing: "0.2em",
               color: "#1a1a1a",
             }}
           >
-            FitAndes
+            <Image
+              src={logo}
+              alt="Nueva Colección"
+              width={400}
+              height={150}
+              sizes="100vw"
+              className="pointer-events-none object-cover object-center lg:object-right"
+            />
           </Link>
 
           <div className="mb-8">
@@ -246,7 +264,7 @@ export default function RegistroPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 text-xs uppercase text-white py-3.5 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[48px]"
+              className="mt-1 text-xs uppercase text-white py-3.5 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[48px] active:scale-95"
               style={{ background: "#1a1a1a", letterSpacing: "0.18em" }}
             >
               {loading ? (
@@ -263,8 +281,8 @@ export default function RegistroPage() {
               Inicia sesion
             </Link>
           </p>
-          
-          <div className="mt-6">
+
+          <div className="mt-6 active:scale-95">
             <GoogleAuthButton callbackUrl="/dashboard" text="signup_with" promptText="o registrate con Google" />
           </div>
         </div>

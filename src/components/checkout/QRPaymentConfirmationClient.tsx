@@ -75,7 +75,10 @@ export default function QRPaymentConfirmationClient() {
         body: formData,
       });
 
-      // Use response directly if needed, otherwise ignore json() if not used
+      // 3. Limpiar todo (el pedido ya se creó, así que vaciamos el carrito local)
+      window.localStorage.removeItem("fitandes-pending-checkout");
+      clearCart();
+
       if (!uploadResponse.ok) {
         // El pedido se creo pero el comprobante fallo. 
         // Redirigimos al detalle para que lo intente de nuevo ahi.
@@ -83,9 +86,6 @@ export default function QRPaymentConfirmationClient() {
         return;
       }
 
-      // 3. Limpiar todo
-      window.localStorage.removeItem("fitandes-pending-checkout");
-      clearCart();
       setSuccess(true);
 
       setTimeout(() => {
