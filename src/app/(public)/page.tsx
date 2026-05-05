@@ -1,6 +1,7 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { BiDevices, BiHistory, BiLogIn } from "react-icons/bi";
+import { FaWhatsapp } from "react-icons/fa";
 import { GrSecure } from "react-icons/gr";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
@@ -11,6 +12,9 @@ const API_URL =
   process.env.API_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
   (process.env.NEXTAUTH_URL ? `${process.env.NEXTAUTH_URL}/api` : undefined);
+
+const WHATSAPP_NUMBER = process.env.WHATSAPP_NUMBER || "59176574068";
+const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=Hola,%20me%20gustaría%20más%20información.`;
 
 type VariantePublica = CatalogVariant;
 
@@ -148,7 +152,7 @@ export default async function HomePage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/catalogo"
-                className="inline-flex items-center justify-center gap-3 rounded-full px-6 py-4 text-[11px] uppercase text-white transition-transform hover:-translate-y-0.5"
+                className="inline-flex items-center justify-center gap-3 rounded-full px-6 py-4 text-[11px] uppercase text-white transition-all hover:-translate-y-0.5 active:scale-95"
                 style={{ background: "#1a1a1a", letterSpacing: "0.18em" }}
               >
                 Explorar catálogo
@@ -156,7 +160,7 @@ export default async function HomePage() {
               </Link>
               <Link
                 href="/#nuevo"
-                className="inline-flex items-center justify-center gap-3 rounded-full border px-6 py-4 text-[11px] uppercase transition-colors hover:bg-white"
+                className="inline-flex items-center justify-center gap-3 rounded-full border px-6 py-4 text-[11px] uppercase transition-all hover:bg-white active:scale-95"
                 style={{ letterSpacing: "0.18em", borderColor: "rgba(26,26,26,0.12)", color: "#1a1a1a", background: "rgba(255,255,255,0.45)" }}
               >
                 Ver novedades
@@ -224,7 +228,7 @@ export default async function HomePage() {
                           </div>
                         )}
 
-                        <div className="absolute inset-x-3 bottom-3 flex justify-center opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100">
+                        <div className="absolute inset-x-3 bottom-3 flex justify-center opacity-0 transition-opacity duration-300 md:group-hover:opacity-100">
                           <span className="rounded-full bg-[#1a1a1a] px-4 py-2 text-[10px] uppercase text-white" style={{ letterSpacing: "0.2em" }}>
                             Ver producto
                           </span>
@@ -261,14 +265,14 @@ export default async function HomePage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/registro"
-                className="inline-flex items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase text-white transition-opacity hover:opacity-85"
+                className="inline-flex items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase text-white transition-all hover:opacity-85 active:scale-95"
                 style={{ background: "#1a1a1a", letterSpacing: "0.2em" }}
               >
                 Crear cuenta
               </Link>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center rounded-full border px-6 py-4 text-[11px] uppercase transition-colors hover:bg-white"
+                className="inline-flex items-center justify-center rounded-full border px-6 py-4 text-[11px] uppercase transition-all hover:bg-white active:scale-95"
                 style={{ border: "1px solid #1a1a1a", color: "#1a1a1a", letterSpacing: "0.2em" }}
               >
                 Ingresar
@@ -276,7 +280,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="hidden grid-cols-1 gap-4 sm:grid sm:grid-cols-2">
             {beneficios.map(({ icon, title, desc }) => (
               <div key={title} className="rounded-[24px] border bg-[#f6f2ec] px-5 py-5 shadow-[0_8px_24px_rgba(17,17,17,0.03)]" style={{ borderColor: "#dcd2c6" }}>
                 <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border bg-white text-xl" style={{ borderColor: "#ddd2c5", color: "#1a1a1a" }}>
@@ -361,7 +365,7 @@ export default async function HomePage() {
                           </div>
                         )}
 
-                        <div className="absolute inset-x-3 bottom-3 flex justify-center opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100">
+                        <div className="absolute inset-x-3 bottom-3 flex justify-center opacity-0 transition-opacity duration-300 md:group-hover:opacity-100">
                           <span className="rounded-full bg-[#1a1a1a] px-4 py-2 text-[10px] uppercase text-white" style={{ letterSpacing: "0.15em" }}>
                             Ver
                           </span>
@@ -424,6 +428,25 @@ export default async function HomePage() {
               ))}
             </div>
           </div>
+
+          <div>
+            <p className="text-xs uppercase font-semibold mb-5" style={{ letterSpacing: "0.2em", color: "#9c8f82" }}>
+              Contacto
+            </p>
+            <div className="flex flex-col gap-3">
+              <a
+                href={WHATSAPP_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm hover:opacity-50 transition-opacity"
+                style={{ color: "#f5f2ee" }}
+              >
+                <FaWhatsapp className="text-lg text-green-500" />
+                WhatsApp
+              </a>
+            </div>
+          </div>
+
           {/*
           <div>
             <p className="text-xs uppercase font-semibold mb-5" style={{ letterSpacing: "0.2em", color: "#9c8f82" }}>
@@ -444,6 +467,17 @@ export default async function HomePage() {
           </p>
         </div>
       </footer>
+
+      {/* Botón flotante de WhatsApp */}
+      <a
+        href={WHATSAPP_LINK}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
+        aria-label="Contactar por WhatsApp"
+      >
+        <FaWhatsapp size={30} />
+      </a>
     </main>
   );
 }

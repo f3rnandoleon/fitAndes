@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import AppProviders from "@/components/providers/AppProviders";
 import "./globals.css";
-
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 export const metadata: Metadata = {
   title: {
     default: "FitAndes | Chompas Andinas y Poleras de Calidad",
@@ -34,6 +35,8 @@ export default function RootLayout({
             {children}
           </div>
         </AppProviders>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

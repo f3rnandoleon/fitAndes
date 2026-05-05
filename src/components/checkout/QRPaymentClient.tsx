@@ -20,7 +20,7 @@ export default function QRPaymentClient({ paymentId, order }: Props) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const qrImageUrl = "https://res.cloudinary.com/dq1jeikev/image/upload/v1777531404/comprobante_sglufd.jpg";
+  const qrImageUrl = "https://res.cloudinary.com/dq1jeikev/image/upload/v1777964054/comprobante_xvdhuf.jpg";
   const total = getPedidoTotal(order);
 
   async function handleUpload() {
@@ -113,11 +113,11 @@ export default function QRPaymentClient({ paymentId, order }: Props) {
       <Card className="flex flex-col items-center text-center">
         <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-4">Paso 1: Escanear y Pagar</p>
         <h2 className="text-xl font-serif mb-6">Codigo QR de Pago</h2>
-        
+
         <div className="relative w-full aspect-square max-w-[320px] bg-white p-4 border border-border/50 rounded-xl mb-6 shadow-sm">
-          <Image 
-            src={qrImageUrl} 
-            alt="QR de Pago FitAndes" 
+          <Image
+            src={qrImageUrl}
+            alt="QR de Pago FitAndes"
             fill
             className="object-contain p-2"
           />
@@ -128,7 +128,7 @@ export default function QRPaymentClient({ paymentId, order }: Props) {
             <span className="text-sm text-muted">Monto a pagar:</span>
             <span className="text-lg font-bold text-foreground">{formatPrice(total)}</span>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-3">
             <Button variant="outline" size="sm" onClick={handleDownloadQR} className="w-full">
               Descargar
@@ -138,9 +138,9 @@ export default function QRPaymentClient({ paymentId, order }: Props) {
             </Button>
           </div>
         </div>
-        
+
         <p className="mt-8 text-[11px] text-muted leading-relaxed">
-          Escanea el codigo desde tu aplicacion bancaria favorita. <br/>
+          Escanea el codigo desde tu aplicacion bancaria favorita. <br />
           Asegurate de que el monto coincida exactamente con el total de tu pedido.
         </p>
       </Card>
@@ -149,13 +149,13 @@ export default function QRPaymentClient({ paymentId, order }: Props) {
       <Card className="flex flex-col">
         <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-4">Paso 2: Confirmar Pago</p>
         <h2 className="text-xl font-serif mb-6">Subir Comprobante</h2>
-        
+
         <div className="flex-1 flex flex-col justify-center">
           <div className="border-2 border-dashed border-border rounded-2xl p-8 text-center transition-colors hover:border-accent/40 bg-surface/30">
-            <input 
-              type="file" 
-              id="receipt-upload" 
-              accept="image/*" 
+            <input
+              type="file"
+              id="receipt-upload"
+              accept="image/*"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               className="hidden"
             />
@@ -179,16 +179,16 @@ export default function QRPaymentClient({ paymentId, order }: Props) {
           )}
 
           <div className="mt-8 space-y-4">
-            <Button 
-              variant="primary" 
-              size="lg" 
-              className="w-full" 
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full"
               onClick={handleUpload}
               disabled={!file || uploading}
             >
               {uploading ? "Subiendo..." : "Confirmar y Finalizar"}
             </Button>
-            
+
             <p className="text-[11px] text-center text-muted">
               Una vez subido, el equipo verificara la transaccion y procesara tu pedido.
             </p>

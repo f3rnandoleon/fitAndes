@@ -75,7 +75,7 @@ export default function CarruselImagenes({
             type="button"
             aria-label="Imagen anterior"
             onClick={manejarControl(-1)}
-            className="absolute left-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
+            className="absolute left-3 top-1/2 z-10 hidden md:flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
             style={{ background: "rgba(26,26,26,0.48)", borderColor: "rgba(245,242,238,0.28)", color: "#f5f2ee" }}
           >
             {"\u2039"}
@@ -84,7 +84,7 @@ export default function CarruselImagenes({
             type="button"
             aria-label="Imagen siguiente"
             onClick={manejarControl(1)}
-            className="absolute right-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
+            className="absolute right-3 top-1/2 z-10 hidden md:flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
             style={{ background: "rgba(26,26,26,0.48)", borderColor: "rgba(245,242,238,0.28)", color: "#f5f2ee" }}
           >
             {"\u203A"}
@@ -94,7 +94,7 @@ export default function CarruselImagenes({
 
       {mostrarIndicadores && imagenes.length > 1 && (
         <div
-          className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-2 py-1"
+          className="absolute bottom-3 left-1/2 hidden md:flex -translate-x-1/2 items-center gap-1.5 rounded-full px-2 py-1"
           style={{ background: "rgba(26,26,26,0.32)" }}
         >
           {imagenes.map((_, index) => (

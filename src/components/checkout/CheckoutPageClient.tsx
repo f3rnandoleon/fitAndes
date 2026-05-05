@@ -412,7 +412,7 @@ export default function CheckoutPageClient() {
                 Finalizar compra
               </h1>
               <p className="mt-4 text-sm text-muted leading-relaxed">
-                Tu carrito local se sincronizara con el sistema central para generar un pedido real y reservar stock.
+                Revisa tu pedido y los detalles antes de finalizar la compra.
               </p>
             </div>
 
@@ -479,9 +479,8 @@ export default function CheckoutPageClient() {
                     return (
                       <label
                         key={option.value}
-                        className={`block rounded-[20px] border px-4 py-3 transition-colors ${
-                          disabled ? "cursor-not-allowed bg-surface/20 opacity-50" : "cursor-pointer"
-                        } ${paymentMethod === option.value ? "border-foreground bg-surface/30" : "border-border bg-white"}`}
+                        className={`block rounded-[20px] border px-4 py-3 transition-all ${disabled ? "cursor-not-allowed bg-surface/20 opacity-50" : "cursor-pointer active:scale-[0.98]"
+                          } ${paymentMethod === option.value ? "border-foreground bg-surface/30" : "border-border bg-white"}`}
                       >
                         <div className="flex items-start gap-3">
                           <input

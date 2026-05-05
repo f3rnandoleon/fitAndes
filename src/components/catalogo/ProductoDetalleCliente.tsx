@@ -325,7 +325,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
                   key={`${color}-${colorSecundario || ""}`}
                   type="button"
                   onClick={() => seleccionarColor(color, colorSecundario)}
-                  className="flex items-center gap-2 rounded-full border px-3 py-2 transition-colors hover:bg-white"
+                  className="flex items-center gap-2 rounded-full border px-3 py-2 transition-all hover:bg-white active:scale-95"
                   style={{
                     borderColor: activo ? "#111111" : "#e2d8cc",
                     background: activo ? "#ffffff" : "transparent",
@@ -370,7 +370,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
                   key={tallaDisponible}
                   type="button"
                   onClick={() => seleccionarTalla(tallaDisponible)}
-                  className="min-w-12 rounded-full border px-4 py-2.5 text-sm transition-colors"
+                  className="min-w-12 rounded-full border px-4 py-2.5 text-sm transition-all active:scale-95"
                   style={{
                     borderColor: activa ? "#111111" : "#e2d8cc",
                     background: activa ? "#111111" : "#ffffff",
@@ -389,7 +389,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
             <button
               type="button"
               onClick={() => setCantidad((actual) => Math.max(1, actual - 1))}
-              className="h-12 w-12 text-lg"
+              className="h-12 w-12 text-lg active:scale-90 transition-transform"
               aria-label="Reducir cantidad"
             >
               -
@@ -400,7 +400,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
             <button
               type="button"
               onClick={() => setCantidad((actual) => Math.min(stockActual || 1, actual + 1))}
-              className="h-12 w-12 text-lg"
+              className="h-12 w-12 text-lg active:scale-90 transition-transform"
               aria-label="Aumentar cantidad"
               disabled={stockActual <= 0}
             >
@@ -412,7 +412,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
             type="button"
             onClick={reservarSeleccion}
             disabled={!varianteSeleccionada || stockActual <= 0}
-            className="inline-flex flex-1 items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-45 hover:opacity-88"
+            className="inline-flex flex-1 items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase text-white transition-all disabled:cursor-not-allowed disabled:opacity-45 hover:opacity-88 active:scale-[0.98]"
             style={{ background: "#1a1a1a", letterSpacing: "0.24em" }}
           >
             Añadir a reserva
@@ -434,7 +434,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
           {!authenticated ? (
             <Link
               href="/login"
-              className="rounded-[22px] border px-4 py-4 text-sm transition-colors hover:bg-[#f8f4ee]"
+              className="rounded-[22px] border px-4 py-4 text-sm transition-all hover:bg-[#f8f4ee] active:scale-[0.98]"
               style={{ borderColor: "#ece6dc", color: "var(--muted)" }}
             >
               Inicia sesión para guardar tu reserva y seguir tus pedidos.
@@ -447,10 +447,10 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
 
           <Link
             href="/catalogo"
-            className="rounded-[22px] border px-4 py-4 text-sm transition-colors hover:bg-[#f8f4ee]"
+            className="rounded-[22px] border px-4 py-4 text-sm transition-all hover:bg-[#f8f4ee] active:scale-[0.98]"
             style={{ borderColor: "#ece6dc", color: "var(--muted)" }}
           >
-            Volver al catálogo para seguir explorando más modelos.
+            Volver al catálogo.
           </Link>
         </div>
       </section>
