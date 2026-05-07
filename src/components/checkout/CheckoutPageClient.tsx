@@ -221,16 +221,16 @@ export default function CheckoutPageClient() {
     const normalizedSenderPhone = senderPhone.replace(/\D/g, "");
 
     if (!authenticated) {
-      return "Inicia sesion para registrar tu pedido en el historial.";
+      return "Inicia sesión para registrar tu pedido en el historial.";
     }
 
     if (items.length === 0) {
-      return "Tu carrito esta vacio.";
+      return "Tu carrito está vacío.";
     }
 
     const invalidItem = items.find((item) => !item.productoId);
     if (invalidItem) {
-      return "Hay un producto sin identificador valido. Vuelve a agregarlo desde el catalogo.";
+      return "Hay un producto sin identificador válido. Vuelve a agregarlo desde el catálogo.";
     }
 
     if (notes.trim().length > 300) {
@@ -247,7 +247,7 @@ export default function CheckoutPageClient() {
       }
 
       if (normalizedPhone.length < 8) {
-        return "Ingresa un celular valido para coordinar la entrega.";
+        return "Ingresa un celular válido para coordinar la entrega.";
       }
 
       if (!pickupScheduleId) {
@@ -277,7 +277,7 @@ export default function CheckoutPageClient() {
       }
 
       if (normalizedSenderPhone.length < 8) {
-        return "Ingresa un celular valido del destinatario.";
+        return "Ingresa un celular válido del destinatario.";
       }
     }
 
@@ -380,18 +380,23 @@ export default function CheckoutPageClient() {
     return (
       <main className="min-h-[calc(100vh-82px)] bg-background px-4 py-10 sm:px-6 sm:py-14">
         <Card className="max-w-[860px] mx-auto rounded-[30px] py-12 text-center sm:py-20">
+          <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-surface-soft text-muted">
+            <svg className="h-10 w-10 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+          </div>
           <p className="text-[10px] uppercase mb-4 tracking-[0.2em] text-subtle">
             Carrito
           </p>
           <h1 className="mb-4 text-3xl font-serif text-foreground sm:text-4xl">
-            Tu carrito esta vacio
+            Tu carrito está vacío
           </h1>
           <p className="text-sm max-w-md mx-auto text-muted">
-            Agrega productos desde el catalogo para revisar variantes, entrega y confirmar tu pedido.
+            Agrega productos desde el catálogo para revisar variantes, entrega y confirmar tu pedido.
           </p>
           <div className="mt-10">
             <Link href="/catalogo">
-              <Button variant="primary" size="lg">Ir al catalogo</Button>
+              <Button variant="primary" size="lg">Ir al catálogo</Button>
             </Link>
           </div>
         </Card>
@@ -406,7 +411,7 @@ export default function CheckoutPageClient() {
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-2xl">
               <p className="text-[10px] uppercase mb-2 tracking-[0.2em] text-subtle">
-                Revision final
+                Revisión final
               </p>
               <h1 className="text-3xl font-serif text-foreground sm:text-5xl">
                 Finalizar compra
@@ -427,6 +432,15 @@ export default function CheckoutPageClient() {
 
         <div className="grid gap-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
           <div className="space-y-6 sm:space-y-8">
+            {!authenticated && (
+              <div className="rounded-[20px] bg-accent/10 border border-accent/20 p-5">
+                <h3 className="text-sm font-semibold text-accent mb-2">Inicia sesión para comprar</h3>
+                <p className="text-sm text-muted">
+                  Puedes revisar tu carrito, pero necesitarás iniciar sesión para registrar y confirmar el pedido.
+                </p>
+              </div>
+            )}
+            
             <section>
               <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle">Productos en reserva</h2>
               <CheckoutCartSummary
@@ -469,7 +483,7 @@ export default function CheckoutPageClient() {
 
             {deliveryMethod !== "WHATSAPP" && (
               <section>
-                <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle">Metodo de pago</h2>
+                <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle">Método de pago</h2>
                 <Card className="space-y-4 rounded-[28px]">
                   {[
                     { value: "EFECTIVO", label: "Efectivo", description: "Pago al momento de la entrega." },
@@ -532,7 +546,7 @@ export default function CheckoutPageClient() {
 
             <div className="mt-6 px-2 sm:px-4">
               <Link href="/catalogo" className="block text-center text-[10px] uppercase tracking-widest text-subtle transition-colors hover:text-foreground">
-                Volver al catalogo
+                Volver al catálogo
               </Link>
             </div>
           </aside>

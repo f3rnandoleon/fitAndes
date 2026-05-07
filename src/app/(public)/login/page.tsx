@@ -35,7 +35,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (res?.error) {
-      setError(res.error === "CredentialsSignin" ? "Correo o contrasena incorrectos." : res.error);
+      setError(res.error === "CredentialsSignin" ? "Correo o contraseña incorrectos." : res.error);
       return;
     }
 
@@ -108,7 +108,7 @@ export default function LoginPage() {
           >
             <Image
               src={logo}
-              alt="Nueva Colección"
+              alt="Logo FitAndes"
               width={400}
               height={100}
               sizes="100vw"

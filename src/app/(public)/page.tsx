@@ -87,15 +87,18 @@ export default async function HomePage() {
     })
     .slice(0, 3);
 
-  const seleccionBase = [...productosDisponibles].sort((a, b) => {
-    const vendidosA = normalizarNumero(a.totalVendidos);
-    const vendidosB = normalizarNumero(b.totalVendidos);
-    if (vendidosA !== vendidosB) return vendidosB - vendidosA;
+  const recienLlegadosIds = new Set(recienLlegados.map(p => p._id));
+  const seleccionBase = [...productosDisponibles]
+    .filter(p => !recienLlegadosIds.has(p._id))
+    .sort((a, b) => {
+      const vendidosA = normalizarNumero(a.totalVendidos);
+      const vendidosB = normalizarNumero(b.totalVendidos);
+      if (vendidosA !== vendidosB) return vendidosB - vendidosA;
 
-    return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
-  });
+      return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+    });
 
-  const seleccion = (seleccionBase.length > 0 ? seleccionBase : productos).slice(0, 4);
+  const seleccion = (seleccionBase.length > 0 ? seleccionBase : productos.filter(p => !recienLlegadosIds.has(p._id))).slice(0, 4);
   /*const categorias = Array.from(new Set(productosDisponibles.map((producto) => producto.categoria).filter(Boolean)));
   const heroStats = [
     { label: "Piezas activas", value: `${productosDisponibles.length}` },
@@ -106,7 +109,7 @@ export default async function HomePage() {
     { icon: <BiHistory />, title: "Historial de pedidos", desc: "Consulta cada compra desde tu cuenta sin perder el hilo." },
     { icon: <GrSecure />, title: "Cuenta segura", desc: "Sesión protegida y flujo simple para volver a comprar rápido." },
     { icon: <BiLogIn />, title: "Registro en segundos", desc: "Sin formularios largos ni pasos innecesarios." },
-    { icon: <BiDevices />, title: "Catalogo actualizado", desc: "Navega el catálogo y reserva tus productos favoritos." },
+    { icon: <BiDevices />, title: "Catálogo actualizado", desc: "Navega el catálogo y reserva tus productos favoritos." },
   ];
 
   return (
@@ -144,9 +147,7 @@ export default async function HomePage() {
             </h1>
 
             <p className="mt-5 max-w-lg text-base leading-7 sm:text-lg text-muted">
-              {productos.length > 0
-                ? `Descubre las ${productosDisponibles.length} prendas listas para reserva: chompas y poleras con una experiencia pensada para verse bien.`
-                : "Chompas y poleras diseñadas para tu día a día, presentadas como un catálogo simple, claro y fácil de compartir."}
+              Descubre prendas listas para reserva: chompas y poleras diseñadas con una experiencia pensada para verse bien y sentirse cómodo en cualquier ocasión.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -280,7 +281,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="hidden grid-cols-1 gap-4 sm:grid sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {beneficios.map(({ icon, title, desc }) => (
               <div key={title} className="rounded-[24px] border bg-background px-5 py-5 shadow-[0_8px_24px_rgba(17,17,17,0.03)] border-border">
                 <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border bg-white text-xl border-border text-foreground">
@@ -404,9 +405,12 @@ export default async function HomePage() {
               Comprar
             </p>
             <div className="flex flex-col gap-3">
-              {["Nueva colección", "Catálogo completo"].map((item) => (
-                <Link key={item} href="/catalogo" className="text-sm hover:opacity-50 transition-opacity text-background">
-                  {item}
+              {[
+                { label: "Nueva colección", href: "/#nuevo" },
+                { label: "Catálogo completo", href: "/catalogo" }
+              ].map((item) => (
+                <Link key={item.label} href={item.href} className="text-sm hover:opacity-50 transition-opacity text-background">
+                  {item.label}
                 </Link>
               ))}
             </div>

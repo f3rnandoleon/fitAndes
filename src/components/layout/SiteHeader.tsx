@@ -79,7 +79,7 @@ export default function SiteHeader({ authenticated = false, fullname, firstName:
             >
               <Image
                 src={logo}
-                alt="Nueva Colección"
+                alt="FitAndes"
                 width={400}
                 height={150}
                 sizes="100vw"

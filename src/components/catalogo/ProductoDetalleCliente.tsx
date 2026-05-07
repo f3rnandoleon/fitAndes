@@ -432,16 +432,7 @@ export default function ProductoDetalleCliente({ producto, colores, colorInicial
             </p>
           ) : null}
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-2">
 
-
-            <Link
-              href="/catalogo"
-              className="  text-sm transition-all hover:bg-background active:scale-[0.98] text-muted underline"
-            >
-              Volver al catálogo.
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -467,13 +458,11 @@ export default function ProductoDetalleCliente({ producto, colores, colorInicial
             </div>
 
             <div className="grid gap-3">
-              <Link href="/checkout" className="w-full">
-                <button
-                  type="button"
-                  className="w-full rounded-full bg-foreground py-3.5 text-[11px] uppercase tracking-[0.16em] text-background transition-all hover:opacity-90 active:scale-[0.98]"
-                >
-                  Ir al carrito
-                </button>
+              <Link
+                href="/checkout"
+                className="block w-full text-center rounded-full bg-foreground py-3.5 text-[11px] uppercase tracking-[0.16em] text-background transition-all hover:opacity-90 active:scale-[0.98]"
+              >
+                Ir al carrito
               </Link>
               <button
                 type="button"

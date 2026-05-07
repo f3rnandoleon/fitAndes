@@ -60,11 +60,14 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
 
   const productosConStock = productos.filter(productoTieneStock);
-  const colores = sortProductColors(Array.from(new Set(productosConStock.flatMap((producto) => variantesConStock(producto).map((variante) => variante.color)))));
   const categorias = Array.from(new Set(productosConStock.map((producto) => producto.categoria).filter((value): value is string => Boolean(value)))).sort();
   const categoriaActiva = categoriaFiltro || categorias[0] || "";
 
-  const tallas = Array.from(new Set(productosConStock.flatMap((producto) => variantesConStock(producto).map((variante) => variante.talla)))).sort(
+  const productosDeCategoria = productosConStock.filter(p => p.categoria === categoriaActiva);
+
+  const colores = sortProductColors(Array.from(new Set(productosDeCategoria.flatMap((producto) => variantesConStock(producto).map((variante) => variante.color)))));
+  
+  const tallas = Array.from(new Set(productosDeCategoria.flatMap((producto) => variantesConStock(producto).map((variante) => variante.talla)))).sort(
     (a, b) => a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }),
   );
 
