@@ -27,12 +27,12 @@ export default function RegistroPage() {
     setError("");
 
     if (form.password !== form.confirmPassword) {
-      setError("Las contrasenas no coinciden.");
+      setError("Las contraseñas no coinciden.");
       return;
     }
 
     if (form.password.length < 6) {
-      setError("La contrasena debe tener al menos 6 caracteres.");
+      setError("La contraseña debe tener al menos 6 caracteres.");
       return;
     }
 
@@ -77,7 +77,7 @@ export default function RegistroPage() {
       router.push(callbackUrl);
       router.refresh();
     } catch {
-      setError("Error de conexion. Intenta de nuevo.");
+      setError("Error de conexión. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -117,14 +117,14 @@ export default function RegistroPage() {
           </p>
           <h1
             className="text-5xl leading-tight mb-4"
-            style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "#1a1a1a" }}
+            style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "var(--foreground)" }}
           >
             Crea tu cuenta
             <br />
             en segundos
           </h1>
-          <p className="text-sm leading-relaxed max-w-xs" style={{ color: "#4d433b" }}>
-            Registrate gratis y empieza a seguir tus pedidos con un panel disenado para ti.
+          <p className="text-sm leading-relaxed max-w-xs" style={{ color: "var(--muted)" }}>
+            Regístrate gratis y empieza a seguir tus pedidos con un panel diseñado para ti.
           </p>
         </div>
 
@@ -158,7 +158,7 @@ export default function RegistroPage() {
             style={{
               fontFamily: "Georgia, 'Times New Roman', serif",
               letterSpacing: "0.2em",
-              color: "#1a1a1a",
+              color: "var(--foreground)",
             }}
           >
             <Image
@@ -197,14 +197,14 @@ export default function RegistroPage() {
                 onChange={(e) => setForm({ ...form, fullname: e.target.value })}
                 required
                 autoComplete="name"
-                className="border rounded-none px-4 py-3 text-sm placeholder:text-[#8f8377] focus:outline-none focus:ring-0"
-                style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+                className="border border-border rounded-[var(--radius-md)] px-4 py-3 text-sm placeholder:text-subtle/50 focus:outline-none focus:ring-1 focus:ring-foreground/10"
+                style={{ background: "var(--background)" }}
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-xs uppercase" style={{ letterSpacing: "0.16em", color: "var(--subtle)" }}>
-                Correo electronico
+                Correo electrónico
               </label>
               <input
                 id="email"
@@ -214,15 +214,15 @@ export default function RegistroPage() {
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 required
                 autoComplete="email"
-                className="border rounded-none px-4 py-3 text-sm placeholder:text-[#8f8377] focus:outline-none focus:ring-0"
-                style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+                className="border border-border rounded-[var(--radius-md)] px-4 py-3 text-sm placeholder:text-subtle/50 focus:outline-none focus:ring-1 focus:ring-foreground/10"
+                style={{ background: "var(--background)" }}
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="password" className="text-xs uppercase" style={{ letterSpacing: "0.16em", color: "var(--subtle)" }}>
-                  Contrasena
+                  Contraseña
                 </label>
                 <input
                   id="password"
@@ -232,8 +232,8 @@ export default function RegistroPage() {
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   required
                   autoComplete="new-password"
-                  className="border rounded-none px-4 py-3 text-sm placeholder:text-[#8f8377] focus:outline-none focus:ring-0"
-                  style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+                  className="border border-border rounded-[var(--radius-md)] px-4 py-3 text-sm placeholder:text-subtle/50 focus:outline-none focus:ring-1 focus:ring-foreground/10"
+                  style={{ background: "var(--background)" }}
                 />
               </div>
 
@@ -249,14 +249,14 @@ export default function RegistroPage() {
                   onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                   required
                   autoComplete="new-password"
-                  className="border rounded-none px-4 py-3 text-sm placeholder:text-[#8f8377] focus:outline-none focus:ring-0"
-                  style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+                  className="border border-border rounded-[var(--radius-md)] px-4 py-3 text-sm placeholder:text-subtle/50 focus:outline-none focus:ring-1 focus:ring-foreground/10"
+                  style={{ background: "var(--background)" }}
                 />
               </div>
             </div>
 
             {error && (
-              <p className="text-sm border px-3 py-2" style={{ color: "var(--danger)", borderColor: "#d9b2ac", background: "#f3e3e0" }}>
+              <p className="text-sm border border-danger/20 px-3 py-2 rounded-[var(--radius-md)] bg-danger/10 text-danger">
                 {error}
               </p>
             )}
@@ -264,11 +264,11 @@ export default function RegistroPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 text-xs uppercase text-white py-3.5 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[48px] active:scale-95"
-              style={{ background: "#1a1a1a", letterSpacing: "0.18em" }}
+              className="mt-1 text-xs uppercase text-background py-3.5 bg-foreground transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[48px] active:scale-95 rounded-full"
+              style={{ letterSpacing: "0.18em" }}
             >
               {loading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
               ) : (
                 "Crear cuenta"
               )}
@@ -276,9 +276,9 @@ export default function RegistroPage() {
           </form>
 
           <p className="mt-6 text-center text-sm" style={{ color: "var(--muted)" }}>
-            Ya tienes cuenta?{" "}
-            <Link href="/login" className="hover:opacity-60 transition-opacity" style={{ color: "#1a1a1a" }}>
-              Inicia sesion
+            ¿Ya tienes cuenta?{" "}
+            <Link href="/login" className="hover:opacity-60 transition-opacity font-medium" style={{ color: "var(--foreground)" }}>
+              Inicia sesión
             </Link>
           </p>
 

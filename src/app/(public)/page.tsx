@@ -1,4 +1,4 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { BiDevices, BiHistory, BiLogIn } from "react-icons/bi";
 import { FaWhatsapp } from "react-icons/fa";
@@ -110,7 +110,7 @@ export default async function HomePage() {
   ];
 
   return (
-    <main className="min-h-screen" style={{ background: "#f5f2ee", color: "#1a1a1a", fontFamily: "system-ui, sans-serif" }}>
+    <main className="min-h-screen bg-background text-foreground font-sans">
       <section
         id="inicio"
         className="relative isolate overflow-hidden"
@@ -140,10 +140,10 @@ export default async function HomePage() {
               <br />
               y estilo para
               <br />
-              tu dia a dia
+              tu día a día
             </h1>
 
-            <p className="mt-5 max-w-lg text-base leading-7 sm:text-lg" style={{ color: "#4f463d" }}>
+            <p className="mt-5 max-w-lg text-base leading-7 sm:text-lg text-muted">
               {productos.length > 0
                 ? `Descubre las ${productosDisponibles.length} prendas listas para reserva: chompas y poleras con una experiencia pensada para verse bien.`
                 : "Chompas y poleras diseñadas para tu día a día, presentadas como un catálogo simple, claro y fácil de compartir."}
@@ -152,16 +152,16 @@ export default async function HomePage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/catalogo"
-                className="inline-flex items-center justify-center gap-3 rounded-full px-6 py-4 text-[11px] uppercase text-white transition-all hover:-translate-y-0.5 active:scale-95"
-                style={{ background: "#1a1a1a", letterSpacing: "0.18em" }}
+                className="inline-flex items-center justify-center gap-3 rounded-full px-6 py-4 text-[11px] uppercase bg-foreground text-background transition-all hover:translate-y-[-2px] active:scale-95"
+                style={{ letterSpacing: "0.18em" }}
               >
                 Explorar catálogo
                 <span aria-hidden="true">→</span>
               </Link>
               <Link
                 href="/#nuevo"
-                className="inline-flex items-center justify-center gap-3 rounded-full border px-6 py-4 text-[11px] uppercase transition-all hover:bg-white active:scale-95"
-                style={{ letterSpacing: "0.18em", borderColor: "rgba(26,26,26,0.12)", color: "#1a1a1a", background: "rgba(255,255,255,0.45)" }}
+                className="inline-flex items-center justify-center gap-3 rounded-full border border-border px-6 py-4 text-[11px] uppercase transition-all hover:bg-white active:scale-95 bg-white/45 text-foreground"
+                style={{ letterSpacing: "0.18em" }}
               >
                 Ver novedades
               </Link>
@@ -177,7 +177,7 @@ export default async function HomePage() {
         <div className="mx-auto max-w-[1240px]">
           <div className="mb-10 flex flex-col gap-4 sm:mb-14 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-xl">
-              <p className="text-xs uppercase mb-3" style={{ letterSpacing: "0.25em", color: "#9c8f82" }}>
+              <p className="text-xs uppercase mb-3 text-subtle" style={{ letterSpacing: "0.25em" }}>
                 Lo más nuevo
               </p>
               <h2 className="text-4xl font-normal sm:text-5xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
@@ -199,11 +199,11 @@ export default async function HomePage() {
 
                 return (
                   <Link key={item._id} href={`/catalogo/${item._id}`} className="group block " >
-                    <article className="overflow-hidden rounded-[26px] border bg-white shadow-[0_14px_40px_rgba(17,17,17,0.04)] transition-transform duration-300 hover:-translate-y-1 active:scale-95" style={{ borderColor: "#ece6dc" }}>
-                      <div className="relative mb-4 overflow-hidden" style={{ background: "#e8e4de", aspectRatio: "3 / 4" }}>
+                    <article className="overflow-hidden rounded-[var(--radius-lg)] border bg-white shadow-[0_14px_40px_rgba(17,17,17,0.04)] transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
+                      <div className="relative mb-4 overflow-hidden bg-surface-soft aspect-[3/4]">
                         <div
-                          className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white"
-                          style={{ background: "#b8965a", letterSpacing: "0.12em" }}
+                          className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white bg-accent"
+                          style={{ letterSpacing: "0.12em" }}
                         >
                           {badge}
                         </div>
@@ -229,15 +229,15 @@ export default async function HomePage() {
                         )}
 
                         <div className="absolute inset-x-3 bottom-3 flex justify-center opacity-0 transition-opacity duration-300 md:group-hover:opacity-100">
-                          <span className="rounded-full bg-[#1a1a1a] px-4 py-2 text-[10px] uppercase text-white" style={{ letterSpacing: "0.2em" }}>
+                          <span className="rounded-full bg-foreground px-4 py-2 text-[10px] uppercase text-white" style={{ letterSpacing: "0.2em" }}>
                             Ver producto
                           </span>
                         </div>
                       </div>
                       <div className="px-4 pb-5 sm:px-5">
-                        <h3 className="text-sm font-normal sm:text-base" style={{ color: "#1a1a1a" }}>{item.nombre}</h3>
-                        <p className="mt-1 text-[11px] uppercase" style={{ color: "#9c8f82", letterSpacing: "0.12em" }}>{item.modelo}</p>
-                        <p className="mt-3 text-sm sm:text-base" style={{ color: "#1a1a1a" }}>{formatearPrecio(item.precioVenta)}</p>
+                        <h3 className="text-sm font-normal sm:text-base text-foreground">{item.nombre}</h3>
+                        <p className="mt-1 text-[11px] uppercase text-subtle" style={{ letterSpacing: "0.12em" }}>{item.modelo}</p>
+                        <p className="mt-3 text-sm sm:text-base text-foreground">{formatearPrecio(item.precioVenta)}</p>
                       </div>
                     </article>
                   </Link>
@@ -248,10 +248,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="px-5 py-16 sm:px-6 sm:py-18" style={{ background: "#e8e4de" }}>
+      <section className="px-5 py-16 sm:px-6 sm:py-18 bg-surface">
         <div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[minmax(0,1fr)_480px] lg:items-start">
           <div className="max-w-xl">
-            <p className="text-xs uppercase mb-4" style={{ letterSpacing: "0.25em", color: "#9c8f82" }}>
+            <p className="text-xs uppercase mb-4 text-subtle" style={{ letterSpacing: "0.25em" }}>
               Crea tu cuenta
             </p>
             <h2 className="text-4xl font-normal leading-tight sm:text-5xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
@@ -259,21 +259,21 @@ export default async function HomePage() {
               <br />
               desde cualquier pantalla
             </h2>
-            <p className="mt-5 text-sm leading-7 sm:text-base" style={{ color: "#6b6058" }}>
+            <p className="mt-5 text-sm leading-7 sm:text-base text-muted">
               Crea tu cuenta gratis y accede al historial completo de tus compras, estado del pedido y reservas guardadas con un flujo más cómodo.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/registro"
-                className="inline-flex items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase text-white transition-all hover:opacity-85 active:scale-95"
-                style={{ background: "#1a1a1a", letterSpacing: "0.2em" }}
+                className="inline-flex items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase bg-foreground text-background transition-all hover:opacity-85 active:scale-95"
+                style={{ letterSpacing: "0.2em" }}
               >
                 Crear cuenta
               </Link>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center rounded-full border px-6 py-4 text-[11px] uppercase transition-all hover:bg-white active:scale-95"
-                style={{ border: "1px solid #1a1a1a", color: "#1a1a1a", letterSpacing: "0.2em" }}
+                className="inline-flex items-center justify-center rounded-full border border-foreground px-6 py-4 text-[11px] uppercase transition-all hover:bg-white active:scale-95 text-foreground"
+                style={{ letterSpacing: "0.2em" }}
               >
                 Ingresar
               </Link>
@@ -282,15 +282,15 @@ export default async function HomePage() {
 
           <div className="hidden grid-cols-1 gap-4 sm:grid sm:grid-cols-2">
             {beneficios.map(({ icon, title, desc }) => (
-              <div key={title} className="rounded-[24px] border bg-[#f6f2ec] px-5 py-5 shadow-[0_8px_24px_rgba(17,17,17,0.03)]" style={{ borderColor: "#dcd2c6" }}>
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border bg-white text-xl" style={{ borderColor: "#ddd2c5", color: "#1a1a1a" }}>
+              <div key={title} className="rounded-[24px] border bg-background px-5 py-5 shadow-[0_8px_24px_rgba(17,17,17,0.03)] border-border">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border bg-white text-xl border-border text-foreground">
                   {icon}
                 </span>
                 <div className="mt-4">
-                  <p className="text-xs font-semibold uppercase mb-1" style={{ letterSpacing: "0.1em", color: "#1a1a1a" }}>
+                  <p className="text-xs font-semibold uppercase mb-1 text-foreground" style={{ letterSpacing: "0.1em" }}>
                     {title}
                   </p>
-                  <p className="text-sm leading-6" style={{ color: "#6b6058" }}>{desc}</p>
+                  <p className="text-sm leading-6 text-muted">{desc}</p>
                 </div>
               </div>
             ))}
@@ -302,7 +302,7 @@ export default async function HomePage() {
         <div className="mx-auto max-w-[1240px]">
           <div className="mb-10 flex items-end justify-between gap-4">
             <div>
-              <p className="text-xs uppercase mb-3" style={{ letterSpacing: "0.22em", color: "#9c8f82" }}>
+              <p className="text-xs uppercase mb-3 text-subtle" style={{ letterSpacing: "0.22em" }}>
                 Selección destacada
               </p>
               <h2 className="text-3xl font-normal sm:text-4xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
@@ -332,15 +332,15 @@ export default async function HomePage() {
 
                 return (
                   <Link key={item._id} href={`/catalogo/${item._id}`} className="group block ">
-                    <article className="overflow-hidden rounded-[24px] border bg-white transition-transform duration-300 hover:-translate-y-1 active:scale-95" style={{ borderColor: "#ece6dc" }}>
-                      <div className="relative overflow-hidden" style={{ background: "#e8e4de", aspectRatio: "3/4" }}>
+                    <article className="overflow-hidden rounded-[var(--radius-lg)] border bg-white transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
+                      <div className="relative overflow-hidden bg-surface-soft aspect-[3/4]">
                         {tag && (
-                          <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white" style={{ background: "#b8965a", letterSpacing: "0.12em" }}>
+                          <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white bg-accent" style={{ letterSpacing: "0.12em" }}>
                             {tag}
                           </div>
                         )}
                         {descuento > 0 && (
-                          <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white" style={{ background: "#c0392b", letterSpacing: "0.12em" }}>
+                          <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white bg-danger" style={{ letterSpacing: "0.12em" }}>
                             -{descuento}%
                           </div>
                         )}
@@ -366,15 +366,15 @@ export default async function HomePage() {
                         )}
 
                         <div className="absolute inset-x-3 bottom-3 flex justify-center opacity-0 transition-opacity duration-300 md:group-hover:opacity-100">
-                          <span className="rounded-full bg-[#1a1a1a] px-4 py-2 text-[10px] uppercase text-white" style={{ letterSpacing: "0.15em" }}>
+                          <span className="rounded-full bg-foreground px-4 py-2 text-[10px] uppercase text-white" style={{ letterSpacing: "0.15em" }}>
                             Ver
                           </span>
                         </div>
                       </div>
                       <div className="px-4 py-4 sm:px-5 sm:py-5">
-                        <p className="text-sm font-semibold leading-6" style={{ color: "#1a1a1a" }}>{item.nombre}</p>
-                        <p className="text-sm font-normal leading-6" style={{ color: "#6e6c6cff" }}>{item.modelo}</p>
-                        <p className="mt-1 text-sm" style={{ color: "#1a1a1a" }}>{formatearPrecio(item.precioVenta)}</p>
+                        <p className="text-sm font-semibold leading-6 text-foreground">{item.nombre}</p>
+                        <p className="text-sm font-normal leading-6 text-muted/80">{item.modelo}</p>
+                        <p className="mt-1 text-sm text-foreground">{formatearPrecio(item.precioVenta)}</p>
                       </div>
                     </article>
                   </Link>
@@ -385,7 +385,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <footer style={{ background: "#1a1a1a", color: "#f5f2ee" }}>
+      <footer className="bg-foreground text-background">
         <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-10 px-5 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:py-16">
           <div>
             <p
@@ -394,18 +394,18 @@ export default async function HomePage() {
             >
               FitAndes
             </p>
-            <p className="text-sm leading-7" style={{ color: "#b9aea1" }}>
+            <p className="text-sm leading-7 text-background/80">
               Moda de alta calidad con un catálogo visual, claro y fácil de usar.
             </p>
           </div>
 
           <div>
-            <p className="text-xs uppercase font-semibold mb-5" style={{ letterSpacing: "0.2em", color: "#9c8f82" }}>
+            <p className="text-xs uppercase font-semibold mb-5 text-subtle" style={{ letterSpacing: "0.2em" }}>
               Comprar
             </p>
             <div className="flex flex-col gap-3">
               {["Nueva colección", "Catálogo completo"].map((item) => (
-                <Link key={item} href="/catalogo" className="text-sm hover:opacity-50 transition-opacity" style={{ color: "#f5f2ee" }}>
+                <Link key={item} href="/catalogo" className="text-sm hover:opacity-50 transition-opacity text-background">
                   {item}
                 </Link>
               ))}
@@ -413,7 +413,7 @@ export default async function HomePage() {
           </div>
 
           <div>
-            <p className="text-xs uppercase font-semibold mb-5" style={{ letterSpacing: "0.2em", color: "#9c8f82" }}>
+            <p className="text-xs uppercase font-semibold mb-5 text-subtle" style={{ letterSpacing: "0.2em" }}>
               Mi cuenta
             </p>
             <div className="flex flex-col gap-3">
@@ -422,7 +422,7 @@ export default async function HomePage() {
                 { label: "Crear cuenta", href: "/registro" },
                 { label: "Mis pedidos", href: "/pedidos" },
               ].map((item) => (
-                <Link key={item.label} href={item.href} className="text-sm hover:opacity-50 transition-opacity" style={{ color: "#f5f2ee" }}>
+                <Link key={item.label} href={item.href} className="text-sm hover:opacity-50 transition-opacity text-background">
                   {item.label}
                 </Link>
               ))}
@@ -430,7 +430,7 @@ export default async function HomePage() {
           </div>
 
           <div>
-            <p className="text-xs uppercase font-semibold mb-5" style={{ letterSpacing: "0.2em", color: "#9c8f82" }}>
+            <p className="text-xs uppercase font-semibold mb-5 text-subtle" style={{ letterSpacing: "0.2em" }}>
               Contacto
             </p>
             <div className="flex flex-col gap-3">
@@ -438,8 +438,7 @@ export default async function HomePage() {
                 href={WHATSAPP_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm hover:opacity-50 transition-opacity"
-                style={{ color: "#f5f2ee" }}
+                className="flex items-center gap-2 text-sm hover:opacity-50 transition-opacity text-background"
               >
                 <FaWhatsapp className="text-lg text-green-500" />
                 WhatsApp
@@ -461,23 +460,14 @@ export default async function HomePage() {
             */}
         </div>
 
-        <div className="border-t px-5 py-5 text-center sm:px-6" style={{ borderColor: "#2e2e2e" }}>
-          <p className="text-xs" style={{ color: "#6b6058" }}>
+        <div className="border-t border-background/10 px-5 py-5 text-center sm:px-6">
+          <p className="text-xs text-background/40">
             {`© ${new Date().getFullYear()} FitAndes. Todos los derechos reservados.`}
           </p>
         </div>
       </footer>
 
-      {/* Botón flotante de WhatsApp */}
-      <a
-        href={WHATSAPP_LINK}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
-        aria-label="Contactar por WhatsApp"
-      >
-        <FaWhatsapp size={30} />
-      </a>
+
     </main>
   );
 }

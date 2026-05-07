@@ -13,17 +13,18 @@ import logo from "../../../public/fitAndes.png";
 interface Props {
   authenticated?: boolean;
   fullname?: string | null;
+  firstName?: string | null;
   email?: string | null;
 }
 
 const NAV_LINKS = [
   { label: "Inicio", href: "/" },
-  { label: "Catalogo", href: "/catalogo" },
-  { label: "Seleccion", href: "/#seleccion" },
+  { label: "Catálogo", href: "/catalogo" },
+  { label: "Selección", href: "/#seleccion" },
   { label: "Nuevo", href: "/#nuevo" },
 ];
 
-export default function SiteHeader({ authenticated = false, fullname, email }: Props) {
+export default function SiteHeader({ authenticated = false, fullname, firstName: firstNameProp, email }: Props) {
   const pathname = usePathname();
   const { items, totalAmount, totalItems, removeItem, updateQuantity } = useReservationCart();
   const [userOpen, setUserOpen] = useState(false);
@@ -49,21 +50,16 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
 
   if (pathname === "/login" || pathname === "/registro") return null;
 
-  const firstName = fullname?.split(" ")[0] ?? "Usuario";
+  const firstName = firstNameProp || fullname?.split(" ")[0] || "Usuario";
 
   return (
     <header
-      className="sticky top-0 z-40 border-b"
-      style={{
-        borderColor: "#ece6dc",
-        background: "white",
-        backdropFilter: "blur(12px)",
-      }}
+      className="sticky top-0 z-40 border-b border-border bg-white/80 backdrop-blur-md"
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6">
         <div className="grid min-h-[78px] grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 sm:min-h-[82px] md:grid-cols-[1fr_auto_1fr] md:gap-4">
           <div className="flex items-center">
-            <nav className="hidden md:flex items-center gap-6 text-[11px] uppercase" style={{ letterSpacing: "0.18em", color: "#5f564e" }}>
+            <nav className="hidden md:flex items-center gap-6 text-[11px] uppercase tracking-[0.18em] text-muted">
               {NAV_LINKS.map((item) => (
                 <Link key={item.label} href={item.href} className="transition-opacity hover:opacity-55 ">
                   {item.label}
@@ -78,8 +74,8 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
             <Link
               href="/"
 
-              className="text-lg uppercase font-bold sm:text-xl md:text-2xl"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.24em", color: "#111111" }}
+              className="text-lg uppercase font-bold sm:text-xl md:text-2xl text-foreground"
+              style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.24em" }}
             >
               <Image
                 src={logo}
@@ -97,27 +93,26 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
               <button
                 type="button"
                 onClick={() => setCartOpen((current) => !current)}
-                className="relative flex h-10 w-10 items-center justify-center rounded-full border transition-colors hover:bg-white sm:h-11 sm:w-11"
-                style={{ borderColor: "#ddd5cb", color: "#111111" }}
+                className="relative flex h-10 w-10 items-center justify-center rounded-full border border-border transition-colors hover:bg-background sm:h-11 sm:w-11 text-foreground"
                 aria-label="Ver reservas"
               >
                 <CartIcon />
                 {totalItems > 0 && (
-                  <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full text-[10px] flex items-center justify-center bg-[#111111] text-white">
+                  <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full text-[10px] flex items-center justify-center bg-foreground text-background">
                     {totalItems}
                   </span>
                 )}
               </button>
 
               {cartOpen && (
-                <div className="absolute right-0 mt-3 w-[min(100vw-1rem,360px)] border bg-white shadow-[0_24px_50px_rgba(17,17,17,0.08)]" style={{ borderColor: "#ece6dc" }}>
-                  <div className="px-4 py-4 border-b sm:px-5" style={{ borderColor: "#ece6dc" }}>
+                <div className="absolute -right-12 sm:right-0 mt-3 w-[calc(100vw-2rem)] sm:w-[360px] border border-border bg-white shadow-[0_24px_50px_rgba(0,0,0,0.08)] rounded-[var(--radius-md)] overflow-hidden">
+                  <div className="px-4 py-4 border-b border-border sm:px-5">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs uppercase" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
+                      <p className="text-xs uppercase tracking-[0.16em] text-subtle">
                         Reservas
                       </p>
                       {items.length > 0 ? (
-                        <span className="text-[11px]" style={{ color: "#5f564e" }}>
+                        <span className="text-[11px] text-muted">
                           {formatPrice(totalAmount)}
                         </span>
                       ) : null}
@@ -126,41 +121,40 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
 
                   {items.length === 0 ? (
                     <div className="px-4 py-8 sm:px-5">
-                      <p className="text-sm" style={{ color: "#5f564e" }}>
-                        Aun no agregaste productos a tu reserva.
+                      <p className="text-sm text-muted">
+                        Aún no agregaste productos a tu reserva.
                       </p>
                     </div>
                   ) : (
                     <>
                       <div className="max-h-[60vh] overflow-y-auto">
                         {items.map((item) => (
-                          <div key={item.id} className="px-4 py-4 border-b sm:px-5" style={{ borderColor: "#f1ebe3" }}>
+                          <div key={item.id} className="px-4 py-4 border-b border-surface-soft sm:px-5">
                             <div className="flex gap-3">
-                              <div className="relative h-20 w-16 shrink-0 overflow-hidden border" style={{ borderColor: "#ece6dc", background: "#f6f1ea" }}>
+                              <div className="relative h-20 w-16 shrink-0 overflow-hidden border border-border bg-background">
                                 {item.imagen ? <Image src={item.imagen} alt={item.nombre} fill unoptimized sizes="64px" className="object-cover" /> : null}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm uppercase leading-snug" style={{ color: "#111111" }}>
+                                <p className="text-sm uppercase leading-snug text-foreground">
                                   {item.nombre}
                                 </p>
-                                <p className="text-[11px] uppercase mt-1" style={{ letterSpacing: "0.08em", color: "#8f8478" }}>
+                                <p className="text-[11px] uppercase mt-1 tracking-[0.08em] text-subtle">
                                   {item.color} / {item.talla}
                                 </p>
                                 <div className="mt-3 flex items-center justify-between gap-3">
-                                  <p className="text-sm" style={{ color: "#111111" }}>
+                                  <p className="text-sm text-foreground">
                                     {formatPrice(item.precio)}
                                   </p>
                                   <button
                                     type="button"
                                     onClick={() => removeItem(item.id)}
-                                    className="text-[11px] uppercase transition-opacity hover:opacity-60"
-                                    style={{ letterSpacing: "0.12em", color: "#8f8478" }}
+                                    className="text-[11px] uppercase transition-opacity hover:opacity-60 tracking-[0.12em] text-subtle"
                                   >
                                     Quitar
                                   </button>
                                 </div>
                                 <div className="mt-3 flex items-center justify-between gap-3">
-                                  <div className="flex items-center border" style={{ borderColor: "#ddd5cb" }}>
+                                  <div className="flex items-center border border-border">
                                     <button
                                       type="button"
                                       onClick={() => updateQuantity(item.id, item.cantidad - 1)}
@@ -177,7 +171,7 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
                                       +
                                     </button>
                                   </div>
-                                  <span className="text-[11px]" style={{ color: "#8f8478" }}>
+                                  <span className="text-[11px] text-subtle">
                                     {formatPrice(item.precio * item.cantidad)}
                                   </span>
                                 </div>
@@ -206,7 +200,7 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
                           ) : (
                             <Link href="/login?callbackUrl=%2Fcheckout" className="w-full">
                               <Button variant="secondary" size="md" className="w-full bg-white">
-                                Iniciar sesion
+                                Iniciar sesión
                               </Button>
                             </Link>
                           )}
@@ -222,20 +216,19 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
               <button
                 type="button"
                 onClick={() => setUserOpen((current) => !current)}
-                className="flex h-10 w-10 items-center justify-center rounded-full border transition-colors hover:bg-white sm:h-11 sm:w-11"
-                style={{ borderColor: "#ddd5cb", color: "#111111" }}
-                aria-label="Abrir menu de usuario"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border transition-colors hover:bg-background sm:h-11 sm:w-11 text-foreground"
+                aria-label="Abrir menú de usuario"
               >
                 <UserIcon />
               </button>
 
               {userOpen && (
-                <div className="absolute right-0 mt-3 w-[min(100vw-1rem,280px)] border bg-white shadow-[0_24px_50px_rgba(17,17,17,0.08)]" style={{ borderColor: "#ece6dc" }}>
-                  <div className="px-5 py-4 border-b" style={{ borderColor: "#ece6dc" }}>
-                    <p className="text-sm" style={{ color: "#111111" }}>
+                <div className="absolute right-0 mt-3 w-[min(100vw-1rem,280px)] border border-border bg-white shadow-[0_24px_50px_rgba(0,0,0,0.08)] rounded-[var(--radius-md)] overflow-hidden">
+                  <div className="px-5 py-4 border-b border-border">
+                    <p className="text-sm text-foreground">
                       {authenticated ? firstName : "Mi cuenta"}
                     </p>
-                    <p className="text-[11px] mt-1 uppercase" style={{ letterSpacing: "0.12em", color: "#8f8478" }}>
+                    <p className="text-[11px] mt-1 uppercase tracking-[0.12em] text-subtle">
                       {authenticated ? email ?? "Cliente FitAndes" : "Accede o crea tu cuenta"}
                     </p>
                   </div>
@@ -249,16 +242,15 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
                         <button
                           type="button"
                           onClick={() => signOut({ callbackUrl: "/" })}
-                          className="w-full text-left px-5 py-3 text-xs uppercase transition-colors hover:bg-[#f8f4ee]"
-                          style={{ letterSpacing: "0.14em", color: "#5f564e" }}
+                          className="w-full text-left px-5 py-3 text-xs uppercase transition-colors hover:bg-background tracking-[0.14em] text-muted"
                         >
                           Salir
                         </button>
                       </>
                     ) : (
                       <>
-                        <HeaderLink href="/login" label="Iniciar sesion" />
-                        <HeaderLink href="/registro" label="Registrar" />
+                        <HeaderLink href="/login" label="Iniciar sesión" />
+                        <HeaderLink href="/registro" label="Registrarse" />
                       </>
                     )}
                   </div>
@@ -268,13 +260,12 @@ export default function SiteHeader({ authenticated = false, fullname, email }: P
           </div>
         </div>
 
-        <nav className="md:hidden flex items-center gap-2 overflow-x-auto pb-4" aria-label="Accesos rapidos">
+        <nav className="md:hidden flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide" aria-label="Accesos rápidos">
           {NAV_LINKS.map((item) => (
             <Link
               key={item.label}
               href={item.href}
-              className="whitespace-nowrap rounded-full border px-3 py-2 text-[10px] uppercase transition-colors hover:bg-white active:scale-95"
-              style={{ letterSpacing: "0.14em", color: "#5f564e", borderColor: "#ddd5cb", background: "rgba(255,255,255,0.62)" }}
+              className="whitespace-nowrap rounded-full border border-border px-4 py-2 text-[10px] uppercase transition-colors hover:bg-white active:scale-95 tracking-[0.14em] text-muted bg-white/60 shadow-sm"
             >
               {item.label}
             </Link>
@@ -289,8 +280,7 @@ function HeaderLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="block px-5 py-3 text-xs uppercase transition-colors hover:bg-[#f8f4ee]"
-      style={{ letterSpacing: "0.14em", color: "#5f564e" }}
+      className="block px-5 py-3 text-xs uppercase transition-colors hover:bg-background tracking-[0.14em] text-muted"
     >
       {label}
     </Link>

@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor } from "@/lib/product-colors";
@@ -19,6 +18,8 @@ interface Props {
   producto: CatalogProduct;
   colores: string[];
   tallas: string[];
+  colorInicial?: string;
+  tallaInicial?: string;
 }
 
 function formatPrice(value: number) {
@@ -28,22 +29,26 @@ function formatPrice(value: number) {
   }).format(value)}`;
 }
 
-export default function ProductoDetalleCliente({ producto, colores, tallas }: Props) {
+export default function ProductoDetalleCliente({ producto, colores, colorInicial, tallaInicial }: Props) {
   const { addItem } = useReservationCart();
   const productoDisponible = filterCatalogAvailableVariants(producto);
   const variantesDisponibles = productoDisponible.variantes;
   const primeraVariante =
-    variantesDisponibles[0] ??
-    producto.variantes.find((variante) => getCatalogVariantAvailableStock(variante) > 0) ??
-    producto.variantes[0] ??
-    null;
+    (colorInicial || tallaInicial)
+      ? (variantesDisponibles.find((v) =>
+        (!colorInicial || v.color === colorInicial) &&
+        (!tallaInicial || v.talla === tallaInicial)
+      ) ?? variantesDisponibles[0])
+      : variantesDisponibles[0] ??
+      producto.variantes.find((variante) => getCatalogVariantAvailableStock(variante) > 0) ??
+      producto.variantes[0] ??
+      null;
   const [varianteSeleccionada, setVarianteSeleccionada] = useState<CatalogVariant | null>(primeraVariante);
   const [mensaje, setMensaje] = useState("");
+  const [mostrarExito, setMostrarExito] = useState(false);
   const [indiceImagenActual, setIndiceImagenActual] = useState(0);
   const [cantidad, setCantidad] = useState(1);
-  const { data: session, status } = useSession();
 
-  const authenticated = status === "authenticated" && session?.user?.role === "CLIENTE";
 
   const colorSeleccionado = varianteSeleccionada?.color ?? primeraVariante?.color ?? colores[0] ?? "";
   const colorSecundarioSeleccionado = varianteSeleccionada?.colorSecundario ?? primeraVariante?.colorSecundario;
@@ -64,11 +69,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
   const precioAnterior = descuento > 0 ? producto.precioVenta / (1 - descuento / 100) : null;
   const imagenPrincipal = imagenesActivas[indiceImagenActual] ?? null;
   const imagenesActivasKey = imagenesActivas.join("|");
-  const resumenRapido = [
-    { label: "Colores", value: `${new Set(variantesDisponibles.map((variante) => variante.color)).size}` },
-    { label: "Tallas", value: `${new Set([...tallas, ...tallasDisponibles]).size}` },
-    { label: "Stock", value: stockActual > 0 ? `${stockActual}` : "Agotado" },
-  ];
+
 
   useEffect(() => {
     setIndiceImagenActual(0);
@@ -78,6 +79,13 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
     const cantidadMaxima = Math.max(1, stockActual);
     setCantidad((actual) => Math.min(actual, cantidadMaxima));
   }, [stockActual]);
+
+  useEffect(() => {
+    if (mensaje) {
+      const timer = setTimeout(() => setMensaje(""), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [mensaje]);
 
   function seleccionarColor(color: string, colorSecundario?: string | null) {
     const siguiente =
@@ -134,7 +142,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
       stockDisponible: stockActual,
     });
 
-    setMensaje("Producto agregado a tu reserva.");
+    setMostrarExito(true);
   }
 
   function moverImagen(paso: number) {
@@ -144,7 +152,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)] xl:gap-10">
-      <section className="rounded-[30px] border bg-white p-3 sm:p-4 lg:sticky lg:top-24 lg:self-start" style={{ borderColor: "#ece6dc" }}>
+      <section className="rounded-[var(--radius-lg)] border bg-white p-3 sm:p-4 lg:sticky lg:top-24 lg:self-start border-border shadow-sm">
         <div className="grid gap-3 lg:grid-cols-[84px_minmax(0,1fr)]">
           {imagenesActivas.length > 1 ? (
             <div className="order-2 lg:order-1">
@@ -171,7 +179,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
             </div>
           ) : null}
 
-          <div className={`order-1 overflow-hidden rounded-[26px] ${imagenesActivas.length <= 1 ? "lg:col-span-2" : "lg:order-2"}`} style={{ background: "#f8f4ee" }}>
+          <div className={`order-1 overflow-hidden rounded-[var(--radius-lg)] bg-background ${imagenesActivas.length <= 1 ? "lg:col-span-2" : "lg:order-2"}`}>
             <div className="relative aspect-[4/5] w-full">
               {imagenPrincipal ? (
                 <div className="relative h-full w-full">
@@ -190,8 +198,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
                         type="button"
                         aria-label="Imagen anterior"
                         onClick={() => moverImagen(-1)}
-                        className="absolute left-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
-                        style={{ background: "rgba(255,255,255,0.94)", borderColor: "#ddd4c9", color: "#111111" }}
+                        className="absolute left-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border text-sm transition-opacity hover:opacity-85 bg-white/94 text-foreground"
                       >
                         {"\u2039"}
                       </button>
@@ -199,8 +206,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
                         type="button"
                         aria-label="Imagen siguiente"
                         onClick={() => moverImagen(1)}
-                        className="absolute right-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
-                        style={{ background: "rgba(255,255,255,0.94)", borderColor: "#ddd4c9", color: "#111111" }}
+                        className="absolute right-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border text-sm transition-opacity hover:opacity-85 bg-white/94 text-foreground"
                       >
                         {"\u203A"}
                       </button>
@@ -210,8 +216,8 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
                             key={index}
                             className="h-2.5 w-2.5 rounded-full border transition-all duration-300"
                             style={{
-                              background: index === indiceImagenActual ? "#e45754" : "transparent",
-                              borderColor: index === indiceImagenActual ? "#e45754" : "#d3c8bc",
+                              background: index === indiceImagenActual ? "var(--accent)" : "transparent",
+                              borderColor: index === indiceImagenActual ? "var(--accent)" : "var(--border)",
                             }}
                           />
                         ))}
@@ -237,212 +243,249 @@ export default function ProductoDetalleCliente({ producto, colores, tallas }: Pr
         </div>
       </section>
 
-      <section className="rounded-[30px] border bg-white px-5 py-6 sm:px-6 lg:px-7 lg:py-7" style={{ borderColor: "#ece6dc" }}>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-[10px] uppercase" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
-              {(producto.categoria ?? "Catálogo").toUpperCase()} {producto.nombre ? `· ${producto.nombre.toUpperCase()}` : ""}
-            </p>
-            <h1 className="mt-3 text-[2.1rem] leading-[1.02] sm:text-[2.7rem]" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "#201a16" }}>
-              {producto.modelo}
-            </h1>
-          </div>
+      <section className="flex flex-col rounded-[var(--radius-lg)] border bg-white px-5 py-6 sm:px-6 lg:px-7 lg:py-7 border-border shadow-sm">
+        <div className="order-1">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
+                {(producto.categoria ?? "Catálogo").toUpperCase()} {producto.nombre ? `· ${producto.nombre.toUpperCase()}` : ""}
+              </p>
+              <h1 className="mt-3 text-[2.1rem] leading-[1.02] sm:text-[2.7rem] text-foreground" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
+                {producto.modelo}
+              </h1>
+            </div>
 
-          <span
-            className="inline-flex w-fit rounded-full border px-4 py-2 text-[10px] uppercase"
-            style={{
-              letterSpacing: "0.18em",
-              color: stockActual > 0 ? "#4f7a57" : "#a54a3f",
-              borderColor: stockActual > 0 ? "rgba(79,122,87,0.18)" : "rgba(165,74,63,0.18)",
-              background: stockActual > 0 ? "rgba(79,122,87,0.08)" : "rgba(165,74,63,0.08)",
-            }}
-          >
-            {stockActual > 0 ? "Disponible" : "Sin stock"}
-          </span>
-        </div>
-
-
-
-        <div className="mt-6 flex flex-wrap items-end gap-3">
-          <p className="text-[1.9rem] leading-none sm:text-[2.2rem]" style={{ color: "#201a16", fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            {formatPrice(producto.precioVenta)}
-          </p>
-          {precioAnterior ? (
-            <p className="pb-1 text-sm line-through" style={{ color: "#a79b8c" }}>
-              {formatPrice(precioAnterior)}
-            </p>
-          ) : null}
-          {descuento > 0 ? (
-            <span className="inline-flex rounded-full bg-[#f6ebe8] px-3 py-1 text-[10px] uppercase" style={{ letterSpacing: "0.14em", color: "#b14f43" }}>
-              Ahorra {descuento}%
-            </span>
-          ) : null}
-        </div>
-
-        {descripcionActual ? (
-          <p className="mt-5 max-w-2xl text-sm leading-7 sm:text-[15px]" style={{ color: "#6b6258" }}>
-            {descripcionActual}
-          </p>
-        ) : null}
-
-        <div className="mt-8 rounded-[26px] border px-4 py-5 sm:px-5" style={{ borderColor: "#eee5da", background: "#fbf8f3" }}>
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-[10px] uppercase" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
-              Color actual
-            </p>
-            <span className="text-xs" style={{ color: "#201a16" }}>
-              {colorSeleccionado || "-"}{colorSecundarioSeleccionado ? ` / ${colorSecundarioSeleccionado}` : ""}
+            <span
+              className="inline-flex w-fit rounded-full border px-4 py-2 text-[10px] uppercase"
+              style={{
+                letterSpacing: "0.18em",
+                color: stockActual > 0 ? "#4f7a57" : "#a54a3f",
+                borderColor: stockActual > 0 ? "rgba(79,122,87,0.18)" : "rgba(165,74,63,0.18)",
+                background: stockActual > 0 ? "rgba(79,122,87,0.08)" : "rgba(165,74,63,0.08)",
+              }}
+            >
+              {stockActual > 0 ? "Disponible" : "Sin stock"}
             </span>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-3">
-            {Array.from(
-              new Map(
-                variantesDisponibles.map((v) => [
-                  `${v.color}-${v.colorSecundario || ""}`,
-                  { color: v.color, colorSecundario: v.colorSecundario },
-                ]),
-              ).values(),
-            ).map(({ color, colorSecundario }) => {
-              const activo = color === colorSeleccionado && colorSecundario === colorSecundarioSeleccionado;
-              const colorBase = getProductColorValue(color);
-              const colorSec = colorSecundario ? getProductColorValue(colorSecundario) : null;
-              const coloresClaros = isLightProductColor(color) && (!colorSecundario || isLightProductColor(colorSecundario));
 
-              return (
-                <button
-                  key={`${color}-${colorSecundario || ""}`}
-                  type="button"
-                  onClick={() => seleccionarColor(color, colorSecundario)}
-                  className="flex items-center gap-2 rounded-full border px-3 py-2 transition-all hover:bg-white active:scale-95"
-                  style={{
-                    borderColor: activo ? "#111111" : "#e2d8cc",
-                    background: activo ? "#ffffff" : "transparent",
-                  }}
-                  aria-label={`Seleccionar color ${color}${colorSecundario ? ` y ${colorSecundario}` : ""}`}
-                  title={`${color}${colorSecundario ? ` / ${colorSecundario}` : ""}`}
-                >
-                  <span
-                    className="block h-7 w-7 rounded-full border"
-                    style={{
-                      background: colorSec ? `linear-gradient(135deg, ${colorBase} 50%, ${colorSec} 50%)` : colorBase,
-                      borderColor: activo ? "#111111" : coloresClaros ? "#b8afa2" : "#d7cec3",
-                      boxShadow: activo ? "0 0 0 2px rgba(17,17,17,0.08)" : "none",
-                    }}
-                  />
-                  <span className="text-[11px] uppercase" style={{ letterSpacing: "0.12em", color: "#5f564e" }}>
-                    {colorSecundario ? `${color} / ${colorSecundario}` : color}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
-        <div className="mt-5 rounded-[26px] border px-4 py-5 sm:px-5" style={{ borderColor: "#eee5da", background: "#fbf8f3" }}>
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-[10px] uppercase" style={{ letterSpacing: "0.22em", color: "#9a8f82" }}>
-              Talla
+          <div className="mt-6 flex flex-wrap items-end gap-3">
+            <p className="text-[1.9rem] leading-none sm:text-[2.2rem] text-foreground" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+              {formatPrice(producto.precioVenta)}
             </p>
-            {varianteSeleccionada ? (
-              <span className="text-xs" style={{ color: "#201a16" }}>
-                {varianteSeleccionada.talla}
+            {precioAnterior ? (
+              <p className="pb-1 text-sm line-through text-subtle/60">
+                {formatPrice(precioAnterior)}
+              </p>
+            ) : null}
+            {descuento > 0 ? (
+              <span className="inline-flex rounded-full bg-danger/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-danger">
+                Ahorra {descuento}%
               </span>
             ) : null}
           </div>
+        </div>
 
-          <div className="mt-4 flex flex-wrap gap-2.5">
-            {Array.from(new Set(tallasDisponibles)).map((tallaDisponible) => {
-              const activa = tallaDisponible === varianteSeleccionada?.talla;
-              return (
-                <button
-                  key={tallaDisponible}
-                  type="button"
-                  onClick={() => seleccionarTalla(tallaDisponible)}
-                  className="min-w-12 rounded-full border px-4 py-2.5 text-sm transition-all active:scale-95"
-                  style={{
-                    borderColor: activa ? "#111111" : "#e2d8cc",
-                    background: activa ? "#111111" : "#ffffff",
-                    color: activa ? "#ffffff" : "#4f463d",
-                  }}
-                >
-                  {tallaDisponible}
-                </button>
-              );
-            })}
+        {descripcionActual ? (
+          <div className="order-3 lg:order-2 mt-5">
+            <p className="max-w-2xl text-sm leading-7 sm:text-[15px] text-muted">
+              {descripcionActual}
+            </p>
           </div>
-        </div>
-
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <div className="inline-flex items-center justify-center rounded-full border" style={{ borderColor: "#ddd4c9" }}>
-            <button
-              type="button"
-              onClick={() => setCantidad((actual) => Math.max(1, actual - 1))}
-              className="h-12 w-12 text-lg active:scale-90 transition-transform"
-              aria-label="Reducir cantidad"
-            >
-              -
-            </button>
-            <span className="flex h-12 min-w-12 items-center justify-center text-sm" style={{ color: "#201a16" }}>
-              {cantidad}
-            </span>
-            <button
-              type="button"
-              onClick={() => setCantidad((actual) => Math.min(stockActual || 1, actual + 1))}
-              className="h-12 w-12 text-lg active:scale-90 transition-transform"
-              aria-label="Aumentar cantidad"
-              disabled={stockActual <= 0}
-            >
-              +
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={reservarSeleccion}
-            disabled={!varianteSeleccionada || stockActual <= 0}
-            className="inline-flex flex-1 items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase text-white transition-all disabled:cursor-not-allowed disabled:opacity-45 hover:opacity-88 active:scale-[0.98]"
-            style={{ background: "#1a1a1a", letterSpacing: "0.24em" }}
-          >
-            Añadir a reserva
-          </button>
-        </div>
-
-        <div className="mt-4 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between" style={{ color: "#8f8478" }}>
-          <span>{stockActual > 0 ? `${stockActual} unidades disponibles` : "Sin stock"}</span>
-          {varianteSeleccionada ? <span>{varianteSeleccionada.color}{varianteSeleccionada.colorSecundario ? ` / ${varianteSeleccionada.colorSecundario}` : ""} / {varianteSeleccionada.talla}</span> : null}
-        </div>
-
-        {mensaje ? (
-          <p className="mt-4 rounded-[20px] border px-4 py-3 text-sm" style={{ borderColor: "#d8cdc0", background: "#f6f1ea", color: "#6b6058" }}>
-            {mensaje}
-          </p>
         ) : null}
 
-        <div className="mt-8 grid gap-3 sm:grid-cols-2">
-          {!authenticated ? (
-            <Link
-              href="/login"
-              className="rounded-[22px] border px-4 py-4 text-sm transition-all hover:bg-[#f8f4ee] active:scale-[0.98]"
-              style={{ borderColor: "#ece6dc", color: "var(--muted)" }}
-            >
-              Inicia sesión para guardar tu reserva y seguir tus pedidos.
-            </Link>
-          ) : (
-            <div className="rounded-[22px] border px-4 py-4 text-sm" style={{ borderColor: "#ece6dc", color: "var(--muted)", background: "#fbf8f3" }}>
-              Tu reserva quedará disponible en tu cuenta para completar la compra cuando quieras.
+        <div className="order-2 lg:order-3">
+          <div className="mt-8 rounded-[var(--radius-md)] border border-border px-4 py-5 sm:px-5 bg-background">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
+                Color actual
+              </p>
+              <span className="text-xs text-foreground">
+                {colorSeleccionado || "-"}{colorSecundarioSeleccionado ? ` / ${colorSecundarioSeleccionado}` : ""}
+              </span>
             </div>
-          )}
 
-          <Link
-            href="/catalogo"
-            className="rounded-[22px] border px-4 py-4 text-sm transition-all hover:bg-[#f8f4ee] active:scale-[0.98]"
-            style={{ borderColor: "#ece6dc", color: "var(--muted)" }}
-          >
-            Volver al catálogo.
-          </Link>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {Array.from(
+                new Map(
+                  variantesDisponibles.map((v) => [
+                    `${v.color}-${v.colorSecundario || ""}`,
+                    { color: v.color, colorSecundario: v.colorSecundario },
+                  ]),
+                ).values(),
+              ).map(({ color, colorSecundario }) => {
+                const activo = color === colorSeleccionado && colorSecundario === colorSecundarioSeleccionado;
+                const colorBase = getProductColorValue(color);
+                const colorSec = colorSecundario ? getProductColorValue(colorSecundario) : null;
+                const coloresClaros = isLightProductColor(color) && (!colorSecundario || isLightProductColor(colorSecundario));
+
+                return (
+                  <button
+                    key={`${color}-${colorSecundario || ""}`}
+                    type="button"
+                    onClick={() => seleccionarColor(color, colorSecundario)}
+                    className="flex items-center gap-2 rounded-full border border-border transition-all hover:bg-white active:scale-95"
+                    style={{
+                      borderColor: activo ? "var(--foreground)" : "var(--border)",
+                      background: activo ? "var(--background)" : "transparent",
+                    }}
+                    aria-label={`Seleccionar color ${color}${colorSecundario ? ` y ${colorSecundario}` : ""}`}
+                    aria-pressed={activo}
+                    title={`${color}${colorSecundario ? ` / ${colorSecundario}` : ""}`}
+                  >
+                    <span
+                      className="block h-7 w-7 rounded-full border"
+                      style={{
+                        background: colorSec ? `linear-gradient(135deg, ${colorBase} 50%, ${colorSec} 50%)` : colorBase,
+                        borderColor: activo ? "var(--foreground)" : coloresClaros ? "var(--subtle)" : "var(--border)",
+                        boxShadow: activo ? "0 0 0 2px rgba(0,0,0,0.08)" : "none",
+                      }}
+                    />
+                    <span className="text-[11px] uppercase tracking-[0.12em] text-muted">
+                      {colorSecundario ? `${color} / ${colorSecundario}` : color}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-[var(--radius-md)] border border-border px-4 py-5 sm:px-5 bg-background">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
+                Talla
+              </p>
+              {varianteSeleccionada ? (
+                <span className="text-xs text-foreground">
+                  {varianteSeleccionada.talla}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              {Array.from(new Set(tallasDisponibles)).map((tallaDisponible) => {
+                const activa = tallaDisponible === varianteSeleccionada?.talla;
+                return (
+                  <button
+                    key={tallaDisponible}
+                    type="button"
+                    onClick={() => seleccionarTalla(tallaDisponible)}
+                    className="min-w-12 rounded-full border px-4 py-2.5 text-sm transition-all active:scale-95"
+                    style={{
+                      borderColor: activa ? "#111111" : "#e2d8cc",
+                      background: activa ? "#111111" : "#ffffff",
+                      color: activa ? "#ffffff" : "#4f463d",
+                    }}
+                  >
+                    {tallaDisponible}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="order-4">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <div className="inline-flex items-center justify-center rounded-full border border-border">
+              <button
+                type="button"
+                onClick={() => setCantidad((actual) => Math.max(1, actual - 1))}
+                className="h-12 w-12 text-lg active:scale-90 transition-transform"
+                aria-label="Reducir cantidad"
+              >
+                -
+              </button>
+              <span className="flex h-12 min-w-12 items-center justify-center text-sm text-foreground font-medium">
+                {cantidad}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCantidad((actual) => Math.min(stockActual || 1, actual + 1))}
+                className="h-12 w-12 text-lg active:scale-90 transition-transform"
+                aria-label="Aumentar cantidad"
+                disabled={stockActual <= 0}
+              >
+                +
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={reservarSeleccion}
+              disabled={!varianteSeleccionada || stockActual <= 0}
+              className="inline-flex flex-1 items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase bg-foreground text-background transition-all disabled:cursor-not-allowed disabled:opacity-45 hover:opacity-90 active:scale-[0.98]"
+            >
+              Añadir a reserva
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between" style={{ color: "#8f8478" }}>
+            <span>{stockActual > 0 ? `${stockActual} unidades disponibles` : "Sin stock"}</span>
+            {varianteSeleccionada ? <span>{varianteSeleccionada.color}{varianteSeleccionada.colorSecundario ? ` / ${varianteSeleccionada.colorSecundario}` : ""} / {varianteSeleccionada.talla}</span> : null}
+          </div>
+
+          {mensaje ? (
+            <p className="mt-4 rounded-[var(--radius-md)] border border-success/20 px-4 py-3 text-sm bg-success/10 text-success">
+              {mensaje}
+            </p>
+          ) : null}
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+
+
+            <Link
+              href="/catalogo"
+              className="  text-sm transition-all hover:bg-background active:scale-[0.98] text-muted underline"
+            >
+              Volver al catálogo.
+            </Link>
+          </div>
         </div>
       </section>
+
+      {/* Modal de éxito al agregar producto */}
+      {mostrarExito && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="w-full max-w-sm rounded-[24px] border border-border bg-white p-6 shadow-[0_32px_64px_rgba(0,0,0,0.16)] animate-in zoom-in-95 duration-300">
+            <div className="mb-5 flex flex-col items-center text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/10 text-success">
+                <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-medium text-foreground" style={{ fontFamily: "Georgia, serif" }}>
+                ¡Producto agregado!
+              </h3>
+              <p className="mt-2 text-sm text-muted leading-relaxed">
+                {producto.modelo} ha sido añadido a tu carrito de reserva correctamente.
+              </p>
+              <div className="mt-2 text-[10px] uppercase tracking-[0.12em] text-subtle">
+                {varianteSeleccionada?.color} / {varianteSeleccionada?.talla} · {cantidad} unidad{cantidad !== 1 ? 'es' : ''}
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <Link href="/checkout" className="w-full">
+                <button
+                  type="button"
+                  className="w-full rounded-full bg-foreground py-3.5 text-[11px] uppercase tracking-[0.16em] text-background transition-all hover:opacity-90 active:scale-[0.98]"
+                >
+                  Ir al carrito
+                </button>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setMostrarExito(false)}
+                className="w-full rounded-full border border-border bg-white py-3.5 text-[11px] uppercase tracking-[0.16em] text-foreground transition-all hover:bg-background active:scale-[0.98]"
+              >
+                Seguir reservando
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

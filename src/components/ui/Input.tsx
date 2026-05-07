@@ -31,7 +31,7 @@ export function Input({
       )}
       <input
         id={inputId}
-        className={`w-full border px-4 py-3 text-sm bg-white transition-colors focus:border-foreground outline-none border-border text-foreground placeholder:text-subtle/50 ${
+        className={`w-full border px-4 py-3 text-sm bg-white transition-colors focus:border-foreground outline-none border-border text-foreground placeholder:text-subtle/50 rounded-[var(--radius-md)] ${
           error ? "border-danger" : ""
         } ${className}`}
         {...props}

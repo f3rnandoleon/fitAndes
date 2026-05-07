@@ -23,7 +23,7 @@ function buildWelcomeMessage(): TranscriptMessage {
   return {
     id: createId(),
     role: "assistant",
-    text: "Puedo ayudarte a encontrar productos, ver detalles, sugerir similares, buscar por codigo y revisar tus pedidos.",
+    text: "Puedo ayudarte a encontrar productos, ver detalles, sugerir similares, buscar por código y revisar tus pedidos.",
     suggestions: ["Quiero una polera negra", "Muestrame novedades", "Buscar por codigo", "Mis pedidos"],
     createdAt: Date.now(),
     sourceMode: "rules",
@@ -259,21 +259,21 @@ export default function ChatWidget() {
       />
 
       {hintVisible && !open ? (
-        <div className="fixed bottom-24 right-24 z-50 hidden max-w-[260px] rounded-[22px] border bg-white px-4 py-3 text-sm leading-relaxed shadow-[0_20px_45px_rgba(17,17,17,0.12)] sm:block" style={{ borderColor: "#ece6dc", color: "#5f564e" }}>
-          Consulta productos, tallas, similares o tus pedidos de forma comoda.
-          <span className="absolute -bottom-2 right-6 h-4 w-4 rotate-45 border-r border-b bg-white" style={{ borderColor: "#ece6dc" }} />
+        <div className="fixed bottom-44 right-4 z-50 hidden max-w-[260px] rounded-[22px] border border-border bg-white px-4 py-3 text-sm leading-relaxed shadow-[0_20px_45px_rgba(17,17,17,0.12)] text-muted sm:block">
+          Consulta productos, tallas, similares o tus pedidos de forma cómoda.
+          <span className="absolute -bottom-2 right-6 h-4 w-4 rotate-45 border-r border-b border-border bg-white" />
         </div>
       ) : null}
 
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#111111] text-white shadow-[0_20px_45px_rgba(17,17,17,0.25)] transition-transform hover:-translate-y-1 sm:bottom-4 sm:h-16 sm:w-16"
+        className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-foreground text-background shadow-[0_20px_45px_rgba(17,17,17,0.25)] transition-transform hover:-translate-y-1 sm:bottom-24 sm:h-16 sm:w-16"
         aria-label="Abrir asistente de FitAndes"
       >
         <MessageIcon />
         {unread > 0 ? (
-          <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-[#d04d37] px-1 text-[10px] font-semibold text-white">
+          <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white">
             {unread}
           </span>
         ) : null}

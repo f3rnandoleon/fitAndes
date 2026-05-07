@@ -31,9 +31,9 @@ export function Button({
   };
 
   const sizes = {
-    sm: "px-4 py-2 text-[10px] tracking-[0.12em]",
-    md: "px-6 py-3 text-[11px] tracking-[0.16em]",
-    lg: "px-8 py-4 text-xs tracking-[0.2em]",
+    sm: "px-4 py-2 text-[10px] tracking-[0.12em] rounded-full",
+    md: "px-6 py-3 text-[11px] tracking-[0.16em] rounded-full",
+    lg: "px-8 py-4 text-xs tracking-[0.2em] rounded-full",
   };
 
   const classes = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;

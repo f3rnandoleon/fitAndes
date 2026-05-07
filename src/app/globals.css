@@ -11,6 +11,9 @@
   --accent: #b8965a;
   --success: #4f7a57;
   --danger: #a54a3f;
+  --radius-sm: 8px;
+  --radius-md: 18px;
+  --radius-lg: 26px;
 }
 
 @theme inline {
@@ -24,8 +27,11 @@
   --color-accent: var(--accent);
   --color-success: var(--success);
   --color-danger: var(--danger);
-  --font-sans: "system-ui", "-apple-system", "Segoe UI", sans-serif;
+  --font-sans: "Inter", "system-ui", "-apple-system", "Segoe UI", sans-serif;
   --font-mono: "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
 }
 
 body {

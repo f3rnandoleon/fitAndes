@@ -75,8 +75,7 @@ export default function CarruselImagenes({
             type="button"
             aria-label="Imagen anterior"
             onClick={manejarControl(-1)}
-            className="absolute left-3 top-1/2 z-10 hidden md:flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
-            style={{ background: "rgba(26,26,26,0.48)", borderColor: "rgba(245,242,238,0.28)", color: "#f5f2ee" }}
+            className="absolute left-3 top-1/2 z-10 hidden md:flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85 bg-foreground/50 border-background/30 text-background"
           >
             {"\u2039"}
           </button>
@@ -84,8 +83,7 @@ export default function CarruselImagenes({
             type="button"
             aria-label="Imagen siguiente"
             onClick={manejarControl(1)}
-            className="absolute right-3 top-1/2 z-10 hidden md:flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85"
-            style={{ background: "rgba(26,26,26,0.48)", borderColor: "rgba(245,242,238,0.28)", color: "#f5f2ee" }}
+            className="absolute right-3 top-1/2 z-10 hidden md:flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85 bg-foreground/50 border-background/30 text-background"
           >
             {"\u203A"}
           </button>
@@ -94,15 +92,14 @@ export default function CarruselImagenes({
 
       {mostrarIndicadores && imagenes.length > 1 && (
         <div
-          className="absolute bottom-3 left-1/2 hidden md:flex -translate-x-1/2 items-center gap-1.5 rounded-full px-2 py-1"
-          style={{ background: "rgba(26,26,26,0.32)" }}
+          className="absolute bottom-3 left-1/2 hidden md:flex -translate-x-1/2 items-center gap-1.5 rounded-full px-2 py-1 bg-foreground/30"
         >
           {imagenes.map((_, index) => (
             <span
               key={index}
               className="h-1.5 w-1.5 rounded-full transition-all duration-300"
               style={{
-                background: index === indiceActual ? "#f5f2ee" : "rgba(245,242,238,0.45)",
+                background: index === indiceActual ? "var(--background)" : "rgba(245,242,238,0.45)",
                 transform: index === indiceActual ? "scale(1.15)" : "scale(1)",
               }}
             />

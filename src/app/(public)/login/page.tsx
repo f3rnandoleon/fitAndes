@@ -77,7 +77,7 @@ export default function LoginPage() {
           </p>
           <h1
             className="text-5xl leading-tight mb-4"
-            style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "#1a1a1a" }}
+            style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "var(--foreground)" }}
           >
             Tu tienda, en
             <br />
@@ -133,7 +133,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-xs uppercase" style={{ letterSpacing: "0.16em", color: "var(--subtle)" }}>
-                Correo electronico
+                Correo electrónico
               </label>
               <input
                 id="email"
@@ -143,14 +143,14 @@ export default function LoginPage() {
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 required
                 autoComplete="email"
-                className="border rounded-none px-4 py-3 text-sm placeholder:text-[#8f8377] focus:outline-none focus:ring-0"
-                style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+                className="border border-border rounded-[var(--radius-md)] px-4 py-3 text-sm placeholder:text-subtle/50 focus:outline-none focus:ring-1 focus:ring-foreground/10"
+                style={{ background: "var(--background)" }}
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="password" className="text-xs uppercase" style={{ letterSpacing: "0.16em", color: "var(--subtle)" }}>
-                Contrasena
+                Contraseña
               </label>
               <input
                 id="password"
@@ -160,8 +160,8 @@ export default function LoginPage() {
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 required
                 autoComplete="current-password"
-                className="border rounded-none px-4 py-3 text-sm placeholder:text-[#8f8377] focus:outline-none focus:ring-0"
-                style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+                className="border border-border rounded-[var(--radius-md)] px-4 py-3 text-sm placeholder:text-subtle/50 focus:outline-none focus:ring-1 focus:ring-foreground/10"
+                style={{ background: "var(--background)" }}
               />
             </div>
 
@@ -174,11 +174,11 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 text-xs uppercase text-white py-3.5 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[48px] active:scale-95"
-              style={{ background: "#1a1a1a", letterSpacing: "0.18em" }}
+              className="mt-1 text-xs uppercase text-background py-3.5 bg-foreground transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[48px] active:scale-95 rounded-full"
+              style={{ letterSpacing: "0.18em" }}
             >
               {loading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
               ) : (
                 "Ingresar"
               )}
@@ -186,9 +186,9 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-sm" style={{ color: "var(--muted)" }}>
-            No tienes cuenta?{" "}
-            <Link href={`/registro${callbackUrl ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`} className="hover:opacity-60 transition-opacity" style={{ color: "#1a1a1a" }}>
-              Registrate gratis
+            ¿No tienes cuenta?{" "}
+            <Link href={`/registro${callbackUrl ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`} className="hover:opacity-60 transition-opacity font-medium" style={{ color: "var(--foreground)" }}>
+              Regístrate gratis
             </Link>
           </p>
           <div className="mt-6 active:scale-95">

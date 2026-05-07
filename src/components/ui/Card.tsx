@@ -16,7 +16,7 @@ export function Card({
   padding = "md",
   hoverable = false,
 }: CardProps) {
-  const baseStyles = "border border-border bg-white/90 backdrop-blur-sm transition-all";
+  const baseStyles = "border border-border bg-white transition-all rounded-[var(--radius-lg)] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.04)]";
   
   const paddings = {
     none: "",

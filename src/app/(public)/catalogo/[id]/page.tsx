@@ -18,8 +18,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
 }
 
-export default async function ProductoDetallePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProductoDetallePage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const { id } = await params;
+  const { color, talla } = await searchParams;
   let res: Response;
 
   try {
@@ -56,12 +57,18 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
           <p className="text-[10px] uppercase mb-3" style={{ letterSpacing: "0.22em", color: "#8f8478" }}>
             Detalle de producto
           </p>
-          <h1 className="text-2xl leading-tight sm:text-3xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            Mira la prenda, elige variante y reserva.
-          </h1>
+          <h2 className="text-xl leading-tight sm:text-2xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+            Mira la prenda, escoge talla y color, y resérvala.
+          </h2>
         </section>
 
-        <ProductoDetalleCliente producto={producto} colores={colores} tallas={tallas} />
+        <ProductoDetalleCliente
+          producto={producto}
+          colores={colores}
+          tallas={tallas}
+          colorInicial={typeof color === 'string' ? color : undefined}
+          tallaInicial={typeof talla === 'string' ? talla : undefined}
+        />
       </div>
     </main>
   );

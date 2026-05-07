@@ -21,21 +21,21 @@ export default async function DashboardPage() {
         <p className="text-xs uppercase mb-2" style={{ letterSpacing: "0.22em", color: "var(--subtle)" }}>
           Panel de cliente
         </p>
-        <h1 className="text-4xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
+        <h1 className="text-4xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "var(--foreground)" }}>
           Hola, {session.user.fullname.split(" ")[0]}
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
-          Aqui tienes un resumen de tu actividad.
+          Aquí tienes un resumen de tu actividad.
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Total pedidos" value={totalPedidos.toString()} icon="📦" />
-        <StatCard label="Total gastado" value={`Bs. ${totalGastado.toFixed(2)}`} icon="💰" />
+        <StatCard label="Total pedidos" value={totalPedidos.toString()} icon={<BoxIcon />} />
+        <StatCard label="Total gastado" value={`Bs. ${totalGastado.toFixed(2)}`} icon={<CashIcon />} />
         <StatCard
-          label="Ultimo pedido"
+          label="Último pedido"
           value={recientes[0] ? new Date(recientes[0].createdAt).toLocaleDateString("es-BO") : "-"}
-          icon="🕐"
+          icon={<ClockIcon />}
         />
       </div>
 
@@ -50,13 +50,13 @@ export default async function DashboardPage() {
         </div>
 
         {recientes.length === 0 ? (
-          <div className="border p-10 text-center" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-            <p className="text-3xl mb-2">◈</p>
+          <div className="border border-border p-10 text-center rounded-[var(--radius-lg)] bg-white">
+            <p className="text-3xl mb-2 text-subtle">◈</p>
             <p className="text-sm" style={{ color: "var(--muted)" }}>
-              Aun no tienes pedidos.
+              Aún no tienes pedidos.
             </p>
-            <Link href="/catalogo" className="mt-3 inline-block text-sm hover:opacity-60 transition-opacity">
-              Explorar catalogo
+            <Link href="/catalogo" className="mt-3 inline-block text-sm hover:opacity-60 transition-opacity font-medium" style={{ color: "var(--foreground)" }}>
+              Explorar catálogo
             </Link>
           </div>
         ) : (
@@ -71,19 +71,49 @@ export default async function DashboardPage() {
   );
 }
 
-function StatCard({ label, value, icon }: { label: string; value: string; icon: string }) {
+function StatCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <div className="border p-5 flex items-center gap-4" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-      <span className="text-3xl" style={{ color: "var(--subtle)" }}>{icon}</span>
+    <div className="border border-border p-5 flex items-center gap-4 rounded-[var(--radius-md)] bg-white shadow-sm">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-background text-foreground border border-border">
+        {icon}
+      </span>
       <div>
         <p className="text-xs uppercase mb-0.5" style={{ letterSpacing: "0.14em", color: "var(--subtle)" }}>
           {label}
         </p>
-        <p className="text-xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
+        <p className="text-xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "var(--foreground)" }}>
           {value}
         </p>
       </div>
     </div>
+  );
+}
+
+function BoxIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+      <path d="m3.3 7 8.7 5 8.7-5" />
+      <path d="M12 22V12" />
+    </svg>
+  );
+}
+
+function CashIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
   );
 }
 
@@ -100,7 +130,7 @@ function PedidoRow({ pedido }: { pedido: Pedido }) {
 
   return (
     <Link href={`/pedidos/${pedido._id}`}>
-      <div className="flex items-center justify-between border px-5 py-4 transition-opacity hover:opacity-85" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+      <div className="flex items-center justify-between border border-border px-5 py-4 transition-all hover:translate-x-1 bg-white rounded-[var(--radius-md)] shadow-sm hover:shadow-md">
         <div>
           <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{getPedidoNumero(pedido)}</p>
           <p className="text-xs mt-0.5" style={{ color: "var(--subtle)" }}>
@@ -112,7 +142,7 @@ function PedidoRow({ pedido }: { pedido: Pedido }) {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-xs px-2.5 py-1 border" style={estadoColor[statusTone]}>
+          <span className="text-[10px] uppercase px-3 py-1 border rounded-full font-medium" style={estadoColor[statusTone]}>
             {statusLabel}
           </span>
           <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
