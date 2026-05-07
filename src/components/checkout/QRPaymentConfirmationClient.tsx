@@ -18,7 +18,7 @@ export default function QRPaymentConfirmationClient() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const qrImageUrl = "https://res.cloudinary.com/dq1jeikev/image/upload/v1777531404/comprobante_sglufd.jpg";
+  const qrImageUrl = "https://res.cloudinary.com/dq1jeikev/image/upload/v1777964054/comprobante_xvdhuf.jpg";
 
   useEffect(() => {
     const stored = window.localStorage.getItem("fitandes-pending-checkout");
@@ -135,7 +135,7 @@ export default function QRPaymentConfirmationClient() {
       <Card className="flex flex-col items-center text-center">
         <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-4">Paso 1: Realizar el Pago</p>
         <h2 className="text-xl font-serif mb-6">Pagar con QR</h2>
-        
+
         <div className="relative w-full aspect-square max-w-[320px] bg-white p-4 border border-border/50 rounded-xl mb-6 shadow-sm">
           <Image src={qrImageUrl} alt="QR de Pago FitAndes" fill className="object-contain p-2" />
         </div>
@@ -154,7 +154,7 @@ export default function QRPaymentConfirmationClient() {
       <Card className="flex flex-col">
         <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-4">Paso 2: Finalizar Pedido</p>
         <h2 className="text-xl font-serif mb-6">Confirmar y Enviar</h2>
-        
+
         <div className="flex-1 flex flex-col justify-center">
           <div className="border-2 border-dashed border-border rounded-2xl p-8 text-center bg-surface/30">
             <input type="file" id="receipt-upload" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="hidden" />
