@@ -29,7 +29,7 @@ function formatPrice(value: number) {
   }).format(value)}`;
 }
 
-export default function ProductoDetalleCliente({ producto, colores, colorInicial, tallaInicial }: Props) {
+export default function ProductoDetalleCliente({ producto, colores, tallas, colorInicial, tallaInicial }: Props) {
   const { addItem } = useReservationCart();
   const productoDisponible = filterCatalogAvailableVariants(producto);
   const variantesDisponibles = productoDisponible.variantes;
@@ -49,14 +49,31 @@ export default function ProductoDetalleCliente({ producto, colores, colorInicial
   const [indiceImagenActual, setIndiceImagenActual] = useState(0);
   const [cantidad, setCantidad] = useState(1);
 
+  const tallasDisponibles = Array.from(
+    new Set(variantesDisponibles.map((v) => v.talla))
+  ) as string[];
 
-  const colorSeleccionado = varianteSeleccionada?.color ?? primeraVariante?.color ?? colores[0] ?? "";
-  const colorSecundarioSeleccionado = varianteSeleccionada?.colorSecundario ?? primeraVariante?.colorSecundario;
+  const tallaSeleccionada =
+    varianteSeleccionada?.talla ??
+    primeraVariante?.talla ??
+    tallasDisponibles[0] ??
+    "";
 
-  const variantesDelColor = variantesDisponibles.filter(
-    (variante) => variante.color === colorSeleccionado && variante.colorSecundario === colorSecundarioSeleccionado,
+  const variantesDeLaTalla = variantesDisponibles.filter(
+    (variante) => variante.talla === tallaSeleccionada,
   );
-  const tallasDisponibles = variantesDelColor.map((variante) => variante.talla);
+
+  const coloresDisponibles = Array.from(
+    new Map(
+      variantesDeLaTalla.map((v) => [
+        `${v.color}-${v.colorSecundario || ""}`,
+        { color: v.color, colorSecundario: v.colorSecundario },
+      ]),
+    ).values(),
+  );
+
+  const colorSeleccionado = varianteSeleccionada?.color ?? primeraVariante?.color ?? "";
+  const colorSecundarioSeleccionado = varianteSeleccionada?.colorSecundario ?? primeraVariante?.colorSecundario;
 
   const imagenes = imagenesDeVariante(varianteSeleccionada);
   const imagenesActivas = imagenes.length > 0 ? imagenes : imagenesDeProducto(producto);
@@ -93,24 +110,25 @@ export default function ProductoDetalleCliente({ producto, colores, colorInicial
         (variante) =>
           variante.color === color &&
           variante.colorSecundario === colorSecundario &&
-          variante.talla === varianteSeleccionada?.talla,
-      ) ??
-      variantesDisponibles.find(
-        (variante) =>
-          variante.color === color &&
-          variante.colorSecundario === colorSecundario,
-      ) ??
-      null;
+          variante.talla === tallaSeleccionada,
+      ) ?? null;
 
     setVarianteSeleccionada(siguiente);
     setMensaje("");
   }
 
-  function seleccionarTalla(tallaSeleccionada: string) {
+  function seleccionarTalla(talla: string) {
     const siguiente =
       variantesDisponibles.find(
-        (variante) => variante.color === colorSeleccionado && variante.colorSecundario === colorSecundarioSeleccionado && variante.talla === tallaSeleccionada,
-      ) ?? null;
+        (variante) =>
+          variante.talla === talla &&
+          variante.color === varianteSeleccionada?.color &&
+          variante.colorSecundario === varianteSeleccionada?.colorSecundario,
+      ) ??
+      variantesDisponibles.find(
+        (variante) => variante.talla === talla,
+      ) ??
+      null;
 
     setVarianteSeleccionada(siguiente);
     setMensaje("");
@@ -299,6 +317,40 @@ export default function ProductoDetalleCliente({ producto, colores, colorInicial
           <div className="mt-8 rounded-[var(--radius-md)] border border-border px-4 py-5 sm:px-5 bg-background">
             <div className="flex items-center justify-between gap-4">
               <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
+                Talla
+              </p>
+              {varianteSeleccionada ? (
+                <span className="text-xs text-foreground">
+                  {varianteSeleccionada.talla}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              {tallasDisponibles.map((tallaDisponible) => {
+                const activa = tallaDisponible === varianteSeleccionada?.talla;
+                return (
+                  <button
+                    key={tallaDisponible}
+                    type="button"
+                    onClick={() => seleccionarTalla(tallaDisponible)}
+                    className="min-w-12 rounded-full border px-4 py-2.5 text-sm transition-all active:scale-95"
+                    style={{
+                      borderColor: activa ? "#111111" : "#e2d8cc",
+                      background: activa ? "#111111" : "#ffffff",
+                      color: activa ? "#ffffff" : "#4f463d",
+                    }}
+                  >
+                    {tallaDisponible}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-[var(--radius-md)] border border-border px-4 py-5 sm:px-5 bg-background">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
                 Color actual
               </p>
               <span className="text-xs text-foreground">
@@ -307,14 +359,7 @@ export default function ProductoDetalleCliente({ producto, colores, colorInicial
             </div>
 
             <div className="mt-4 flex flex-wrap gap-3">
-              {Array.from(
-                new Map(
-                  variantesDisponibles.map((v) => [
-                    `${v.color}-${v.colorSecundario || ""}`,
-                    { color: v.color, colorSecundario: v.colorSecundario },
-                  ]),
-                ).values(),
-              ).map(({ color, colorSecundario }) => {
+              {coloresDisponibles.map(({ color, colorSecundario }) => {
                 const activo = color === colorSeleccionado && colorSecundario === colorSecundarioSeleccionado;
                 const colorBase = getProductColorValue(color);
                 const colorSec = colorSecundario ? getProductColorValue(colorSecundario) : null;
@@ -345,40 +390,6 @@ export default function ProductoDetalleCliente({ producto, colores, colorInicial
                     <span className="text-[11px] uppercase tracking-[0.12em] text-muted">
                       {colorSecundario ? `${color} / ${colorSecundario}` : color}
                     </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mt-5 rounded-[var(--radius-md)] border border-border px-4 py-5 sm:px-5 bg-background">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
-                Talla
-              </p>
-              {varianteSeleccionada ? (
-                <span className="text-xs text-foreground">
-                  {varianteSeleccionada.talla}
-                </span>
-              ) : null}
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2.5">
-              {Array.from(new Set(tallasDisponibles)).map((tallaDisponible) => {
-                const activa = tallaDisponible === varianteSeleccionada?.talla;
-                return (
-                  <button
-                    key={tallaDisponible}
-                    type="button"
-                    onClick={() => seleccionarTalla(tallaDisponible)}
-                    className="min-w-12 rounded-full border px-4 py-2.5 text-sm transition-all active:scale-95"
-                    style={{
-                      borderColor: activa ? "#111111" : "#e2d8cc",
-                      background: activa ? "#111111" : "#ffffff",
-                      color: activa ? "#ffffff" : "#4f463d",
-                    }}
-                  >
-                    {tallaDisponible}
                   </button>
                 );
               })}
