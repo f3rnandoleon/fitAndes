@@ -4,8 +4,8 @@ import { DeliveryMethod, DeliveryOptionsConfig } from "@/types/checkout";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { PickupSchedulePicker } from "@/components/checkout/PickupSchedulePicker";
 import { 
-  getPickupScheduleTimeSlots, 
   getShippingDepartments, 
   getShippingCompaniesByDepartment, 
   getShippingBranches 
@@ -25,6 +25,8 @@ interface Props {
   setPhone: (v: string) => void;
   recipientName: string;
   setRecipientName: (v: string) => void;
+  pickupDate: string;
+  setPickupDate: (v: string) => void;
   pickupScheduleId: string;
   setPickupScheduleId: (v: string) => void;
   pickupTime: string;
@@ -63,14 +65,11 @@ export function CheckoutDeliverySection(props: Props) {
   const {
     method, setMethod, config, loading, error,
     address, setAddress, phone, setPhone, recipientName, setRecipientName,
-    pickupScheduleId, setPickupScheduleId, pickupTime, setPickupTime,
+    pickupDate, setPickupDate, pickupScheduleId, setPickupScheduleId, pickupTime, setPickupTime,
     department, setDepartment, shippingCompany, setShippingCompany,
     branch, setBranch, senderCI, setSenderCI, senderPhone, setSenderPhone
   } = props;
 
-  const pickupPointOptions = config.pickupPoints;
-  const pickupScheduleOptions = config.pickupSchedules;
-  const pickupTimeOptions = getPickupScheduleTimeSlots(pickupScheduleId, config);
   const shippingDepartments = getShippingDepartments(config);
   const shippingCompanies = getShippingCompaniesByDepartment(department, config);
   const shippingBranches = getShippingBranches(department, shippingCompany, config);
@@ -121,40 +120,38 @@ export function CheckoutDeliverySection(props: Props) {
       )}
 
       {method === "PICKUP_POINT" && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <Select
-              label="Punto de encuentro"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              options={pickupPointOptions.map(p => ({ value: p.name, label: p.name }))}
-            />
-          </div>
-          <Input
-            label="Celular de contacto"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="76543210"
+        <div className="space-y-4">
+          {/* New interactive pickup scheduler with 12-hour rule */}
+          <PickupSchedulePicker
+            config={config}
+            pickupPoint={address}
+            onPickupPointChange={setAddress}
+            pickupDate={pickupDate}
+            onPickupDateChange={setPickupDate}
+            pickupScheduleId={pickupScheduleId}
+            onPickupScheduleIdChange={setPickupScheduleId}
+            pickupTime={pickupTime}
+            onPickupTimeChange={setPickupTime}
           />
-          <Input
-            label="Nombre de quien recibe"
-            value={recipientName}
-            onChange={(e) => setRecipientName(e.target.value)}
-            placeholder="Opcional"
-          />
-          <Select
-            label="Dia disponible"
-            value={pickupScheduleId}
-            onChange={(e) => setPickupScheduleId(e.target.value)}
-            options={pickupScheduleOptions.map(s => ({ value: s.id, label: s.label }))}
-          />
-          <Select
-            label="Hora especifica"
-            value={pickupTime}
-            onChange={(e) => setPickupTime(e.target.value)}
-            options={pickupTimeOptions.map(t => ({ value: t, label: t }))}
-          />
+
+          {/* Contact info — visible once pickup point is selected */}
+          {address && (
+            <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border/50" style={{ animation: "pickup-step-enter 0.35s cubic-bezier(0.4, 0, 0.2, 1)" }}>
+              <Input
+                label="Celular de contacto"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="76543210"
+              />
+              <Input
+                label="Nombre de quien recibe"
+                value={recipientName}
+                onChange={(e) => setRecipientName(e.target.value)}
+                placeholder="Opcional"
+              />
+            </div>
+          )}
         </div>
       )}
 
