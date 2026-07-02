@@ -117,6 +117,8 @@ export default function CheckoutPageClient() {
   useEffect(() => {
     if (deliveryMethod === "SHIPPING_NATIONAL" && paymentMethod !== "QR") {
       setPaymentMethod("QR");
+    } else if (deliveryMethod === "WHATSAPP" && paymentMethod !== "EFECTIVO") {
+      setPaymentMethod("EFECTIVO");
     }
   }, [deliveryMethod, paymentMethod]);
 
