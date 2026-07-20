@@ -7,8 +7,7 @@ import { useEffect, useState } from "react";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
 import {
   EMPTY_DELIVERY_OPTIONS,
-  getPickupScheduleById,
-  getPickupScheduleTimeSlots,
+  formatDateLabel,
   getShippingBranches,
   getShippingCompaniesByDepartment,
   getShippingDepartments,
@@ -55,6 +54,7 @@ export default function CheckoutPageClient() {
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [recipientName, setRecipientName] = useState("");
+  const [pickupDate, setPickupDate] = useState("");
   const [pickupScheduleId, setPickupScheduleId] = useState("");
   const [pickupTime, setPickupTime] = useState("");
   const [department, setDepartment] = useState("");
@@ -74,9 +74,6 @@ export default function CheckoutPageClient() {
 
   const authenticated = status === "authenticated" && session?.user?.role === "CLIENTE";
   const pickupPointOptions = deliveryConfig.pickupPoints;
-  const pickupScheduleOptions = deliveryConfig.pickupSchedules;
-  const selectedPickupSchedule = getPickupScheduleById(pickupScheduleId, deliveryConfig);
-  const pickupTimeOptions = getPickupScheduleTimeSlots(pickupScheduleId, deliveryConfig);
   const shippingDepartments = getShippingDepartments(deliveryConfig);
   const shippingCompanies = getShippingCompaniesByDepartment(department, deliveryConfig);
   const shippingBranches = getShippingBranches(department, shippingCompany, deliveryConfig);
@@ -122,25 +119,18 @@ export default function CheckoutPageClient() {
     }
   }, [deliveryMethod, paymentMethod]);
 
+  // Reset pickup selections when switching away from PICKUP_POINT
   useEffect(() => {
     if (deliveryMethod !== "PICKUP_POINT") return;
 
+    // Auto-select first pickup point if current one is invalid
     if (!pickupPointOptions.some((option) => option.name === address)) {
-      setAddress(pickupPointOptions[0]?.name ?? "");
+      setAddress("");
+      setPickupDate("");
+      setPickupScheduleId("");
+      setPickupTime("");
     }
-
-    if (!pickupScheduleOptions.some((option) => option.id === pickupScheduleId)) {
-      setPickupScheduleId(pickupScheduleOptions[0]?.id ?? "");
-    }
-  }, [deliveryMethod, address, pickupScheduleId, pickupPointOptions, pickupScheduleOptions]);
-
-  useEffect(() => {
-    if (deliveryMethod !== "PICKUP_POINT") return;
-
-    if (!pickupTimeOptions.includes(pickupTime)) {
-      setPickupTime(pickupTimeOptions[0] ?? "");
-    }
-  }, [deliveryMethod, pickupTime, pickupTimeOptions]);
+  }, [deliveryMethod, address, pickupPointOptions]);
 
   useEffect(() => {
     if (deliveryMethod !== "SHIPPING_NATIONAL") return;
@@ -240,7 +230,7 @@ export default function CheckoutPageClient() {
     }
 
     if (deliveryMethod === "PICKUP_POINT") {
-      if (pickupPointOptions.length === 0 || pickupScheduleOptions.length === 0) {
+      if (pickupPointOptions.length === 0) {
         return "No pude cargar los puntos de entrega del sistema central.";
       }
 
@@ -248,8 +238,8 @@ export default function CheckoutPageClient() {
         return "Selecciona un punto de encuentro.";
       }
 
-      if (normalizedPhone.length < 8) {
-        return "Ingresa un celular válido para coordinar la entrega.";
+      if (!pickupDate) {
+        return "Selecciona una fecha de entrega.";
       }
 
       if (!pickupScheduleId) {
@@ -257,7 +247,11 @@ export default function CheckoutPageClient() {
       }
 
       if (!pickupTime.trim()) {
-        return "Selecciona una hora especifica dentro del rango.";
+        return "Selecciona una hora especifica para la entrega.";
+      }
+
+      if (normalizedPhone.length < 8) {
+        return "Ingresa un celular válido para coordinar la entrega.";
       }
     }
 
@@ -303,9 +297,10 @@ export default function CheckoutPageClient() {
       pendingWhatsappWindow.opener = null;
     }
 
+    // Build the scheduled delivery string: "Lunes 7 de Julio 14:30"
     const pickupScheduleValue =
-      deliveryMethod === "PICKUP_POINT" && selectedPickupSchedule && pickupTime
-        ? `${selectedPickupSchedule.day} ${pickupTime}`
+      deliveryMethod === "PICKUP_POINT" && pickupDate && pickupTime
+        ? `${formatDateLabel(pickupDate)} ${pickupTime}`
         : "";
 
     const checkoutPayload = {
@@ -466,6 +461,8 @@ export default function CheckoutPageClient() {
                 setPhone={setPhone}
                 recipientName={recipientName}
                 setRecipientName={setRecipientName}
+                pickupDate={pickupDate}
+                setPickupDate={setPickupDate}
                 pickupScheduleId={pickupScheduleId}
                 setPickupScheduleId={setPickupScheduleId}
                 pickupTime={pickupTime}

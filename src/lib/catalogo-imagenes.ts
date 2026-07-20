@@ -1,3 +1,5 @@
+import { catalogVariantIsAvailable, type CatalogVariant } from "@/types/catalogo";
+
 interface RecursoConImagenes {
   imagen?: string | null;
   imagenes?: Array<string | null | undefined> | null;
@@ -60,7 +62,21 @@ export function primeraImagenDeVariante(variante?: RecursoConImagenes | null): s
 export function imagenesDeProducto(producto?: ProductoConImagenes | null): string[] {
   if (!producto) return [];
 
-  const imagenes = (producto.variantes ?? [])
+  const variants = (producto.variantes ?? []) as CatalogVariant[];
+  const availableVariants = variants.filter((variante) => {
+    // If it has stock properties, check if it's available. Otherwise, keep it.
+    if (
+      "stock" in variante ||
+      "stockDisponible" in variante ||
+      "stockReservado" in variante ||
+      "reservedStock" in variante
+    ) {
+      return catalogVariantIsAvailable(variante);
+    }
+    return true;
+  });
+
+  const imagenes = availableVariants
     .map((variante) => primeraImagenDeVariante(variante))
     .filter((imagen): imagen is string => Boolean(imagen));
   if (imagenes.length > 0) return Array.from(new Set(imagenes));
