@@ -1,21 +1,30 @@
-# Documentacion Completa del Proyecto FitAndes
+# DOCUMENTACION_COMPLETA_PROYECTO — FitAndes (Frontend/BFF)
 
-## 1. Resumen ejecutivo
+> Documento fuente para **otras apps, desarrolladores y agentes**: explica propósito, arquitectura, flujos, puntos de integración con el **core/API central**, y detalles operativos relevantes.
 
-FitAndes es una aplicacion frontend construida con Next.js 15, React 19, TypeScript y Tailwind CSS 4. El objetivo del proyecto es ofrecer:
+---
 
-- una vitrina publica para explorar el catalogo de productos;
-- un flujo de autenticacion para clientes;
-- un portal privado donde el cliente puede revisar sus pedidos;
-- una capa ligera de reserva local de productos desde el detalle del catalogo.
+## 1) Resumen ejecutivo
 
-Este repositorio **no implementa el backend principal de negocio**. La aplicacion consume una API externa configurada mediante variables de entorno.
+FitAndes es una aplicación web hecha con **Next.js (App Router)**, **React**, **TypeScript** y **Tailwind CSS**. Su rol es actuar como **Frontend/BFF (Backend for Frontend)** entre el navegador y la **API central** del sistema de ventas.
 
-Archivo complementario:
+FitAndes provee:
 
-- `API_DOCUMENTACION.md`: describe la API central consumida por este frontend.
+- **Catálogo público** (home + catálogo + detalle de producto)
+- **Autenticación** para clientes (NextAuth)
+- **Portal privado** del cliente (panel, historial y detalle de pedido)
+- **Checkout BFF**: sincroniza carrito remoto en el core y ejecuta el checkout/pedido (incluye creación de pago **QR** si aplica)
+- **Chat** de apoyo (reglas + motor de conversación, con control de costos/operación)
+- **Reserva local** en el navegador como apoyo UX (localStorage)
 
-## 2. Stack tecnologico
+Este repositorio **no reemplaza** el backend principal de negocio. El BFF depende fuertemente del contrato de la API central.
+
+Archivo de referencia para el core:
+- `API_DOCUMENTACION.md`
+
+---
+
+## 2) Stack tecnológico
 
 - Next.js `15.5.9`
 - React `19.1.0`
@@ -24,448 +33,340 @@ Archivo complementario:
 - Tailwind CSS `4`
 - ESLint `9`
 
-## 3. Alcance real de este repositorio
+---
 
-Este proyecto contiene principalmente la experiencia web del cliente. Las responsabilidades cubiertas aqui son:
+## 3) Alcance real (qué cubre este repo)
 
-- renderizado de paginas publicas y privadas con App Router;
-- login con `next-auth` usando `CredentialsProvider`;
-- registro de clientes contra la API externa;
-- consulta del catalogo publico;
-- consulta de pedidos del cliente autenticado;
-- manejo de una reserva local en `localStorage`.
+### Cubre
 
-No estan implementados aqui:
+- Rutas con **App Router** (public y portal)
+- Sesiones con **NextAuth** usando `CredentialsProvider`
+- Autorización por rol (solo `CLIENTE`)
+- Consumo de API central (vía helpers de integración)
+- **Endpoints BFF** en `src/app/api/*`:
+  - `/api/chat`
+  - `/api/checkout`
+  - (otros endpoints existen en `src/app/api/*`)
+- Persistencia UX: **reserva local** con `localStorage`
 
-- base de datos;
-- modelos persistentes de negocio;
-- endpoints REST de productos, ventas, inventario o reportes;
-- logica de administracion o portal de vendedores/admins.
+### No cubre (o no es responsabilidad directa aquí)
 
-## 4. Estructura general del proyecto
+- Persistencia de negocio y base de datos
+- Lógica de precios/inventario/ventas como sistema de verdad (vive en el core)
+- Contratos y estados transaccionales “definitivos” (se consultan/ejecutan contra la API central)
+
+---
+
+## 4) Estructura del repo (mapa funcional)
 
 ```text
 fitAndes/
 |-- src/
 |   |-- app/
 |   |   |-- (public)/
-|   |   |   |-- page.tsx
-|   |   |   |-- login/page.tsx
-|   |   |   |-- registro/page.tsx
-|   |   |   `-- catalogo/
-|   |   |       |-- page.tsx
-|   |   |       `-- [id]/page.tsx
 |   |   |-- (portal)/
-|   |   |   |-- layout.tsx
-|   |   |   |-- dashboard/page.tsx
-|   |   |   `-- pedidos/
-|   |   |       |-- page.tsx
-|   |   |       `-- [id]/page.tsx
-|   |   |-- api/auth/[...nextauth]/route.ts
+|   |   |-- api/
+|   |   |   |-- chat/route.ts
+|   |   |   |-- checkout/route.ts
+|   |   |   `-- ...otros route handlers
 |   |   |-- globals.css
 |   |   `-- layout.tsx
 |   |-- components/
-|   |   |-- catalogo/
-|   |   |-- layout/
-|   |   `-- providers/
+|   |   `-- ...UI por dominio (catalogo, chat, pedidos, layout, providers)
 |   |-- lib/
-|   |   |-- auth-options.ts
-|   |   `-- catalogo-imagenes.ts
-|   |-- middleware.ts
+|   |   |-- central-api.ts        (helpers de headers/retry)
+|   |   |-- central-client.ts    (fetch con fallback + sync remoto)
+|   |   |-- auth-options.ts      (NextAuth)
+|   |   |-- chat/*               (motor, parser, memoria, formatter, gemini)
+|   |   |-- checkout/*          (auth, validation, QR, notificaciones)
+|   |   |-- adapters/*         (traducción y compatibilidad con core)
+|   |   `-- schemas/*           (validaciones Zod)
+|   |-- services/
+|   |   `-- ...acceso a datos (ej: orders.service)
 |   `-- types/
+|       `-- ...tipos de contrato del core/portal
+|
 |-- public/
-|-- API_DOCUMENTACION.md
+|-- docs/adr/ (decisiones arquitectónicas)
+|-- docs/operations/ (runbooks)
+|-- DOCUMENTACION_COMPLETA_PROYECTO.md
 |-- README.md
 |-- package.json
-`-- .env
+|-- next.config.ts
 ```
 
-## 5. Arquitectura de aplicacion
+---
 
-### 5.1 App Router
+## 5) Arquitectura de aplicación
 
-El proyecto usa App Router de Next.js con dos grupos de rutas:
+### 5.1 App Router: partición de rutas
 
-- `(public)`: home, login, registro, catalogo y detalle de producto.
-- `(portal)`: dashboard y pedidos del cliente.
+- `(public)` → rutas abiertas para el usuario:
+  - `/`, `/catalogo`, `/catalogo/:id`, `/login`, `/registro`, etc.
+- `(portal)` → rutas autenticadas:
+  - `/dashboard`, `/pedidos`, `/pedidos/:id`
 
-Importante: los nombres de grupos entre parentesis **no forman parte de la URL publica**. Por lo tanto, las rutas reales son:
+Los grupos entre paréntesis **no** forman parte de la URL.
 
-- `/`
-- `/login`
-- `/registro`
-- `/catalogo`
-- `/catalogo/:id`
-- `/dashboard`
-- `/pedidos`
-- `/pedidos/:id`
+### 5.2 Autenticación/Autorización
 
-### 5.2 Providers globales
+- NextAuth configura providers en `src/lib/auth-options.ts`.
+- Roles: se permite **solo** `CLIENTE`.
+- La sesión usa estrategia `jwt`.
+- El portal está protegido en:
+  - `src/app/(portal)/layout.tsx` (redirect a `/login`)
+  - `src/middleware.ts` (matcher real con `config.matcher`)
 
-`src/app/layout.tsx` monta `AppProviders`, que a su vez inyecta `ReservationCartProvider` para compartir el estado de reservas en toda la app.
+**Regla práctica para agentes**: la protección efectiva para el portal la define el layout y el middleware. Si cambias rutas del portal, ajusta ambos.
 
-### 5.3 Sesion y autenticacion
+### 5.3 Integración con API central (contrato y compatibilidad)
 
-La sesion se gestiona con NextAuth usando JWT. El flujo es:
+La integración está encapsulada en:
 
-1. El usuario se autentica con email y password.
-2. NextAuth delega la validacion a la API externa (`POST /auth/login`).
-3. Solo se aceptan usuarios con rol `CLIENTE`.
-4. La sesion se guarda como JWT y se expone con campos extendidos:
-   - `id`
-   - `email`
-   - `fullname`
-   - `role`
+- `src/lib/central-api.ts`
+  - `CENTRAL_API_URL = NEXT_PUBLIC_API_URL ?? API_URL ?? ""`
+  - Construye headers con:
+    - `x-user-id`
+    - `x-user-role`
+    - `Authorization: Bearer ...` (si existe `accessToken`)
+  - `fetchCentralApiWithFallback(...)` (reintentos con abort timeout)
+- `src/lib/central-client.ts`
+  - `fetchCentralJson(...)`
+  - `syncRemoteCart(...)` (sincroniza el carrito local hacia el core)
 
-## 6. Variables de entorno
+**Por qué existe “fallback”/compatibilidad**: el core tiene rutas/contratos que conviven (legacy y canonical). El BFF intenta ambos.
 
-Variables efectivamente usadas por el frontend:
+---
 
-| Variable | Obligatoria | Uso |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | Si | Base URL publica de la API externa. Se usa para login, signup, catalogo y pedidos. |
-| `NEXTAUTH_SECRET` | Si | Firma y cifrado de la sesion JWT de NextAuth. |
-| `NEXTAUTH_URL` | Recomendable | URL base de la aplicacion; sirve como fallback en la home para calcular una API interna. |
-| `API_URL` | Opcional | Override server-side para llamadas desde componentes del servidor. |
+## 6) Variables de entorno (lo que realmente usa el código)
 
-Observacion:
+### Variables clave
 
-- En el `.env` actual existen `MONGODB_URL`, `JWT_SECRET` y `JWT_EXPIRES_IN`, pero este repositorio no los referencia en el codigo fuente. Parecen pertenecer al backend central, no a esta app cliente.
+- `NEXT_PUBLIC_API_URL` (recomendada/clave)
+  - base URL pública de la API central.
+  - usada por integración (`CENTRAL_API_URL`) y fetch server components cuando aplica.
+- `API_URL` (fallback server-side)
+  - si no existe `NEXT_PUBLIC_API_URL`.
+- `NEXTAUTH_SECRET` (obligatoria)
+  - firma/cifrado de sesión JWT.
+- `NEXTAUTH_URL` (recomendada)
+  - ayuda a OAuth/flows y generación de URLs.
 
-Ejemplo seguro:
+### Variables para Google (si se usa)
+- `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (verificación requerida según tu configuración de NextAuth/Google)
 
-```env
-NEXT_PUBLIC_API_URL=https://tu-backend/api
-NEXTAUTH_SECRET=tu-secreto-seguro
-NEXTAUTH_URL=http://localhost:3000
-```
+### Chat
+- `GOOGLE_GENERATIVE_AI_API_KEY` y configuración Gemini (si el motor lo usa en tu despliegue)
 
-Importante para Google Sign-In:
+> Nota: el repo puede tener variables adicionales relacionadas a backend central (ej: Mongo/JWT) pero no son necesariamente consumidas en este frontend.
 
-- `NEXTAUTH_URL` debe coincidir con la URL real desde la que abres la web, incluyendo el puerto.
-- Si trabajas en `http://localhost:3001`, ese es el origen que debes registrar en Google Cloud Console.
-- `http://localhost:3000` y `http://localhost:3001` cuentan como origenes distintos para Google OAuth.
+---
 
-## 7. Scripts de desarrollo
+## 7) Rutas y flujos de usuario
 
-Definidos en `package.json`:
+### 7.1 Catálogo público
 
-- `npm run dev`: inicia el servidor de desarrollo.
-- `npm run build`: genera la build de produccion.
-- `npm run start`: levanta la build generada.
-- `npm run lint`: ejecuta ESLint.
+`src/app/(public)/page.tsx` (home)
 
-## 8. Flujo funcional del usuario
+- Renderiza secciones y catálogo usando componentes como `CarruselImagenes`.
 
-### 8.1 Home
+`src/app/(public)/catalogo/page.tsx`
 
-Archivo: `src/app/(public)/page.tsx`
+- Llama a:
+  - `GET {NEXT_PUBLIC_API_URL}/productos/publicos`
+- Aplica filtro de stock por variante (la grilla solo muestra productos con variantes disponibles).
+- Usa `revalidate: 60`.
 
-Responsabilidades:
+### 7.2 Detalle de producto
 
-- consulta productos publicos desde la API;
-- arma secciones de marketing como hero, recien llegados y seleccion;
-- usa `CarruselImagenes` para mostrar fotos por producto;
-- genera contenido dinamico segun cantidad de productos disponibles.
+`src/app/(public)/catalogo/[id]/page.tsx`
 
-### 8.2 Catalogo
+- Consulta detalle público.
+- Renderiza `ProductoDetalleCliente`.
+- Permite seleccionar variante (color/talla) y agregar a reserva local.
 
-Archivo: `src/app/(public)/catalogo/page.tsx`
+### 7.3 Registro/Login
 
-Responsabilidades:
+- Login NextAuth (credentials): `src/lib/auth-options.ts` y rutas UI en `/login`.
+- Login con Google token (si está configurado): `src/lib/auth-options.ts` usa `POST /auth/google`.
+- Registro: UI en `/registro` (el core define `POST /auth/signup` o similar; revisar tu contrato si difiere).
 
-- obtiene el catalogo publico;
-- delega la experiencia de filtrado y ordenamiento a `CatalogoGrid`.
+### 7.4 Portal privado
 
-Funcionalidades del grid:
+`src/app/(portal)/layout.tsx`
 
-- filtro por color;
-- busqueda por nombre, modelo o categoria;
-- orden por relevancia, ventas, fecha, descuento y precio;
-- visualizacion de stock agregado por producto.
+- Obtiene `session` por server-side.
+- Si no existe o el rol no es `CLIENTE`, redirige a `/login`.
 
-### 8.3 Detalle de producto
+`/dashboard`
 
-Archivo: `src/app/(public)/catalogo/[id]/page.tsx`
+- Llama a `getOrders(...)` desde `src/services/orders.service`.
+- Calcula métricas (total gastado, pedidos recientes).
 
-Responsabilidades:
+`/pedidos` y `/pedidos/:id`
 
-- consulta el detalle del producto publico;
-- genera metadata dinamica;
-- calcula colores y tallas disponibles;
-- renderiza `ProductoDetalleCliente`.
+- Renderiza listado y detalle de pedidos.
+- Se apoya en helpers de `src/types/pedidos.ts` para estado, total, etc.
 
-`ProductoDetalleCliente` permite:
+---
 
-- cambiar color y talla;
-- ver stock por variante;
-- visualizar imagenes por variante o producto;
-- agregar la seleccion a una reserva local.
+## 8) Endpoints BFF (src/app/api)
 
-### 8.4 Registro
+### 8.1 `POST /api/chat`
 
-Archivo: `src/app/(public)/registro/page.tsx`
+Implementación: `src/app/api/chat/route.ts`
+
+Comportamiento:
+
+1. **Rate limiting** por IP con límites:
+   - `CHAT_RATE_LIMIT = 20`
+   - `CHAT_RATE_LIMIT_WINDOW_MS = 60_000`
+2. Valida el request con Zod (`chatRequestSchema`).
+3. Obtiene sesión server-side (`getServerSession(authOptions)`) para incluir contexto de usuario.
+4. Ejecuta motor de chat (`runChat`) con:
+   - `message`
+   - `memory` (normalizada con o sin userId)
+   - `attachments`
+   - `auth` (userId y accessToken cuando aplica)
+5. Errores:
+   - 429 con headers `Retry-After`, `X-RateLimit-*`
+   - 400 con mensaje de validación
+   - 500 con respuesta de fallback y `sourceMode: "rules"`
+
+**Contrato esperado**: ver `src/lib/schemas/chat.schema.ts`.
+
+### 8.2 `GET /api/checkout` y `POST /api/checkout`
+
+Implementación: `src/app/api/checkout/route.ts`
+
+#### GET /api/checkout
+
+- Requiere sesión rol `CLIENTE`.
+- Llama a core:
+  - `GET /clientes/me`
+  - `GET /customers/me` (fallback por contrato)
+- Normaliza y responde un “customer context” usado por UI del checkout.
+
+#### POST /api/checkout
 
 Flujo:
 
-1. valida password y confirmacion en cliente;
-2. llama a `POST /auth/signup` en la API externa;
-3. si el registro es exitoso, intenta iniciar sesion automaticamente con NextAuth;
-4. redirige al area privada si el login posterior tiene exito.
+1. Requiere sesión rol `CLIENTE`.
+2. Parse y valida payload con `checkoutPayloadSchema` (Zod).
+3. Aplica validación adicional de negocio (`validateCheckoutPayload`).
+4. Sincroniza carrito local → carrito remoto en el core (`syncRemoteCart`).
+5. Envía el checkout al core con compatibilidad canonical/legacy:
+   - `POST /pedidos/checkout` (canonical)
+   - `POST /pedidos/checkout` (legacy)
+   - `POST /orders/checkout` (legacy)
+6. Extrae `orderId`/`orderNumber` y calcula total.
+7. Si `paymentMethod === "QR"`:
+   - crea pago QR (`createQrPayment`)
+   - retorna `paymentId` y `receiptRequired`
+8. Si no QR:
+   - retorna URL WhatsApp si aplica (según delivery)
+
+**Errores importantes**:
+- 401 si no hay sesión o rol no es `CLIENTE`
+- 400 por schema o validación de negocio
+- 5xx si el core falla
 
-### 8.5 Login
+---
 
-Archivo: `src/app/(public)/login/page.tsx`
+## 9) Reserva local (estado global)
 
-Flujo:
+Implementación: `src/components/providers/ReservationCartProvider.tsx`
 
-1. usa `signIn("credentials")`;
-2. NextAuth llama internamente a la API externa;
-3. si el login es valido, redirige al dashboard del cliente.
+Características:
 
-### 8.6 Dashboard del cliente
+- Persistencia en `localStorage`:
+  - key: `fitandes-reservas`
+- Estado modelado por `ReservationItem`:
+  - `id` (clave interna del item)
+  - `productoId?`, `variantId?`, `nombre`, `modelo?`, `imagen?`
+  - `color`, `colorSecundario?`, `talla`, `cantidad`
+  - `precio`, `stockDisponible`
+- Operaciones:
+  - `addItem(item)` (fusiona si ya existe por `id`)
+  - `removeItem(id)`
+  - `updateQuantity(id, cantidad)` (clamp con stockDisponible)
+  - `clearCart()`
 
-Archivo: `src/app/(portal)/dashboard/page.tsx`
+**Importante para agentes**:
+- La reserva local es UX solamente.
+- El “checkout real” es el endpoint BFF `/api/checkout` que sincroniza remoto en el core.
 
-Responsabilidades:
+---
 
-- valida sesion server-side;
-- obtiene `mis-pedidos` desde la API;
-- calcula total gastado, cantidad de pedidos y ultimo pedido;
-- muestra resumen y accesos rapidos.
+## 10) Integración: headers y autenticación hacia el core
 
-### 8.7 Historial de pedidos
+Cuando el BFF llama al core, típicamente usa:
 
-Archivo: `src/app/(portal)/pedidos/page.tsx`
+- `x-user-id`: sesión `session.user.id`
+- `x-user-role`: rol `CLIENTE`/otro
+- `Authorization: Bearer <accessToken>` (si el core lo requiere)
 
-Responsabilidades:
+Helpers:
+- `buildCentralApiHeaders(auth, ...)` en `src/lib/central-api.ts`
 
-- obtiene todos los pedidos del cliente autenticado;
-- muestra estado, cantidad de items, fecha y total;
-- enlaza al detalle individual.
+---
 
-### 8.8 Detalle de pedido
+## 11) Contratos y tipos relevantes
 
-Archivo: `src/app/(portal)/pedidos/[id]/page.tsx`
+- Chat schema:
+  - `src/lib/schemas/chat.schema.ts`
+  - tipos de motor en `src/lib/chat/types.ts`
+- Checkout schema:
+  - `src/lib/schemas/checkout.schema.ts`
+  - tipos en `src/types/checkout.ts`
+- Pedido (portal):
+  - `src/types/pedidos.ts`
 
-Responsabilidades:
+---
 
-- obtiene un pedido puntual desde la API;
-- renderiza items comprados;
-- muestra subtotal, descuento, metodo de pago y total.
+## 12) ADRs y decisiones arquitectónicas
 
-## 9. Integracion con la API externa
+Documentación de referencia:
 
-Los endpoints realmente consumidos por este frontend son:
+- `docs/adr/ADR-001-bff-core-boundary.md`
+- `docs/adr/ADR-002-central-api-compatibility.md`
+- `docs/adr/ADR-003-chat-cost-control.md`
+- `docs/adr/ADR-004-session-and-csrf-boundary.md`
 
-| Metodo | Endpoint | Uso |
-|---|---|---|
-| `POST` | `/auth/login` | Validacion de credenciales desde NextAuth. |
-| `POST` | `/auth/signup` | Registro de nuevos clientes. |
-| `GET` | `/productos/publicos` | Home y catalogo. |
-| `GET` | `/productos/publicos/:id` | Detalle de producto. |
-| `GET` | `/mis-pedidos` | Dashboard y listado de pedidos. |
-| `GET` | `/mis-pedidos/:id` | Detalle de pedido. |
+---
 
-Notas de integracion:
+## 13) Operación / Deploy
 
-- Para `mis-pedidos` y `mis-pedidos/:id`, el frontend envia `x-user-id` con el ID de la sesion.
-- Los componentes del servidor usan `fetch` con `revalidate: 60` para catalogo publico y `revalidate: 0` para pedidos del cliente.
-- La autenticacion de la app depende por completo de la disponibilidad y contrato de la API externa.
+Runbooks:
+- `docs/operations/deployment-checklist.md`
+- `docs/operations/logging.md`
 
-## 10. Autenticacion y autorizacion
+Checklist operativo (resumen):
 
-### 10.1 Configuracion NextAuth
+1. Variables de entorno completas (API + NextAuth + (si aplica) Gemini)
+2. Validar:
+   - `npm run lint`
+   - `npm run build`
+3. Verificar conectividad con la API central
+4. Validar login, portal y checkout (incluyendo QR)
+5. Validar `/api/chat` bajo carga (rate limiting)
 
-Archivo principal: `src/lib/auth-options.ts`
+---
 
-Caracteristicas:
+## 14) Convenciones para modificar y extender
 
-- `CredentialsProvider` con email y password;
-- rechazo explicito de usuarios que no sean `CLIENTE`;
-- `session.strategy = "jwt"`;
-- `maxAge` de 24 horas;
-- pagina de login personalizada en `/login`.
+- Endpoints BFF:
+  - colocar lógica de orquestación en `src/app/api/*`
+  - mover lógica transversal a `src/lib/*` (schemas, adaptadores, clientes)
+- Integración con core:
+  - mantener compatibilidad canonical/legacy en `adapters/*`
+  - mantener retry/timeout en `central-api.ts`
+- Autenticación:
+  - actualizar rol-checks siempre que cambie el contrato del core
 
-### 10.2 Extensiones de tipos
+---
 
-Archivo: `src/types/next-auth.d.ts`
-
-Se agregan a `Session`, `User` y `JWT` los campos:
-
-- `id`
-- `fullname`
-- `role`
-
-### 10.3 Proteccion de rutas
-
-Hay dos capas de proteccion:
-
-- `src/app/(portal)/layout.tsx`: hace `redirect("/login")` si no existe sesion valida o si el rol no es `CLIENTE`.
-- `src/middleware.ts`: declara `withAuth`, pero actualmente solo hace match sobre `/portal/:path*`.
-
-Esto significa que la proteccion efectiva hoy recae principalmente en el layout server-side, porque las rutas reales del portal son `/dashboard` y `/pedidos`.
-
-## 11. Estado global y reserva local
-
-Archivo: `src/components/providers/ReservationCartProvider.tsx`
-
-La app mantiene una reserva local del catalogo con estas caracteristicas:
-
-- usa React Context;
-- persiste en `localStorage` con la clave `fitandes-reservas`;
-- guarda items con producto, variante, cantidad, precio y stock disponible;
-- fusiona items repetidos por una clave compuesta `producto-color-talla`;
-- calcula `totalItems` y `totalAmount`;
-- permite agregar, eliminar, actualizar cantidad y vaciar la reserva.
-
-Importante:
-
-- la reserva es **local al navegador**;
-- no hay checkout real en este repositorio;
-- no existe sincronizacion automatica de esta reserva con la API.
-
-## 12. Componentes principales
-
-### 12.1 `SiteHeader`
-
-Responsabilidades:
-
-- navegacion principal;
-- acceso a cuenta;
-- acceso al carrito de reservas;
-- control visual segun sesion autenticada o anonima.
-
-### 12.2 `CatalogoGrid`
-
-Responsabilidades:
-
-- filtro por color;
-- busqueda libre;
-- ordenamiento;
-- render de tarjetas de producto.
-
-### 12.3 `ProductoDetalleCliente`
-
-Responsabilidades:
-
-- seleccion de variantes;
-- calculo de imagenes activas;
-- agregado a reserva local.
-
-### 12.4 `VarianteSelector`
-
-Responsabilidades:
-
-- mantener color/talla seleccionados;
-- recalcular tallas validas por color;
-- informar stock actual.
-
-### 12.5 `CarruselImagenes`
-
-Responsabilidades:
-
-- autoplay configurable;
-- navegacion manual;
-- indicadores visuales;
-- reseteo de indice cuando cambia la galeria.
-
-## 13. Manejo de imagenes
-
-Archivo: `src/lib/catalogo-imagenes.ts`
-
-Capacidades:
-
-- unifica `imagen` e `imagenes[]`;
-- soporta rutas absolutas y relativas;
-- si recibe una ruta relativa, intenta convertirla a URL absoluta usando el origen de la API;
-- prioriza imagenes de variantes sobre imagenes del producto.
-
-Esto permite tolerar diferencias del backend y mantener compatibilidad con respuestas antiguas o mixtas.
-
-## 14. Tipos de datos relevantes
-
-### 14.1 Pedido
-
-Archivo: `src/types/pedidos.ts`
-
-Modelo usado por el portal:
-
-- `Pedido`
-  - `_id`
-  - `numeroVenta`
-  - `createdAt`
-  - `estado`
-  - `total`
-  - `subtotal`
-  - `descuento`
-  - `metodoPago`
-  - `items`
-- `PedidoItem`
-  - `_id`
-  - `nombre`
-  - `color`
-  - `talla`
-  - `cantidad`
-  - `precioVenta`
-
-### 14.2 Modelos de producto
-
-No existe un tipo centralizado unico para productos. Cada pagina/componente declara interfaces locales compatibles con la respuesta de la API publica, normalmente con:
-
-- `_id`
-- `nombre`
-- `modelo`
-- `precioVenta`
-- `descuento`
-- `createdAt`
-- `totalVendidos`
-- `imagen`
-- `imagenes`
-- `variantes[]`
-
-## 15. Estilos y sistema visual
-
-Archivo global: `src/app/globals.css`
-
-La interfaz usa una identidad visual sobria y editorial, basada en variables CSS como:
-
-- `--background`
-- `--foreground`
-- `--surface`
-- `--border`
-- `--muted`
-- `--subtle`
-- `--accent`
-- `--success`
-- `--danger`
-
-Caracteristicas del look & feel:
-
-- paleta neutra inspirada en moda y catalogo premium;
-- tipografia principal simple con acentos serif en titulares;
-- uso fuerte de bloques, bordes y espacios amplios;
-- diseno responsive para desktop y mobile.
-
-## 16. Configuracion tecnica
-
-### 16.1 TypeScript
-
-- `strict: true`
-- alias de imports `@/* -> ./src/*`
-- `moduleResolution: bundler`
-
-### 16.2 Next.js
-
-- `next.config.ts` no define personalizaciones adicionales;
-- el proyecto usa la configuracion base de Next.js.
-
-### 16.3 ESLint
-
-- existe `eslint.config.mjs`;
-- el script `npm run lint` ejecuta el chequeo estatico.
-
-## 17. Guia rapida para levantar el proyecto
+## 15) Guía rápida para levantar el proyecto
 
 1. Instalar dependencias:
 
@@ -473,7 +374,7 @@ Caracteristicas del look & feel:
 npm install
 ```
 
-2. Crear o ajustar `.env` con al menos:
+2. Configurar `.env` con al menos:
 
 ```env
 NEXT_PUBLIC_API_URL=https://tu-backend/api
@@ -481,7 +382,7 @@ NEXTAUTH_SECRET=tu-secreto
 NEXTAUTH_URL=http://localhost:3000
 ```
 
-3. Ejecutar en desarrollo:
+3. Ejecutar:
 
 ```bash
 npm run dev
@@ -489,32 +390,19 @@ npm run dev
 
 4. Abrir:
 
-```text
-http://localhost:3000
-```
+- `http://localhost:3000`
 
-## 18. Observaciones tecnicas detectadas
+---
 
-Estas observaciones no impiden entender el proyecto, pero conviene tenerlas presentes:
+## 16) Limitaciones conocidas (alineadas con código actual)
 
-1. `src/middleware.ts` protege `/portal/:path*`, pero las rutas reales privadas son `/dashboard` y `/pedidos`.
-2. Existen referencias a `/portal/dashboard` y `/portal/pedidos` en partes del codigo, aunque por App Router esas URLs no corresponden a las paginas reales.
-3. `src/components/layout/PortalNavbar.tsx` parece ser un componente legado y hoy no participa en el layout activo del portal.
-4. El estado de reserva vive solo en frontend; no existe proceso de confirmacion o persistencia remota en este repositorio.
-5. El archivo `README.md` aun contiene el contenido por defecto de `create-next-app`, por lo que esta documentacion es actualmente la fuente mas fiel del proyecto.
+- La reserva local vive en el navegador; el estado transaccional final ocurre en el core vía `/api/checkout`.
+- Si el core cambia contratos (canonical/legacy), deben actualizarse los adaptadores (`adapters/*`) para evitar regresiones.
+- El chat tiene rate limiting y fallback; para robustez adicional se puede endurecer observabilidad y seguridad.
 
-## 19. Relacion con `API_DOCUMENTACION.md`
+---
 
-La lectura recomendada para entender el sistema completo es:
+## 17) Conclusión
 
-1. Este archivo, para comprender la aplicacion frontend y su arquitectura.
-2. `API_DOCUMENTACION.md`, para comprender los endpoints, contratos y permisos del backend central.
+Este repositorio es un **BFF** que orquesta la experiencia de catálogo, autenticación, portal de pedidos y checkout contra una **API central**. La integración está encapsulada en helpers (`central-api`, `central-client`, adaptadores) y la extensión se espera a través de nuevos endpoints en `src/app/api/*` con schemas Zod, manteniendo los contratos y compatibilidad con el core.
 
-En otras palabras:
-
-- este documento explica **como esta construida la app cliente**;
-- `API_DOCUMENTACION.md` explica **contra que servicios conversa la app**.
-
-## 20. Conclusiones
-
-FitAndes es hoy un frontend de catalogo y portal de clientes, orientado a ecommerce ligero y consulta de pedidos. La aplicacion esta bien separada del backend principal y usa NextAuth como puente de autenticacion hacia la API externa. Su parte mas madura es la experiencia de lectura del catalogo y consulta de pedidos; la reserva local existe como apoyo de UX, pero todavia no representa un flujo transaccional completo dentro de este repositorio.
