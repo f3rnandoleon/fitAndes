@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { FaWhatsapp } from "react-icons/fa";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor } from "@/lib/product-colors";
@@ -48,6 +49,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas, colo
   const [mostrarExito, setMostrarExito] = useState(false);
   const [indiceImagenActual, setIndiceImagenActual] = useState(0);
   const [cantidad, setCantidad] = useState(1);
+  const [urlActual, setUrlActual] = useState("");
 
   const tallasDisponibles = Array.from(
     new Set(variantesDisponibles.map((v) => v.talla))
@@ -86,7 +88,18 @@ export default function ProductoDetalleCliente({ producto, colores, tallas, colo
   const precioAnterior = descuento > 0 ? producto.precioVenta / (1 - descuento / 100) : null;
   const imagenPrincipal = imagenesActivas[indiceImagenActual] ?? null;
   const imagenesActivasKey = imagenesActivas.join("|");
+  const colorWhatsapp = varianteSeleccionada
+    ? `${varianteSeleccionada.color}${varianteSeleccionada.colorSecundario ? ` / ${varianteSeleccionada.colorSecundario}` : ""}`
+    : "-";
+  const tallaWhatsapp = varianteSeleccionada?.talla ?? "-";
+  const detalleWhatsapp = `${producto.nombre} - ${producto.modelo} - ${colorWhatsapp} - ${tallaWhatsapp}`;
+  const mensajeWhatsapp = `Hola me interesa el producto: ${detalleWhatsapp} ${urlActual}`;
+  const whatsappUrl = `https://wa.me/59167113105?text=${encodeURIComponent(mensajeWhatsapp)}`;
 
+
+  useEffect(() => {
+    setUrlActual(window.location.href);
+  }, []);
 
   useEffect(() => {
     setIndiceImagenActual(0);
@@ -266,7 +279,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas, colo
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
-                {(producto.categoria ?? "Catálogo").toUpperCase()} {producto.nombre ? `· ${producto.nombre.toUpperCase()}` : ""}
+                {(producto.categoria ?? "Catalogo").toUpperCase()} {producto.nombre ? `· ${producto.nombre.toUpperCase()}` : ""}
               </p>
               <h1 className="mt-3 text-[2.1rem] leading-[1.02] sm:text-[2.7rem] text-foreground" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
                 {producto.modelo}
@@ -282,7 +295,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas, colo
                 background: stockActual > 0 ? "rgba(79,122,87,0.08)" : "rgba(165,74,63,0.08)",
               }}
             >
-              {stockActual > 0 ? "Disponible" : "Sin stock"}
+              {stockActual > 0 ? `${stockActual} unidades disponibles` : "Sin stock"}
             </span>
           </div>
 
@@ -428,14 +441,44 @@ export default function ProductoDetalleCliente({ producto, colores, tallas, colo
               disabled={!varianteSeleccionada || stockActual <= 0}
               className="inline-flex flex-1 items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase bg-foreground text-background transition-all disabled:cursor-not-allowed disabled:opacity-45 hover:opacity-90 active:scale-[0.98]"
             >
-              Añadir a reserva
+              Añadir al carrito
             </button>
           </div>
 
-          <div className="mt-4 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between" style={{ color: "#8f8478" }}>
-            <span>{stockActual > 0 ? `${stockActual} unidades disponibles` : "Sin stock"}</span>
-            {varianteSeleccionada ? <span>{varianteSeleccionada.color}{varianteSeleccionada.colorSecundario ? ` / ${varianteSeleccionada.colorSecundario}` : ""} / {varianteSeleccionada.talla}</span> : null}
+          <div className="mt-6 rounded-[var(--radius-md)] border border-emerald-500/20 bg-gradient-to-br from-[#25d366] to-[#168f68] px-4 py-5 text-white shadow-sm sm:px-5">
+            <div className="mb-2 flex items-center gap-2">
+              <FaWhatsapp className="h-6 w-6 shrink-0" aria-hidden="true" />
+              <h5 className="text-lg font-semibold">¿Necesitas ayuda inmediata?</h5>
+            </div>
+
+            <p className="text-sm font-medium sm:text-base">Reserva este producto directamente por WhatsApp:</p>
+
+            <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="grid gap-2 text-sm">
+                <p>
+                  {producto.nombre}
+                  <strong> -</strong> {producto.modelo}
+                </p>
+                
+                <p>
+                  {colorWhatsapp}
+                  <strong> -</strong> {tallaWhatsapp}
+                </p>
+                
+              </div>
+
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-bold text-foreground transition hover:bg-white/90 active:scale-[0.98]"
+              >
+                <FaWhatsapp className="h-4 w-4" aria-hidden="true" />
+                Contactar
+              </a>
+            </div>
           </div>
+            
 
           {mensaje ? (
             <p className="mt-4 rounded-[var(--radius-md)] border border-success/20 px-4 py-3 text-sm bg-success/10 text-success">
@@ -447,7 +490,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas, colo
         </div>
       </section>
 
-      {/* Modal de éxito al agregar producto */}
+      {/* Modal de Ã©xito al agregar producto */}
       {mostrarExito && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="w-full max-w-sm rounded-[24px] border border-border bg-white p-6 shadow-[0_32px_64px_rgba(0,0,0,0.16)] animate-in zoom-in-95 duration-300">
@@ -461,7 +504,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas, colo
                 ¡Producto agregado!
               </h3>
               <p className="mt-2 text-sm text-muted leading-relaxed">
-                {producto.modelo} ha sido añadido a tu carrito de reserva correctamente.
+                {producto.modelo} ha sido añadido a tu carrito correctamente.
               </p>
               <div className="mt-2 text-[10px] uppercase tracking-[0.12em] text-subtle">
                 {varianteSeleccionada?.color} / {varianteSeleccionada?.talla} · {cantidad} unidad{cantidad !== 1 ? 'es' : ''}
@@ -480,7 +523,7 @@ export default function ProductoDetalleCliente({ producto, colores, tallas, colo
                 onClick={() => setMostrarExito(false)}
                 className="w-full rounded-full border border-border bg-white py-3.5 text-[11px] uppercase tracking-[0.16em] text-foreground transition-all hover:bg-background active:scale-[0.98]"
               >
-                Seguir reservando
+                Seguir navegando
               </button>
             </div>
           </div>
@@ -489,3 +532,4 @@ export default function ProductoDetalleCliente({ producto, colores, tallas, colo
     </div>
   );
 }
+

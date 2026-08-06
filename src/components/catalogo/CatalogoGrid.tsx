@@ -8,11 +8,11 @@ import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes"
 import { getProductColorValue, isLightProductColor, sortProductColors } from "@/lib/product-colors";
 import { catalogVariantIsAvailable, getCatalogProductAvailableStock, type CatalogProduct } from "@/types/catalogo";
 
-type OrdenKey = "fecha" | "ventas" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
+type OrdenKey = "ventas" | "fecha" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
 
 const ORDENES: Array<{ key: OrdenKey; label: string }> = [
-  { key: "ventas", label: "Popular" },
-  { key: "fecha", label: "Fecha" },
+  { key: "ventas", label: "Lo mas Popular" },
+  { key: "fecha", label: "Lo mas Nuevo" },
   { key: "descuento", label: "Descuento" },
   { key: "precio-desc", label: "Precio: mayor a menor" },
   { key: "precio-asc", label: "Precio: menor a mayor" },
@@ -56,7 +56,7 @@ export default function CatalogoGrid({ productos }: { productos: CatalogProduct[
   const [colorFiltro, setColorFiltro] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [tallaFiltro, setTallaFiltro] = useState("");
-  const [orden, setOrden] = useState<OrdenKey>("fecha");
+  const [orden, setOrden] = useState<OrdenKey>("ventas");
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
 
   const productosConStock = productos.filter(productoTieneStock);
