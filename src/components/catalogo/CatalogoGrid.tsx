@@ -51,11 +51,21 @@ function colorStyle(color: string) {
   return base.startsWith("linear-gradient") ? { background: base } : { backgroundColor: base };
 }
 
-export default function CatalogoGrid({ productos }: { productos: CatalogProduct[] }) {
-  const [busqueda, setBusqueda] = useState("");
-  const [colorFiltro, setColorFiltro] = useState("");
-  const [categoriaFiltro, setCategoriaFiltro] = useState("");
-  const [tallaFiltro, setTallaFiltro] = useState("");
+interface CatalogoGridProps {
+  productos: CatalogProduct[];
+  filtroInicial?: {
+    busqueda?: string;
+    categoria?: string;
+    color?: string;
+    talla?: string;
+  };
+}
+
+export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridProps) {
+  const [busqueda, setBusqueda] = useState(filtroInicial?.busqueda ?? "");
+  const [colorFiltro, setColorFiltro] = useState(filtroInicial?.color ?? "");
+  const [categoriaFiltro, setCategoriaFiltro] = useState(filtroInicial?.categoria ?? "");
+  const [tallaFiltro, setTallaFiltro] = useState(filtroInicial?.talla ?? "");
   const [orden, setOrden] = useState<OrdenKey>("ventas");
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
 

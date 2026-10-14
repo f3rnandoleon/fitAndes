@@ -20,7 +20,10 @@ export default function QRPaymentClient({ paymentId, order }: Props) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const qrImageUrl = "https://res.cloudinary.com/dq1jeikev/image/upload/v1777964054/comprobante_xvdhuf.jpg";
+  const qrImageUrl =
+    order.pago?.qrImageUrl ||
+    process.env.NEXT_PUBLIC_BANCOSOL_QR_URL ||
+    "https://res.cloudinary.com/dq1jeikev/image/upload/v1777964054/comprobante_xvdhuf.jpg";
   const total = getPedidoTotal(order);
 
   async function handleUpload() {
@@ -139,7 +142,22 @@ export default function QRPaymentClient({ paymentId, order }: Props) {
           </div>
         </div>
 
-        <p className="mt-8 text-[11px] text-muted leading-relaxed">
+        <div className="mt-4 p-3 bg-surface/50 border border-border/60 rounded-lg text-left text-xs w-full max-w-[320px] space-y-1">
+          <div className="flex justify-between">
+            <span className="text-muted">Banco:</span>
+            <span className="font-medium text-foreground">BancoSol</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted">Titular:</span>
+            <span className="font-medium text-foreground">Fernando Leon Andrade Gutierrez</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted">Moneda:</span>
+            <span className="font-medium text-foreground">Bolivianos (BOB)</span>
+          </div>
+        </div>
+
+        <p className="mt-4 text-[11px] text-muted leading-relaxed">
           Escanea el codigo desde tu aplicacion bancaria favorita. <br />
           Asegurate de que el monto coincida exactamente con el total de tu pedido.
         </p>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -30,7 +30,7 @@ function formatPrice(value: number) {
   }).format(value)}`;
 }
 
-export default function ProductoDetalleCliente({ producto, colores, tallas, colorInicial, tallaInicial }: Props) {
+export default function ProductoDetalleCliente({ producto, colores: _colores, tallas: _tallas, colorInicial, tallaInicial }: Props) {
   const { addItem } = useReservationCart();
   const productoDisponible = filterCatalogAvailableVariants(producto);
   const variantesDisponibles = productoDisponible.variantes;
@@ -408,6 +408,63 @@ export default function ProductoDetalleCliente({ producto, colores, tallas, colo
               })}
             </div>
           </div>
+
+          {varianteSeleccionada?.medidas && (
+            varianteSeleccionada.medidas.anchoPecho ||
+            varianteSeleccionada.medidas.anchoHombros ||
+            varianteSeleccionada.medidas.largoTotal ||
+            varianteSeleccionada.medidas.largoMangaHombro ||
+            varianteSeleccionada.medidas.largoMangaAxila
+          ) ? (
+            <div className="mt-5 rounded-[var(--radius-md)] border border-border px-4 py-4 sm:px-5 bg-background">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6h18M3 12h18M3 18h18" />
+                  </svg>
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
+                    Medidas de la prenda (Talla {varianteSeleccionada.talla})
+                  </p>
+                </div>
+                <span className="text-[10px] uppercase tracking-wider text-muted">en centímetros</span>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                {varianteSeleccionada.medidas.anchoPecho ? (
+                  <div className="p-2.5 rounded border border-border/60 bg-white shadow-2xs">
+                    <p className="text-[10px] text-muted uppercase tracking-wider">Pecho</p>
+                    <p className="text-sm sm:text-base font-semibold text-foreground mt-0.5">
+                      {varianteSeleccionada.medidas.anchoPecho} cm
+                    </p>
+                  </div>
+                ) : null}
+                {varianteSeleccionada.medidas.anchoHombros ? (
+                  <div className="p-2.5 rounded border border-border/60 bg-white shadow-2xs">
+                    <p className="text-[10px] text-muted uppercase tracking-wider">Hombros</p>
+                    <p className="text-sm sm:text-base font-semibold text-foreground mt-0.5">
+                      {varianteSeleccionada.medidas.anchoHombros} cm
+                    </p>
+                  </div>
+                ) : null}
+                {varianteSeleccionada.medidas.largoTotal ? (
+                  <div className="p-2.5 rounded border border-border/60 bg-white shadow-2xs">
+                    <p className="text-[10px] text-muted uppercase tracking-wider">Largo total</p>
+                    <p className="text-sm sm:text-base font-semibold text-foreground mt-0.5">
+                      {varianteSeleccionada.medidas.largoTotal} cm
+                    </p>
+                  </div>
+                ) : null}
+                {varianteSeleccionada.medidas.largoMangaHombro || varianteSeleccionada.medidas.largoMangaAxila ? (
+                  <div className="p-2.5 rounded border border-border/60 bg-white shadow-2xs">
+                    <p className="text-[10px] text-muted uppercase tracking-wider">Manga</p>
+                    <p className="text-sm sm:text-base font-semibold text-foreground mt-0.5">
+                      {varianteSeleccionada.medidas.largoMangaHombro ?? varianteSeleccionada.medidas.largoMangaAxila} cm
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="order-4">

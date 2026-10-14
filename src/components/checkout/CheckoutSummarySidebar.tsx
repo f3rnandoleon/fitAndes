@@ -100,7 +100,10 @@ export function CheckoutSummarySidebar({
           </Button>
 
           <p className="text-[10px] text-center text-subtle leading-relaxed">
-            Al confirmar tu pedido, aceptas nuestros términos de reserva y políticas de entrega.
+            Al confirmar tu pedido, aceptas nuestros{" "}
+            <a href="/politicas" target="_blank" className="underline hover:text-foreground">
+              términos de reserva y políticas de entrega
+            </a>.
           </p>
         </Card>
       </div>

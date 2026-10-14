@@ -8,14 +8,37 @@ export const metadata = {
   description: "Descubre nuestra colección de chompas andinas tejidas y poleras exclusivas con una experiencia optimizada para móvil.",
 };
 
-export default async function CatalogoPage() {
+interface PageProps {
+  searchParams?: Promise<{
+    q?: string;
+    busqueda?: string;
+    categoria?: string;
+    color?: string;
+    talla?: string;
+  }>;
+}
+
+export default async function CatalogoPage({ searchParams }: PageProps) {
+  const resolvedParams = searchParams ? await searchParams : {};
+  const queryTerm = resolvedParams.q || resolvedParams.busqueda || "";
+  const categoriaParam = resolvedParams.categoria || "";
+  const colorParam = resolvedParams.color || "";
+  const tallaParam = resolvedParams.talla || "";
+
   let productos: CatalogProduct[] = [];
 
   const productosConStock = (items: CatalogProduct[]) =>
     items.filter((producto) => producto.variantes.some(catalogVariantIsAvailable));
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/publicos`, {
+    const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/productos/publicos`);
+    if (queryTerm) url.searchParams.set("q", queryTerm);
+    if (categoriaParam) url.searchParams.set("categoria", categoriaParam);
+    if (colorParam) url.searchParams.set("color", colorParam);
+    if (tallaParam) url.searchParams.set("talla", tallaParam);
+    url.searchParams.set("soloDisponible", "true");
+
+    const res = await fetch(url.toString(), {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(10000),
     });
@@ -37,9 +60,16 @@ export default async function CatalogoPage() {
           </span>
         </div>
 
-
         <Suspense fallback={<CatalogoSkeleton />}>
-          <CatalogoGrid productos={productos} />
+          <CatalogoGrid
+            productos={productos}
+            filtroInicial={{
+              busqueda: queryTerm,
+              categoria: categoriaParam,
+              color: colorParam,
+              talla: tallaParam,
+            }}
+          />
         </Suspense>
       </div>
     </main>

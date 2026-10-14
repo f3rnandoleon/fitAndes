@@ -1,3 +1,11 @@
+export interface CatalogVariantMedidas {
+  anchoPecho?: number | null;
+  anchoHombros?: number | null;
+  largoTotal?: number | null;
+  largoMangaAxila?: number | null;
+  largoMangaHombro?: number | null;
+}
+
 export interface CatalogVariant {
   variantId?: string | null;
   varianteId?: string | null;
@@ -13,6 +21,7 @@ export interface CatalogVariant {
   imagenes?: Array<string | null | undefined> | null;
   codigoBarra?: string | null;
   qrCode?: string | null;
+  medidas?: CatalogVariantMedidas | null;
 }
 
 export interface CatalogProduct {

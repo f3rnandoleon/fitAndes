@@ -93,11 +93,13 @@ export interface Pedido {
   snapshotEntrega?: PedidoDelivery | null;
   delivery?: PedidoDelivery | null;
   deliverySnapshot?: PedidoDelivery | null;
+  reservaExpiraEn?: string | null;
   totales?: PedidoTotales | null;
   pago?: {
     metodo?: string | null;
     estado?: string | null;
     comprobanteUrl?: string | null;
+    qrImageUrl?: string | null;
   } | null;
 }
 

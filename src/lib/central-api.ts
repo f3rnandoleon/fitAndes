@@ -19,7 +19,7 @@ export interface CentralApiResult {
 
 export const CENTRAL_API_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "";
 
-const RETRYABLE_CENTRAL_STATUSES = new Set([400, 404, 405, 422]);
+const RETRYABLE_CENTRAL_STATUSES = new Set([400, 403, 404, 405, 422]);
 
 export function buildCentralApiHeaders(
   auth: CentralApiAuth,

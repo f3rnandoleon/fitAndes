@@ -8,9 +8,9 @@ import { getRequestId } from "@/lib/request-context";
 async function fetchOrders(auth: CentralApiAuth): Promise<Pedido[] | null> {
   const result = await fetchCentralJson(
     [
+      { path: "/mis-pedidos" },
       { path: "/pedidos" },
       { path: "/orders" },
-      { path: "/mis-pedidos" },
     ],
     auth,
     { timeoutMs: 10000, requestId: await getRequestId() }
@@ -26,9 +26,9 @@ async function fetchOrders(auth: CentralApiAuth): Promise<Pedido[] | null> {
 async function fetchOrder(auth: CentralApiAuth, orderId: string): Promise<Pedido | null | undefined> {
   const result = await fetchCentralJson(
     [
+      { path: `/mis-pedidos/${orderId}` },
       { path: `/pedidos/${orderId}` },
       { path: `/orders/${orderId}` },
-      { path: `/mis-pedidos/${orderId}` },
     ],
     auth,
     { timeoutMs: 10000, requestId: await getRequestId() }

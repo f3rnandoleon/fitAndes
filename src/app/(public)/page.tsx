@@ -407,7 +407,8 @@ export default async function HomePage() {
             <div className="flex flex-col gap-3">
               {[
                 { label: "Nueva colección", href: "/#nuevo" },
-                { label: "Catálogo completo", href: "/catalogo" }
+                { label: "Catálogo completo", href: "/catalogo" },
+                { label: "Políticas y cambios", href: "/politicas" },
               ].map((item) => (
                 <Link key={item.label} href={item.href} className="text-sm hover:opacity-50 transition-opacity text-background">
                   {item.label}
@@ -464,10 +465,21 @@ export default async function HomePage() {
             */}
         </div>
 
-        <div className="border-t border-background/10 px-5 py-5 text-center sm:px-6">
-          <p className="text-xs text-background/40">
+        <div className="border-t border-background/10 px-5 py-5 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-background/50 max-w-[1240px] mx-auto">
+          <p>
             {`© ${new Date().getFullYear()} FitAndes. Todos los derechos reservados.`}
           </p>
+          <div className="flex gap-4">
+            <Link href="/politicas#devoluciones" className="hover:text-background transition-colors">
+              Cambios y Devoluciones
+            </Link>
+            <Link href="/politicas#terminos" className="hover:text-background transition-colors">
+              Términos de Envío
+            </Link>
+            <Link href="/politicas#privacidad" className="hover:text-background transition-colors">
+              Privacidad
+            </Link>
+          </div>
         </div>
       </footer>
 

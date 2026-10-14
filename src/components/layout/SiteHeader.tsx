@@ -22,6 +22,7 @@ const NAV_LINKS = [
   { label: "Catálogo", href: "/catalogo" },
   { label: "Selección", href: "/#seleccion" },
   { label: "Nuevo", href: "/#nuevo" },
+  { label: "Políticas", href: "/politicas" },
 ];
 
 export default function SiteHeader({ authenticated = false, fullname, firstName: firstNameProp, email }: Props) {
