@@ -3,13 +3,28 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { getOrders } from "@/services/orders.service";
-import { getPedidoEstado, getPedidoEstadoTone, getPedidoNumero, getPedidoTotal, type Pedido } from "@/types/pedidos";
+import {
+  getPedidoEstado,
+  getPedidoEstadoTone,
+  getPedidoMetodoPago,
+  getPedidoNumero,
+  getPedidoTotal,
+  type Pedido,
+} from "@/types/pedidos";
+import StockReservationTimer from "@/components/checkout/StockReservationTimer";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   const pedidos = (await getOrders({ userId: session.user.id, role: "CLIENTE", accessToken: session.accessToken })) ?? [];
+
+  const pendingPaymentOrder = pedidos.find(
+    (p) =>
+      (p.estadoPedido === "PENDING_PAYMENT" || p.orderStatus === "PENDING_PAYMENT") &&
+      getPedidoMetodoPago(p) === "QR" &&
+      !p.pago?.comprobanteUrl
+  );
 
   const recientes = pedidos.slice(0, 5);
   const totalGastado = pedidos.reduce((sum, pedido) => sum + getPedidoTotal(pedido), 0);
@@ -28,6 +43,37 @@ export default async function DashboardPage() {
           Aquí tienes un resumen de tu actividad.
         </p>
       </div>
+
+      {pendingPaymentOrder && (
+        <div className="border border-amber-300 bg-amber-50/90 rounded-2xl p-5 shadow-xs space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-amber-900">
+                  Acción requerida: Pedido #{getPedidoNumero(pendingPaymentOrder)}
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-amber-200 text-amber-900">
+                  Pago QR pendiente
+                </span>
+              </div>
+              <p className="text-xs text-amber-800/90">
+                Tu reserva de prendas está en curso. Para asegurar tu pedido, por favor sube el comprobante de tu transferencia.
+              </p>
+            </div>
+            <Link
+              href={`/pedidos/${pendingPaymentOrder._id}`}
+              className="inline-flex items-center justify-center px-4 py-2 rounded text-xs font-semibold uppercase tracking-wider bg-amber-900 text-amber-50 hover:bg-amber-950 transition-colors shrink-0"
+            >
+              Completar pago ahora →
+            </Link>
+          </div>
+          <StockReservationTimer
+            expiresAt={pendingPaymentOrder.reservaExpiraEn}
+            createdAt={pendingPaymentOrder.createdAt}
+            status={pendingPaymentOrder.estadoReservaStock}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Total pedidos" value={totalPedidos.toString()} icon={<BoxIcon />} />

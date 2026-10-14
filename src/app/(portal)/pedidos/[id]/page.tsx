@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import OrderActionsSection from "@/components/pedidos/OrderActionsSection";
 import OrderDeliveryEditSection from "@/components/pedidos/OrderDeliveryEditSection";
 import PaymentReceiptSection from "@/components/pedidos/PaymentReceiptSection";
+import StockReservationTimer from "@/components/checkout/StockReservationTimer";
 import { authOptions } from "@/lib/auth-options";
 import { getOrderDetail } from "@/services/orders.service";
 import {
@@ -114,23 +115,12 @@ export default async function PedidoDetallePage({
         </span>
       </div>
 
-      {pedido.estadoPedido === "PENDING_PAYMENT" && (
-        <div className="border border-amber-300 bg-amber-50/70 p-4 rounded-lg flex items-center justify-between gap-3 text-amber-900 text-xs">
-          <div className="flex items-center gap-2.5">
-            <span className="text-base">⏳</span>
-            <div>
-              <p className="font-semibold">Reserva de prendas activa</p>
-              <p className="text-amber-800/80 mt-0.5">
-                {pedido.reservaExpiraEn
-                  ? `El stock permanecerá reservado hasta las ${new Date(pedido.reservaExpiraEn).toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" })}.`
-                  : "Por favor completa tu pago QR y sube el comprobante para asegurar tus prendas."}
-              </p>
-            </div>
-          </div>
-          <span className="shrink-0 px-2.5 py-1 bg-amber-200/60 rounded text-[10px] uppercase font-bold tracking-wider">
-            {pedido.estadoReservaStock ?? "RESERVADO"}
-          </span>
-        </div>
+      {(pedido.estadoPedido === "PENDING_PAYMENT" || pedido.orderStatus === "PENDING_PAYMENT") && (
+        <StockReservationTimer
+          expiresAt={pedido.reservaExpiraEn}
+          createdAt={pedido.createdAt}
+          status={pedido.estadoReservaStock}
+        />
       )}
 
       <div className="border overflow-hidden" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>

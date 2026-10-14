@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { DeliveryMethod, DeliveryOptionsConfig } from "@/types/checkout";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -69,6 +71,36 @@ export function CheckoutDeliverySection(props: Props) {
     department, setDepartment, shippingCompany, setShippingCompany,
     branch, setBranch, senderCI, setSenderCI, senderPhone, setSenderPhone
   } = props;
+
+  const [savedAddresses, setSavedAddresses] = useState<Array<{
+    _id: string;
+    alias?: string;
+    nombreDestinatario: string;
+    telefono: string;
+    departamento: string;
+    ciudad?: string;
+    direccion?: string;
+  }>>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSavedAddresses() {
+      try {
+        const res = await fetch("/api/clientes/me/direcciones");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data)) {
+          setSavedAddresses(data);
+        }
+      } catch {
+        // Silently ignore if unauthenticated or error
+      }
+    }
+    loadSavedAddresses();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const shippingDepartments = getShippingDepartments(config);
   const shippingCompanies = getShippingCompaniesByDepartment(department, config);
@@ -157,6 +189,39 @@ export function CheckoutDeliverySection(props: Props) {
 
       {method === "SHIPPING_NATIONAL" && (
         <div className="grid gap-4 sm:grid-cols-2">
+          {savedAddresses.length > 0 && (
+            <div className="sm:col-span-2 p-3 bg-surface/50 border border-border/80 rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-foreground">
+                  📍 Seleccionar de mis direcciones guardadas:
+                </span>
+                <Link
+                  href="/direcciones"
+                  target="_blank"
+                  className="text-[10px] text-muted hover:underline"
+                >
+                  Administrar libreta
+                </Link>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {savedAddresses.map((addr) => (
+                  <button
+                    key={addr._id}
+                    type="button"
+                    onClick={() => {
+                      if (addr.nombreDestinatario) setRecipientName(addr.nombreDestinatario);
+                      if (addr.telefono) setSenderPhone(addr.telefono);
+                      if (addr.departamento) setDepartment(addr.departamento);
+                    }}
+                    className="px-2.5 py-1 text-[11px] rounded border border-border bg-white text-muted hover:text-foreground hover:border-foreground transition-all cursor-pointer"
+                  >
+                    {addr.alias || addr.nombreDestinatario} ({addr.departamento})
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <Select
             label="Departamento"
             value={department}

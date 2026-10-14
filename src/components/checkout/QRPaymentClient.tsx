@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/format";
 import { getPedidoTotal, type Pedido } from "@/types/pedidos";
+import StockReservationTimer from "@/components/checkout/StockReservationTimer";
 
 interface Props {
   paymentId: string;
@@ -111,9 +112,16 @@ export default function QRPaymentClient({ paymentId, order }: Props) {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2 max-w-5xl mx-auto">
-      {/* Columna QR */}
-      <Card className="flex flex-col items-center text-center">
+    <div className="space-y-6 max-w-5xl mx-auto">
+      <StockReservationTimer
+        expiresAt={order.reservaExpiraEn}
+        createdAt={order.createdAt}
+        status={order.estadoReservaStock}
+      />
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* Columna QR */}
+        <Card className="flex flex-col items-center text-center">
         <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-4">Paso 1: Escanear y Pagar</p>
         <h2 className="text-xl font-serif mb-6">Codigo QR de Pago</h2>
 
@@ -213,6 +221,7 @@ export default function QRPaymentClient({ paymentId, order }: Props) {
           </div>
         </div>
       </Card>
+      </div>
     </div>
   );
 }

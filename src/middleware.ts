@@ -6,7 +6,13 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
 
-    if ((pathname.startsWith("/dashboard") || pathname.startsWith("/pedidos")) && token?.role !== "CLIENTE") {
+    const isProtected =
+      pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/pedidos") ||
+      pathname.startsWith("/perfil") ||
+      pathname.startsWith("/direcciones");
+
+    if (isProtected && token?.role !== "CLIENTE") {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
@@ -20,5 +26,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/pedidos/:path*"],
+  matcher: ["/dashboard/:path*", "/pedidos/:path*", "/perfil/:path*", "/direcciones/:path*"],
 };

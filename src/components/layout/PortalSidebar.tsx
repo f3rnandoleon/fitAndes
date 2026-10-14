@@ -9,6 +9,8 @@ export default function PortalSidebar() {
   const links = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/pedidos", label: "Mis pedidos" },
+    { href: "/direcciones", label: "Mis direcciones" },
+    { href: "/perfil", label: "Mi perfil" },
     { href: "/catalogo", label: "Catálogo" },
   ];
 
