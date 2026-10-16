@@ -32,10 +32,18 @@ export interface CatalogProduct {
   modelo: string;
   categoria?: string | null;
   precioVenta: number;
+  precioMinimo?: number | null;
+  precioMaximo?: number | null;
+  tieneRangoPrecios?: boolean | null;
+  precioDisplay?: string | null;
   sku?: string | null;
   descuento?: number | null;
   createdAt?: string;
   totalVendidos?: number;
+  stockTotal?: number;
+  stockReservadoTotal?: number | null;
+  stockDisponible?: number | null;
+  estado?: string | null;
   imagen?: string | null;
   imagenes?: Array<string | null | undefined> | null;
   variantes: CatalogVariant[];
@@ -65,6 +73,9 @@ export function getCatalogVariantAvailableStock(variant: CatalogVariant): number
 }
 
 export function getCatalogProductAvailableStock(product: CatalogProduct): number {
+  if (typeof product.stockDisponible === "number" && Number.isFinite(product.stockDisponible)) {
+    return Math.max(0, product.stockDisponible);
+  }
   return product.variantes.reduce((sum, variant) => sum + getCatalogVariantAvailableStock(variant), 0);
 }
 
@@ -90,7 +101,22 @@ export function getCatalogProductPriceRange(product: CatalogProduct): {
   min: number;
   max: number;
   hasRange: boolean;
+  display?: string | null;
 } {
+  if (
+    typeof product.precioMinimo === "number" &&
+    typeof product.precioMaximo === "number" &&
+    Number.isFinite(product.precioMinimo) &&
+    Number.isFinite(product.precioMaximo)
+  ) {
+    return {
+      min: product.precioMinimo,
+      max: product.precioMaximo,
+      hasRange: product.tieneRangoPrecios ?? product.precioMinimo !== product.precioMaximo,
+      display: product.precioDisplay ?? null,
+    };
+  }
+
   const basePrice = typeof product.precioVenta === "number" && Number.isFinite(product.precioVenta) ? product.precioVenta : 0;
   const availableVariants = product.variantes?.length ? product.variantes.filter(catalogVariantIsAvailable) : [];
   const variantsToInspect = availableVariants.length > 0 ? availableVariants : (product.variantes || []);
