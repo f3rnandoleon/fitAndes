@@ -5,7 +5,12 @@ import { FaWhatsapp } from "react-icons/fa";
 import { GrSecure } from "react-icons/gr";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
-import { getCatalogProductAvailableStock, type CatalogProduct, type CatalogVariant } from "@/types/catalogo";
+import {
+  getCatalogProductAvailableStock,
+  getCatalogProductPriceRange,
+  type CatalogProduct,
+  type CatalogVariant,
+} from "@/types/catalogo";
 import imagen from "../../../public/banner-main.png";
 
 const API_URL =
@@ -238,7 +243,16 @@ export default async function HomePage() {
                       <div className="px-4 pb-5 sm:px-5">
                         <h3 className="text-sm font-normal sm:text-base text-foreground">{item.nombre}</h3>
                         <p className="mt-1 text-[11px] uppercase text-subtle" style={{ letterSpacing: "0.12em" }}>{item.modelo}</p>
-                        <p className="mt-3 text-sm sm:text-base text-foreground">{formatearPrecio(item.precioVenta)}</p>
+                        {(() => {
+                          const priceRange = getCatalogProductPriceRange(item as unknown as CatalogProduct);
+                          return (
+                            <p className="mt-3 text-sm sm:text-base text-foreground">
+                              {priceRange.hasRange
+                                ? `${formatearPrecio(priceRange.min)} - ${formatearPrecio(priceRange.max)}`
+                                : formatearPrecio(priceRange.min)}
+                            </p>
+                          );
+                        })()}
                       </div>
                     </article>
                   </Link>
@@ -375,7 +389,16 @@ export default async function HomePage() {
                       <div className="px-4 py-4 sm:px-5 sm:py-5">
                         <p className="text-sm font-semibold leading-6 text-foreground">{item.nombre}</p>
                         <p className="text-sm font-normal leading-6 text-muted/80">{item.modelo}</p>
-                        <p className="mt-1 text-sm text-foreground">{formatearPrecio(item.precioVenta)}</p>
+                        {(() => {
+                          const priceRange = getCatalogProductPriceRange(item as unknown as CatalogProduct);
+                          return (
+                            <p className="mt-1 text-sm text-foreground">
+                              {priceRange.hasRange
+                                ? `${formatearPrecio(priceRange.min)} - ${formatearPrecio(priceRange.max)}`
+                                : formatearPrecio(priceRange.min)}
+                            </p>
+                          );
+                        })()}
                       </div>
                     </article>
                   </Link>

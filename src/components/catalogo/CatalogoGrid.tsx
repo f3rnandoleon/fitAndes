@@ -6,7 +6,12 @@ import { FiSliders } from "react-icons/fi";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor, sortProductColors } from "@/lib/product-colors";
-import { catalogVariantIsAvailable, getCatalogProductAvailableStock, type CatalogProduct } from "@/types/catalogo";
+import {
+  catalogVariantIsAvailable,
+  getCatalogProductAvailableStock,
+  getCatalogProductPriceRange,
+  type CatalogProduct,
+} from "@/types/catalogo";
 
 type OrdenKey = "ventas" | "fecha" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
 
@@ -102,10 +107,16 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
         return (b.totalVendidos ?? 0) - (a.totalVendidos ?? 0);
       case "descuento":
         return (b.descuento ?? 0) - (a.descuento ?? 0);
-      case "precio-desc":
-        return b.precioVenta - a.precioVenta;
-      case "precio-asc":
-        return a.precioVenta - b.precioVenta;
+      case "precio-desc": {
+        const pA = getCatalogProductPriceRange(a).max;
+        const pB = getCatalogProductPriceRange(b).max;
+        return pB - pA;
+      }
+      case "precio-asc": {
+        const pA = getCatalogProductPriceRange(a).min;
+        const pB = getCatalogProductPriceRange(b).min;
+        return pA - pB;
+      }
       case "nombre-asc":
         return a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
       case "nombre-desc":
@@ -413,9 +424,16 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
           <h3 className="mt-2 min-h-[42px] text-sm leading-6 sm:min-h-[50px] sm:text-[0.98rem] text-foreground">
             {producto.modelo}
           </h3>
-          <p className="mt-4 text-xl font-semibold sm:text-2xl text-foreground" style={{ fontFamily: "Georgia, serif" }}>
-            {formatearPrecio(producto.precioVenta)}
-          </p>
+          {(() => {
+            const priceRange = getCatalogProductPriceRange(producto);
+            return (
+              <p className="mt-4 text-xl font-semibold sm:text-2xl text-foreground" style={{ fontFamily: "Georgia, serif" }}>
+                {priceRange.hasRange
+                  ? `${formatearPrecio(priceRange.min)} - ${formatearPrecio(priceRange.max)}`
+                  : formatearPrecio(priceRange.min)}
+              </p>
+            );
+          })()}
           <p className={`mt-2 text-[11px] ${stock > 0 ? "text-subtle" : "text-danger"}`}>
             {stock > 0 ? `${stock} unidades disponibles` : "Sin stock"}
           </p>

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import type { ChatAction, ProductCardData } from "@/lib/chat/types";
 import { catalogVariantIsAvailable, getCatalogVariantAvailableStock } from "@/types/catalogo";
+import { formatPrice } from "@/lib/format";
 
 interface AddSelection {
   color: string;
@@ -73,7 +74,7 @@ export default function ProductCardMessage({ card, onAction, onAdd }: Props) {
                 {card.title}
               </h3>
               <p className="mt-1 text-sm" style={{ color: "#5f564e" }}>
-                {card.subtitle}
+                {[card.model, formatPrice(selectedVariant?.precioVenta ?? card.price)].filter(Boolean).join(" · ")}
               </p>
             </div>
             <a href={card.detailHref} className="text-[11px] uppercase transition-opacity hover:opacity-60" style={{ letterSpacing: "0.12em", color: "#8f8478" }}>

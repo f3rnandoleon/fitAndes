@@ -84,6 +84,7 @@ export async function syncRemoteCart(
       colorSecundario: item.colorSecundario ?? undefined,
       talla: item.talla,
       cantidad: item.cantidad,
+      precioUnitario: item.precio,
     };
 
     const legacyItemBody = {
@@ -93,6 +94,8 @@ export async function syncRemoteCart(
       colorSecundario: item.colorSecundario ?? undefined,
       talla: item.talla,
       cantidad: item.cantidad,
+      precioUnitario: item.precio,
+      precio: item.precio,
     };
 
     const addItemResult = await fetchCentralApiWithFallback([

@@ -1,6 +1,13 @@
 import { primeraImagenDeProducto } from "@/lib/catalogo-imagenes";
 import type { SearchProductsParams } from "@/lib/chat/types";
-import { catalogVariantIsAvailable, type CatalogProduct, type CatalogVariant, type ProductByCodeResponse } from "@/types/catalogo";
+import {
+  catalogVariantIsAvailable,
+  getCatalogProductPriceRange,
+  getCatalogVariantPrice,
+  type CatalogProduct,
+  type CatalogVariant,
+  type ProductByCodeResponse,
+} from "@/types/catalogo";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "";
 
@@ -132,9 +139,16 @@ export async function searchProducts(params: SearchProductsParams): Promise<Cata
 
     if (!byColorOrSize) return false;
 
-    const price = toNumber(product.precioVenta);
-    if (params.minPrice !== null && params.minPrice !== undefined && price < params.minPrice) return false;
-    if (params.maxPrice !== null && params.maxPrice !== undefined && price > params.maxPrice) return false;
+    const matchingVariant =
+      color || talla
+        ? product.variantes.find((variant) => matchVariant(variant, color, talla) && catalogVariantIsAvailable(variant))
+        : null;
+    const priceRange = matchingVariant
+      ? { min: getCatalogVariantPrice(product, matchingVariant), max: getCatalogVariantPrice(product, matchingVariant) }
+      : getCatalogProductPriceRange(product);
+
+    if (params.minPrice !== null && params.minPrice !== undefined && priceRange.max < params.minPrice) return false;
+    if (params.maxPrice !== null && params.maxPrice !== undefined && priceRange.min > params.maxPrice) return false;
 
     if (!query || recentQuery) return true;
     return scoreProduct(product, query) > 0;

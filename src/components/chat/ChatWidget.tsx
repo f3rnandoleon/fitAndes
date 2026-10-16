@@ -7,7 +7,7 @@ import { primeraImagenDeVariante } from "@/lib/catalogo-imagenes";
 import { createInitialMemory, normalizeMemory } from "@/lib/chat/memory";
 import type { ChatAction, ChatAttachmentPreview, ChatResponse, ProductCardData, TranscriptMessage } from "@/lib/chat/types";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
-import { getCatalogVariantAvailableStock } from "@/types/catalogo";
+import { getCatalogVariantAvailableStock, getCatalogVariantId } from "@/types/catalogo";
 
 const SESSION_KEY = "fitandes-chat-session";
 const MEMORY_KEY = "fitandes-chat-memory";
@@ -182,16 +182,20 @@ export default function ChatWidget() {
     const variant = card.variants.find((item) => item.color === selection.color && item.talla === selection.talla);
     if (!variant) return;
 
+    const variantId = getCatalogVariantId(variant);
+    const itemPrice = typeof variant.precioVenta === "number" && variant.precioVenta > 0 ? variant.precioVenta : card.price;
+
     addItem({
-      id: `${card.id}-${variant.color}-${variant.talla}`,
+      id: `${card.id}-${variantId ?? `${variant.color}-${variant.talla}`}`,
       productoId: card.id,
+      variantId,
       nombre: card.title,
       modelo: card.model,
       imagen: primeraImagenDeVariante(variant) ?? card.image,
       color: variant.color,
       talla: variant.talla,
       cantidad: selection.cantidad,
-      precio: card.price,
+      precio: itemPrice,
       stockDisponible: getCatalogVariantAvailableStock(variant),
     });
 

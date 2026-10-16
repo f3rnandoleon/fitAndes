@@ -39,7 +39,9 @@ function mergeItem(items: ReservationItem[], item: ReservationItem): Reservation
     current.id === item.id
       ? {
           ...current,
-          cantidad: Math.min(current.cantidad + item.cantidad, current.stockDisponible),
+          precio: item.precio,
+          stockDisponible: item.stockDisponible,
+          cantidad: Math.min(current.cantidad + item.cantidad, item.stockDisponible),
         }
       : current,
   );

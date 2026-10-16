@@ -21,6 +21,8 @@ export interface CatalogVariant {
   imagenes?: Array<string | null | undefined> | null;
   codigoBarra?: string | null;
   qrCode?: string | null;
+  precioVenta?: number | null;
+  precioCosto?: number | null;
   medidas?: CatalogVariantMedidas | null;
 }
 
@@ -76,3 +78,30 @@ export function filterCatalogAvailableVariants(product: CatalogProduct): Catalog
     variantes: product.variantes.filter(catalogVariantIsAvailable),
   };
 }
+
+export function getCatalogVariantPrice(product: CatalogProduct, variant?: CatalogVariant | null): number {
+  if (variant && typeof variant.precioVenta === "number" && Number.isFinite(variant.precioVenta) && variant.precioVenta > 0) {
+    return variant.precioVenta;
+  }
+  return typeof product.precioVenta === "number" && Number.isFinite(product.precioVenta) ? product.precioVenta : 0;
+}
+
+export function getCatalogProductPriceRange(product: CatalogProduct): {
+  min: number;
+  max: number;
+  hasRange: boolean;
+} {
+  const basePrice = typeof product.precioVenta === "number" && Number.isFinite(product.precioVenta) ? product.precioVenta : 0;
+  const availableVariants = product.variantes?.length ? product.variantes.filter(catalogVariantIsAvailable) : [];
+  const variantsToInspect = availableVariants.length > 0 ? availableVariants : (product.variantes || []);
+
+  if (variantsToInspect.length === 0) {
+    return { min: basePrice, max: basePrice, hasRange: false };
+  }
+
+  const prices = variantsToInspect.map((v) => getCatalogVariantPrice(product, v));
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  return { min, max, hasRange: min !== max };
+}
+
