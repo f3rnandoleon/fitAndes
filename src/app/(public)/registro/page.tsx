@@ -7,8 +7,6 @@ import { signIn } from "next-auth/react";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import logo from "../../../../public/fitAndes.png";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
 export default function RegistroPage() {
   const router = useRouter();
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
