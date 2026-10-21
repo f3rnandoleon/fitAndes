@@ -42,7 +42,17 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(10000),
     });
-    productos = res.ok ? productosConStock((await res.json()) as CatalogProduct[]) : [];
+    if (res.ok) {
+      const json = await res.json();
+      const rawItems = Array.isArray(json)
+        ? (json as CatalogProduct[])
+        : Array.isArray(json?.data)
+          ? (json.data as CatalogProduct[])
+          : [];
+      productos = productosConStock(rawItems);
+    } else {
+      productos = [];
+    }
   } catch {
     productos = [];
   }

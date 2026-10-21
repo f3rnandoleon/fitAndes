@@ -75,8 +75,10 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T | null>
 }
 
 export async function getPublicProducts(): Promise<CatalogProduct[] | null> {
-  const data = await fetchJson<CatalogProduct[]>("/productos/publicos");
-  return Array.isArray(data) ? data : data === null ? null : [];
+  const data = await fetchJson<CatalogProduct[] | { data?: CatalogProduct[] }>("/productos/publicos");
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object" && Array.isArray(data.data)) return data.data;
+  return data === null ? null : [];
 }
 
 export async function getProductDetail(productId: string): Promise<CatalogProduct | null | undefined> {
@@ -96,16 +98,66 @@ export async function getProductDetail(productId: string): Promise<CatalogProduc
 }
 
 export async function getProductByCode(code: string): Promise<ProductByCodeResponse | null | undefined> {
-  if (!code) return null;
+  const normalizedCode = code?.trim();
+  if (!normalizedCode) return null;
 
+  // 1. Intentar endpoint directo sanitizado de la API central
   try {
-    const res = await fetch(`${API_URL}/productos/by-code/${encodeURIComponent(code)}`, {
+    const res = await fetch(`${API_URL}/productos/by-code/${encodeURIComponent(normalizedCode)}`, {
       cache: "no-store",
       signal: AbortSignal.timeout(10000),
     });
-    if (res.status === 404 || res.status === 400) return null;
-    if (!res.ok) return undefined;
-    return (await res.json()) as ProductByCodeResponse;
+
+    if (res.ok) {
+      return (await res.json()) as ProductByCodeResponse;
+    }
+
+    if (res.status === 404) {
+      return null;
+    }
+  } catch {
+    // Si falla la red directa, continuamos con fallback al catálogo público
+  }
+
+  // 2. Fallback resiliente: buscar en catálogo público por SKU, código de barra o variante
+  try {
+    const products = await getPublicProducts();
+    if (!products) return undefined;
+
+    const codeLower = normalizedCode.toLowerCase();
+
+    for (const product of products) {
+      if (product.sku && product.sku.toLowerCase() === codeLower) {
+        const availableVariant = product.variantes.find(catalogVariantIsAvailable) ?? product.variantes[0];
+        if (availableVariant) {
+          return {
+            _id: product._id,
+            nombre: product.nombre,
+            modelo: product.modelo,
+            precioVenta: product.precioVenta,
+            variante: availableVariant,
+          };
+        }
+      }
+
+      for (const variant of product.variantes) {
+        const matchesBarra = variant.codigoBarra && variant.codigoBarra.toLowerCase() === codeLower;
+        const matchesQr = variant.qrCode && variant.qrCode.toLowerCase() === codeLower;
+        const matchesId = (variant.varianteId ?? variant.variantId ?? "").toLowerCase() === codeLower;
+
+        if (matchesBarra || matchesQr || matchesId) {
+          return {
+            _id: product._id,
+            nombre: product.nombre,
+            modelo: product.modelo,
+            precioVenta: product.precioVenta,
+            variante: variant,
+          };
+        }
+      }
+    }
+
+    return null;
   } catch {
     return undefined;
   }

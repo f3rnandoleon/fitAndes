@@ -69,7 +69,11 @@ async function getProductosPublicos(): Promise<ProductoPublico[]> {
     if (!res.ok) return [];
 
     const data = await res.json();
-    return Array.isArray(data) ? (data as ProductoPublico[]) : [];
+    if (Array.isArray(data)) return data as ProductoPublico[];
+    if (data && typeof data === "object" && Array.isArray((data as { data?: unknown }).data)) {
+      return (data as { data: ProductoPublico[] }).data;
+    }
+    return [];
   } catch {
     return [];
   }

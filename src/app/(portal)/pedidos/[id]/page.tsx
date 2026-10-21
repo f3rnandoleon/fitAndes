@@ -3,10 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import OrderActionsSection from "@/components/pedidos/OrderActionsSection";
 import OrderDeliveryEditSection from "@/components/pedidos/OrderDeliveryEditSection";
+import OrderTrackingSection from "@/components/pedidos/OrderTrackingSection";
 import PaymentReceiptSection from "@/components/pedidos/PaymentReceiptSection";
 import StockReservationTimer from "@/components/checkout/StockReservationTimer";
 import { authOptions } from "@/lib/auth-options";
-import { getOrderDetail } from "@/services/orders.service";
+import { getOrderDetail, getOrderTracking } from "@/services/orders.service";
 import {
   getPedidoDelivery,
   getPedidoDescuento,
@@ -66,8 +67,11 @@ export default async function PedidoDetallePage({
 
   const { id } = await params;
   const { paymentId } = await searchParams;
-  const pedido = await getOrderDetail({ userId: session.user.id, role: "CLIENTE", accessToken: session.accessToken }, id);
+  const auth = { userId: session.user.id, role: "CLIENTE" as const, accessToken: session.accessToken };
+  const pedido = await getOrderDetail(auth, id);
   if (!pedido) notFound();
+
+  const tracking = await getOrderTracking(auth, id);
 
   const descuento = getPedidoDescuento(pedido);
   const subtotal = getPedidoSubtotal(pedido);
@@ -202,6 +206,11 @@ export default async function PedidoDetallePage({
           </span>
         </div>
       </div>
+
+      <OrderTrackingSection
+        tracking={tracking}
+        metodoEntrega={delivery?.method}
+      />
 
       <PaymentReceiptSection
         pedido={pedido}

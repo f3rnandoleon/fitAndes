@@ -259,3 +259,24 @@ export function canPedidoBeEditedByClient(pedido: Pedido, now = Date.now()): boo
 export function canPedidoBeCancelledByClient(pedido: Pedido, now = Date.now()): boolean {
   return canPedidoBeEditedByClient(pedido, now);
 }
+
+export type TrackingEstado = "PENDING" | "PREPARING" | "READY" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED";
+
+export interface OrderTracking {
+  _id?: string;
+  pedidoId?: string;
+  numeroPedido?: string;
+  canal?: string;
+  metodo?: string;
+  estado: TrackingEstado | string;
+  codigoSeguimiento?: string | null;
+  nombreTransportista?: string | null;
+  telefono?: string | null;
+  nombreDestinatario?: string | null;
+  preparadoEn?: string | null;
+  enTransitoEn?: string | null;
+  entregadoEn?: string | null;
+  canceladoEn?: string | null;
+  notas?: string | null;
+}
+
