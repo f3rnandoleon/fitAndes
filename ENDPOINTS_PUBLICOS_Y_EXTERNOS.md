@@ -21,11 +21,11 @@
    - [4.2 Login JWT (`POST /api/auth/login`)](#42-login-jwt-post-apiauthlogin)
    - [4.3 Login Google (`POST /api/auth/google`)](#43-login-google-post-apiauthgoogle)
    - [4.4 Perfil Propio (`GET/PUT /api/clientes/me`)](#44-perfil-propio-getput-apiclientesme)
-   - [4.5 Direcciones Guardadas (`GET/POST/DELETE /api/clientes/me/direcciones`)](#45-direcciones-guardadas-getpostdelete-apiclientesmedirecciones)
+   - [4.5 Direcciones Guardadas (`GET/POST/PUT/DELETE /api/clientes/me/direcciones`)](#45-direcciones-guardadas-getpostputdelete-apiclientesmedirecciones)
 5. [Carrito de Compras Persistente](#5-carrito-de-compras-persistente)
    - [5.1 Obtener Carrito (`GET /api/carrito`)](#51-obtener-carrito-get-apicarrito)
    - [5.2 Agregar Ítem (`POST /api/carrito/items`)](#52-agregar-ítem-post-apicarritoitems)
-   - [5.3 Modificar Cantidad (`PATCH /api/carrito/items/:itemId`)](#53-modificar-cantidad-patch-apicarritoitemsitemid)
+   - [5.3 Modificar Cantidad (`PUT/PATCH /api/carrito/items/:itemId`)](#53-modificar-cantidad-putpatch-apicarritoitemsitemid)
    - [5.4 Eliminar Ítem (`DELETE /api/carrito/items/:itemId`)](#54-eliminar-ítem-delete-apicarritoitemsitemid)
    - [5.5 Vaciar Carrito (`DELETE /api/carrito`)](#55-vaciar-carrito-delete-apicarrito)
 6. [Checkout y Pedidos Web/Móvil](#6-checkout-y-pedidos-web-móvil)
@@ -41,12 +41,31 @@
    - [8.1 Crear Pedido WhatsApp (`POST /api/integrations/whatsapp/orders`)](#81-crear-pedido-whatsapp-post-apiintegrationswhatsapporders)
    - [8.2 Subir Comprobante WhatsApp (`POST /api/integrations/whatsapp/payments/:id/proof`)](#82-subir-comprobante-whatsapp-post-apiintegrationswhatsapppaymentsidproof)
    - [8.3 Consultar Estado por Celular (`GET /api/integrations/whatsapp/orders/:numeroPedido`)](#83-consultar-estado-por-celular-get-apiintegrationswhatsappordersnumeropedido)
+   - [8.4 Búsqueda Rápida y Compacta para IA (`GET /api/integrations/whatsapp/products/search`)](#84-búsqueda-rápida-y-compacta-para-ia-get-apiintegrationswhatsappproductssearch)
+   - [8.5 Medidas y Asesoría de Tallas (`GET /api/integrations/whatsapp/products/:id/measurements`)](#85-medidas-y-asesoría-de-tallas-get-apiintegrationswhatsappproductsidmeasurements)
 9. [Módulo POS y Escáner (App Móvil / Personal de Tienda)](#9-módulo-pos-y-escáner-app-móvil--personal-de-tienda)
    - [9.1 Escanear Código de Barras / QR (`GET /api/pos/scan/:code`)](#91-escanear-código-de-barras--qr-get-apiposscancode)
    - [9.2 Registrar Venta Directa en Mostrador (`POST /api/pos/sales`)](#92-registrar-venta-directa-en-mostrador-post-apipossales)
-   - [9.3 Sesión de Caja Activa (`GET /api/pos/caja/activa`)](#93-sesión-de-caja-activa-get-apiposcajaactiva)
+   - [9.3 Sesión de Caja Activa y Modo Libre (`GET /api/pos/caja/activa`)](#93-sesión-de-caja-activa-y-modo-libre-get-apiposcajaactiva)
    - [9.4 Apertura de Caja (`POST /api/pos/caja/apertura`)](#94-apertura-de-caja-post-apiposcajaapertura)
-   - [9.5 Cierre y Arqueo de Caja (`POST /api/pos/caja/cierre`)](#95-cierre-y-arqueo-de-caja-post-apiposcajacierre)
+   - [9.5 Movimientos Manuales de Caja (`POST /api/pos/caja/movimiento-manual`)](#95-movimientos-manuales-de-caja-post-apiposcajamovimiento-manual)
+   - [9.6 Cierre y Arqueo de Caja (`POST /api/pos/caja/cierre`)](#96-cierre-y-arqueo-de-caja-post-apiposcajacierre)
+10. [Sucursales y Stock por Tienda](#10-sucursales-y-stock-por-tienda)
+    - [10.1 Listado de Sucursales (`GET /api/admin/sucursales`)](#101-listado-de-sucursales-get-apiadminsucursales)
+    - [10.2 Desglose de Stock por Sucursal (`GET /api/admin/productos/:id/stock-sucursales`)](#102-desglose-de-stock-por-sucursal-get-apiadminproductosidstock-sucursales)
+    - [10.3 Detalle y Actualización de Sucursal (`GET/PUT/PATCH /api/admin/sucursales/:id`)](#103-detalle-y-actualización-de-sucursal-getputpatch-apiadminsucursalesid)
+11. [Compras de Proveedores y Reemplazo Atómico](#11-compras-de-proveedores-y-reemplazo-atómico)
+    - [11.1 Listar Compras (`GET /api/compras`)](#111-listar-compras-get-apicompras)
+    - [11.2 Registrar Compra con CPP (`POST /api/compras`)](#112-registrar-compra-con-cpp-post-apicompras)
+    - [11.3 Detalle de Compra y Snapshots (`GET /api/compras/:id`)](#113-detalle-de-compra-y-snapshots-get-apicomprasid)
+    - [11.4 Anular Compra con Reversión (`DELETE /api/compras/:id`)](#114-anular-compra-con-reversión-delete-apicomprasid)
+    - [11.5 Reemplazo Atómico / Clonación Corregida (`PUT /api/compras/:id`)](#115-reemplazo-atómico--clonación-corregida-put-apicomprasid)
+    - [11.6 Actualización de Metadatos de Compra (`PATCH /api/compras/:id`)](#116-actualización-de-metadatos-de-compra-patch-apicomprasid)
+12. [Traspasos de Mercadería entre Sucursales](#12-traspasos-de-mercadería-entre-sucursales)
+    - [12.1 Listar Traspasos (`GET /api/admin/traspasos`)](#121-listar-traspasos-get-apiadmintraspasos)
+    - [12.2 Solicitar Traspaso (`POST /api/admin/traspasos`)](#122-solicitar-traspaso-post-apiadmintraspasos)
+    - [12.3 Despachar Traspaso (`POST /api/admin/traspasos/:id/despachar`)](#123-despachar-traspaso-post-apiadmintraspasosiddespachar)
+    - [12.4 Recibir Traspaso (`POST /api/admin/traspasos/:id/recibir`)](#124-recibir-traspaso-post-apiadmintraspasosidrecibir)
 
 ---
 
@@ -65,7 +84,9 @@
 5. **Realizar Checkout con Bloqueo de Stock:** Reserva inventario temporalmente evitando sobreventas (30 min web, 48 hrs WhatsApp).
 6. **Subir Comprobantes QR:** Envío de imágenes directamente a Cloudinary y generación de alertas inmediatas con enlace de verificación a Telegram.
 7. **Canal Dedicado de WhatsApp:** API especializada con validación de teléfono, idempotencia y cálculo de vencimiento en zona horaria de Bolivia (`America/La_Paz`).
-8. **Operar POS Móvil:** Vendedores pueden escanear prendas con la cámara, cobrar en efectivo o QR y cerrar turnos de caja con arqueo.
+8. **Operar POS Móvil y Cajas Flexibles:** Vendedores pueden escanear prendas con la cámara, cobrar en efectivo o QR, validar stock físico local y operar con turnos de caja formales o caja libre según la sucursal (`requiereAperturaCaja`).
+9. **Desglose de Stock Multisucursal y Traspasos:** Visualización pormenorizada por sucursal de existencias físicas y reservadas, y control de traspasos seguros en dos fases (despacho en origen y recepción en destino).
+10. **Reabastecimiento con CPP y Corrección Atómica:** Registro de compras con Costo Promedio Ponderado (CPP), anulación con reversión total de inventario/caja, y reemplazo atómico transaccional para corregir compras erradas.
 
 ---
 
@@ -505,19 +526,30 @@ Retorna el perfil del cliente autenticado y su dirección de entrega predetermin
 
 ---
 
-### 4.5 Direcciones Guardadas (`GET /api/clientes/me/direcciones`)
-- **`GET /api/clientes/me/direcciones`**: Lista todas las direcciones del cliente.
+### 4.5 Direcciones Guardadas (`GET/POST/PUT/DELETE /api/clientes/me/direcciones`)
+Permite al cliente gestionar su libreta de direcciones para despachos y envíos.
+
+- **`GET /api/clientes/me/direcciones`**: Lista todas las direcciones guardadas del cliente.
 - **`POST /api/clientes/me/direcciones`**: Crea una nueva dirección.
   ```json
   {
-    "alias": "Oficina",
+    "etiqueta": "Oficina",
     "nombreDestinatario": "Carlos Mendoza",
     "telefono": "78965412",
     "direccion": "Edificio Alianza Piso 2, Calacoto Calle 15",
     "ciudad": "La Paz",
     "departamento": "La Paz",
+    "zona": "Calacoto",
     "referencia": "Al lado de la farmacia",
     "esPredeterminada": false
+  }
+  ```
+- **`PUT /api/clientes/me/direcciones/:direccionId`** (o `PATCH`): Actualiza los datos de una dirección guardada existente (admite modificar `etiqueta`, `nombreDestinatario`, `telefono`, `departamento`, `ciudad`, `zona`, `direccion`, `referencia`, `codigoPostal`, `esPredeterminada`).
+  ```json
+  {
+    "telefono": "78965499",
+    "referencia": "Al lado de la farmacia, timbre piso 2",
+    "esPredeterminada": true
   }
   ```
 - **`DELETE /api/clientes/me/direcciones/:direccionId`**: Elimina una dirección guardada.
@@ -595,7 +627,17 @@ Retorna el documento del carrito recalculado.
 
 ---
 
-### 5.3 Modificar Cantidad (`PATCH /api/carrito/items/:itemId`)
+### 5.3 Modificar Cantidad (`PUT /api/carrito/items/:itemId`)
+Actualiza la cantidad solicitada de un ítem ya añadido al carrito. Admite tanto `PUT` como `PATCH`.
+
+```bash
+curl -X PUT https://control-ventas-azure.vercel.app/api/carrito/items/item-670e24aaf1b4 \
+  -H "Authorization: Bearer <accessToken>" \
+  -H "Content-Type: application/json" \
+  -d '{"cantidad": 3}'
+```
+
+#### Payload:
 ```json
 {
   "cantidad": 3
@@ -977,6 +1019,114 @@ Por privacidad, exige el parámetro `phone` que debe coincidir con el teléfono 
 
 ---
 
+### 8.4 Búsqueda Rápida y Compacta para IA (`GET /api/integrations/whatsapp/products/search`)
+Diseñado para que el **Agente IA de WhatsApp** busque productos y variantes disponibles de forma ultrarrápida (<50ms) y con un consumo mínimo de tokens de contexto (80% más liviano que el catálogo público).
+
+- **Método:** `GET`
+- **Ruta:** `/api/integrations/whatsapp/products/search`
+- **Cabeceras:** `Authorization: Bearer <WHATSAPP_INTEGRATION_API_KEY>`
+- **Query Params:**
+  * `q` *(opcional)*: Término de búsqueda o modelo (ej. `alpaca`, `cuello V`, `chompa`).
+  * `color` *(opcional)*: Color primario o secundario (ej. `azul`, `marino`, `negro`).
+  * `talla` *(opcional)*: Talla exacta (ej. `S`, `M`, `L`, `XL`).
+  * `minPrecio` / `maxPrecio` *(opcional)*: Rango de precio en Bs.
+  * `limit` *(opcional, default 5, máx 20)*: Cantidad máxima de productos.
+
+#### Reglas de Negocio:
+1. Filtra automáticamente en MongoDB prendas con `estado: "ACTIVO"`.
+2. Filtra y devuelve **únicamente variantes con stock web real disponible (`stockDisponible > 0`)**.
+3. Si la variante tiene fotos en Cloudinary, transforma automáticamente la URL inyectando `f_auto,q_auto,w_800/` para que la imagen sea ultraliviana, optimizada para WhatsApp y cargue al instante en conexiones móviles.
+4. Incluye un resumen anatómico de medidas (`anchoPecho` y `largoTotal`) si están registradas.
+
+#### Ejemplo de Petición:
+```bash
+curl -X GET "https://control-ventas-azure.vercel.app/api/integrations/whatsapp/products/search?color=azul&talla=M" \
+  -H "Authorization: Bearer fit_andes_wa_secret_..."
+```
+
+#### Respuesta Exitosa (HTTP 200):
+```json
+{
+  "total": 1,
+  "productos": [
+    {
+      "productoId": "670e10a2f1b4c90012345678",
+      "nombre": "Chompa Cuello V",
+      "modelo": "Alpaca Clásica",
+      "categoria": "Chompas",
+      "precioVenta": 140,
+      "descripcionCorta": "Chompa tejida con lana de alpaca suave, abrigadora y liviana para clima frío.",
+      "variantesDisponibles": [
+        {
+          "varianteId": "var-alp-az-m",
+          "color": "Azul Marino",
+          "colorSecundario": null,
+          "talla": "M",
+          "stockDisponible": 4,
+          "precioVenta": 140,
+          "imagen": "https://res.cloudinary.com/dq1jeikev/image/upload/f_auto,q_auto,w_800/v1728864000/chompa-azul-m.jpg",
+          "medidasResumen": {
+            "anchoPecho": 54,
+            "largoTotal": 68
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### 8.5 Medidas y Asesoría de Tallas (`GET /api/integrations/whatsapp/products/:id/measurements`)
+Permite al bot responder con precisión cuando el cliente pregunta por la estatura, contextura física o medidas exactas de una prenda (ej. *"Mido 1.80m y peso 75kg, ¿qué talla me recomiendan?"*).
+
+- **Método:** `GET`
+- **Ruta:** `/api/integrations/whatsapp/products/:id/measurements`
+- **Cabeceras:** `Authorization: Bearer <WHATSAPP_INTEGRATION_API_KEY>`
+
+#### Ejemplo de Petición:
+```bash
+curl -X GET "https://control-ventas-azure.vercel.app/api/integrations/whatsapp/products/670e10a2f1b4c90012345678/measurements" \
+  -H "Authorization: Bearer fit_andes_wa_secret_..."
+```
+
+#### Respuesta Exitosa (HTTP 200):
+```json
+{
+  "productoId": "670e10a2f1b4c90012345678",
+  "nombre": "Chompa Cuello V",
+  "modelo": "Alpaca Clásica",
+  "categoria": "Chompas",
+  "tallas": [
+    {
+      "talla": "M",
+      "coloresDisponibles": ["Azul Marino", "Negro"],
+      "medidas": {
+        "anchoPecho": 54,
+        "anchoHombros": 46,
+        "largoTotal": 68,
+        "largoMangaAxila": 50,
+        "largoMangaHombro": 62
+      }
+    },
+    {
+      "talla": "L",
+      "coloresDisponibles": ["Azul Marino"],
+      "medidas": {
+        "anchoPecho": 58,
+        "anchoHombros": 49,
+        "largoTotal": 72,
+        "largoMangaAxila": 52,
+        "largoMangaHombro": 64
+      }
+    }
+  ]
+}
+```
+
+---
+
 ## 9. Módulo POS y Escáner (App Móvil / Personal de Tienda)
 
 Diseñado para la aplicación móvil que utilizan los dependientes en tiendas físicas (`ADMIN` y `VENDEDOR`).
@@ -1062,19 +1212,21 @@ Completa una venta inmediata en mostrador.
 
 ---
 
-### 9.3 Sesión de Caja Activa (`GET /api/pos/caja/activa`)
-Verifica si el vendedor tiene un turno de caja abierto en su sucursal antes de poder realizar cobros.
+### 9.3 Sesión de Caja Activa y Modo Libre (`GET /api/pos/caja/activa`)
+Verifica el estado del turno de caja para la sucursal del vendedor. Permite saber si existe una sesión abierta y si esa sucursal en particular exige apertura obligatoria de caja para cobrar.
 
 - **Método:** `GET`
 - **Ruta:** `/api/pos/caja/activa?sucursalId=670e1000f1b4c90011000001`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+- *Nota sobre `sucursalId`:* Si se omite en la query, el backend intentará resolver la sucursal asignada al perfil del usuario o, en su defecto, el almacén principal activo.
 
-#### Respuesta (Si hay caja abierta):
+#### Respuesta cuando hay caja abierta (HTTP 200):
 ```json
 {
-  "activa": true,
   "sesion": {
     "_id": "670e4100f1b4c90011889900",
     "sucursalId": "670e1000f1b4c90011000001",
+    "usuarioAperturaId": "670e0001f1b4c90011000099",
     "fechaApertura": "2026-10-14T08:00:00.000Z",
     "montoApertura": 100.00,
     "totalVentasEfectivo": 125.00,
@@ -1083,16 +1235,44 @@ Verifica si el vendedor tiene un turno de caja abierto en su sucursal antes de p
     "totalEgresosManuales": 15.00,
     "montoEsperadoEfectivo": 210.00,
     "estado": "ABIERTA"
+  },
+  "sucursal": {
+    "_id": "670e1000f1b4c90011000001",
+    "nombre": "Tienda 1 - San Miguel",
+    "requiereAperturaCaja": true,
+    "permiteVentaPOS": true
   }
 }
 ```
-*Si no hay caja abierta:* Retorna `{ "activa": false, "sesion": null }`. La app debe mostrar la pantalla de apertura.
+
+#### Respuesta cuando no hay caja abierta pero la sucursal opera en Caja Libre (HTTP 200):
+```json
+{
+  "sesion": null,
+  "sucursal": {
+    "_id": "670e1000f1b4c90011000002",
+    "nombre": "Almacén Central / Showroom",
+    "requiereAperturaCaja": false,
+    "permiteVentaPOS": true
+  }
+}
+```
+
+> [!IMPORTANT]
+> **Regla de Negocio (Apertura de Caja Opcional vs Obligatoria):**
+> 1. Si `sesion === null` y `sucursal.requiereAperturaCaja === true`: La app de POS **debe exigir** al dependiente abrir caja (`POST /api/pos/caja/apertura`) antes de cobrar ventas en mostrador.
+> 2. Si `sesion === null` y `sucursal.requiereAperturaCaja === false`: La tienda física o almacén opera en modo "Turno Opcional / Caja Libre". El POS permite registrar ventas de inmediato (`POST /api/pos/sales`) sin bloquear al usuario, asociando los ingresos a la tesorería general sin necesidad de un turno formal.
 
 ---
 
 ### 9.4 Apertura de Caja (`POST /api/pos/caja/apertura`)
-Inicia el turno de venta con el monto de cambio inicial.
+Inicia el turno de venta registrando el fondo inicial de cambio en efectivo.
 
+- **Método:** `POST`
+- **Ruta:** `/api/pos/caja/apertura`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+
+#### Payload:
 ```json
 {
   "sucursalId": "670e1000f1b4c90011000001",
@@ -1101,14 +1281,75 @@ Inicia el turno de venta con el monto de cambio inicial.
 }
 ```
 
----
-
-### 9.5 Cierre y Arqueo de Caja (`POST /api/pos/caja/cierre`)
-Finaliza el turno. El vendedor cuenta los billetes físicos y envía `montoDeclaradoEfectivo`. El backend calcula automáticamente el descuadre (`diferenciaEfectivo = montoDeclaradoEfectivo - montoEsperadoEfectivo`).
-
+#### Respuesta Exitosa (HTTP 201):
 ```json
 {
+  "_id": "670e4100f1b4c90011889900",
   "sucursalId": "670e1000f1b4c90011000001",
+  "usuarioAperturaId": "670e0001f1b4c90011000099",
+  "fechaApertura": "2026-10-14T08:00:00.000Z",
+  "montoApertura": 100.00,
+  "totalVentasEfectivo": 0.00,
+  "totalVentasQR": 0.00,
+  "totalIngresosManuales": 0.00,
+  "totalEgresosManuales": 0.00,
+  "montoEsperadoEfectivo": 100.00,
+  "estado": "ABIERTA"
+}
+```
+
+---
+
+### 9.5 Movimientos Manuales de Caja (`POST /api/pos/caja/movimiento-manual`)
+Registra ingresos o egresos de dinero no comerciales ocurridos durante el turno (por ejemplo: retiro para almuerzo del personal, compra de suministros de limpieza o inyección adicional de cambio).
+
+- **Método:** `POST`
+- **Ruta:** `/api/pos/caja/movimiento-manual`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+
+#### Payload:
+```json
+{
+  "sesionId": "670e4100f1b4c90011889900",
+  "tipo": "EGRESO_MANUAL", // Valores: "INGRESO_MANUAL" | "EGRESO_MANUAL"
+  "monto": 25.00,
+  "motivo": "Compra urgente de cinta de embalaje y bolsas para la tienda"
+}
+```
+
+#### Respuesta Exitosa (HTTP 200):
+```json
+{
+  "_id": "670e4100f1b4c90011889900",
+  "sucursalId": "670e1000f1b4c90011000001",
+  "totalEgresosManuales": 25.00,
+  "montoEsperadoEfectivo": 75.00,
+  "movimientosManuales": [
+    {
+      "tipo": "EGRESO_MANUAL",
+      "monto": 25.00,
+      "motivo": "Compra urgente de cinta de embalaje y bolsas para la tienda",
+      "fecha": "2026-10-14T11:30:00.000Z",
+      "usuarioId": "670e0001f1b4c90011000099"
+    }
+  ],
+  "estado": "ABIERTA"
+}
+```
+
+---
+
+### 9.6 Cierre y Arqueo de Caja (`POST /api/pos/caja/cierre`)
+Finaliza el turno de caja. El dependiente cuenta físicamente el efectivo disponible en gaveta y envía `montoDeclaradoEfectivo`. El backend computa automáticamente el descuadre (`diferenciaEfectivo = montoDeclaradoEfectivo - montoEsperadoEfectivo`).
+
+- **Método:** `POST`
+- **Ruta:** `/api/pos/caja/cierre`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+
+#### Payload:
+```json
+{
+  "sesionId": "670e4100f1b4c90011889900",
   "montoDeclaradoEfectivo": 210.00,
   "notasCierre": "Cuadre exacto al cierre de turno tarde"
 }
@@ -1117,14 +1358,473 @@ Finaliza el turno. El vendedor cuenta los billetes físicos y envía `montoDecla
 #### Respuesta Exitosa (HTTP 200):
 ```json
 {
-  "message": "Sesión de caja cerrada exitosamente",
-  "resumen": {
-    "_id": "670e4100f1b4c90011889900",
-    "montoApertura": 100.00,
-    "montoEsperadoEfectivo": 210.00,
-    "montoDeclaradoEfectivo": 210.00,
-    "diferenciaEfectivo": 0.00,
-    "estado": "CERRADA"
+  "_id": "670e4100f1b4c90011889900",
+  "sucursalId": "670e1000f1b4c90011000001",
+  "fechaApertura": "2026-10-14T08:00:00.000Z",
+  "fechaCierre": "2026-10-14T18:00:00.000Z",
+  "montoApertura": 100.00,
+  "totalVentasEfectivo": 125.00,
+  "totalVentasQR": 270.00,
+  "totalIngresosManuales": 0.00,
+  "totalEgresosManuales": 15.00,
+  "montoEsperadoEfectivo": 210.00,
+  "montoDeclaradoEfectivo": 210.00,
+  "diferenciaEfectivo": 0.00,
+  "notasCierre": "Cuadre exacto al cierre de turno tarde",
+  "estado": "CERRADA"
+}
+```
+
+---
+
+## 10. Sucursales y Stock por Tienda
+
+Permite a aplicaciones externas, terminales POS o dashboards satélites conocer la infraestructura física de tiendas y consultar el stock exacto desglosado por local.
+
+### 10.1 Listado de Sucursales (`GET /api/admin/sucursales`)
+Obtiene la lista de tiendas físicas, almacenes centrales y puntos de retiro registrados en el sistema.
+
+- **Método:** `GET`
+- **Ruta:** `/api/admin/sucursales`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+
+#### Respuesta Exitosa (HTTP 200):
+```json
+[
+  {
+    "_id": "670e1000f1b4c90011000001",
+    "nombre": "Almacén Central",
+    "codigo": "ALM-CENTRAL",
+    "tipo": "ALMACEN_CENTRAL",
+    "direccion": "Zona Industrial Calle 8 #450",
+    "ciudad": "La Paz",
+    "telefono": "59178901234",
+    "permiteVentaPOS": true,
+    "permiteDespachoWeb": true,
+    "permiteRetiroCliente": false,
+    "requiereAperturaCaja": false,
+    "activa": true,
+    "esAlmacenPrincipal": true
+  },
+  {
+    "_id": "670e1000f1b4c90011000002",
+    "nombre": "Tienda 1 - San Miguel",
+    "codigo": "TDA-SM",
+    "tipo": "TIENDA_FISICA",
+    "direccion": "Av. Montenegro #1234",
+    "ciudad": "La Paz",
+    "telefono": "59170123456",
+    "permiteVentaPOS": true,
+    "permiteDespachoWeb": false,
+    "permiteRetiroCliente": true,
+    "requiereAperturaCaja": true,
+    "activa": true,
+    "esAlmacenPrincipal": false
+  }
+]
+```
+
+---
+
+### 10.2 Desglose de Stock por Sucursal (`GET /api/admin/productos/:id/stock-sucursales`)
+Retorna los niveles de stock físico, reservado y disponible de todas las variantes de un producto específico, clasificados por cada sucursal activa.
+
+- **Método:** `GET`
+- **Ruta:** `/api/admin/productos/:id/stock-sucursales`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+
+#### Ejemplo de Petición:
+```bash
+curl -X GET "https://control-ventas-azure.vercel.app/api/admin/productos/670e10a2f1b4c90012345678/stock-sucursales" \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+#### Respuesta Exitosa (HTTP 200):
+```json
+[
+  {
+    "_id": "670e2200f1b4c90011334401",
+    "productoId": "670e10a2f1b4c90012345678",
+    "varianteId": "var-alp-neg-m",
+    "sucursalId": {
+      "_id": "670e1000f1b4c90011000001",
+      "nombre": "Almacén Central",
+      "codigo": "ALM-CENTRAL",
+      "tipo": "ALMACEN_CENTRAL",
+      "permiteVentaPOS": true,
+      "activa": true
+    },
+    "stockFisico": 6,
+    "stockReservado": 1,
+    "stockMinimo": 2
+  },
+  {
+    "_id": "670e2200f1b4c90011334402",
+    "productoId": "670e10a2f1b4c90012345678",
+    "varianteId": "var-alp-neg-m",
+    "sucursalId": {
+      "_id": "670e1000f1b4c90011000002",
+      "nombre": "Tienda 1 - San Miguel",
+      "codigo": "TDA-SM",
+      "tipo": "TIENDA_FISICA",
+      "permiteVentaPOS": true,
+      "activa": true
+    },
+    "stockFisico": 2,
+    "stockReservado": 0,
+    "stockMinimo": 1
+  }
+]
+```
+
+---
+
+### 10.3 Detalle y Actualización de Sucursal (`GET/PUT/PATCH /api/admin/sucursales/:id`)
+Permite consultar, modificar la configuración operativa o activar/desactivar una sucursal específica.
+
+- **`GET /api/admin/sucursales/:id`**: Retorna la ficha técnica de la sucursal y sus banderas operativas (`permiteVentaPOS`, `permiteDespachoWeb`, `permiteRetiroCliente`, `requiereAperturaCaja`).
+- **`PUT /api/admin/sucursales/:id`**: Actualiza datos de la tienda física o almacén (`nombre`, `tipo`, `direccion`, `ciudad`, `telefono`, flags operativos y `esAlmacenPrincipal`).
+  ```json
+  {
+    "nombre": "Tienda 1 - San Miguel",
+    "tipo": "TIENDA_FISICA",
+    "direccion": "Av. Montenegro #1234",
+    "ciudad": "La Paz",
+    "telefono": "59170123456",
+    "permiteVentaPOS": true,
+    "permiteDespachoWeb": false,
+    "permiteRetiroCliente": true,
+    "requiereAperturaCaja": true,
+    "esAlmacenPrincipal": false
+  }
+  ```
+- **`PATCH /api/admin/sucursales/:id`**: Modifica el estado activo/inactivo (`{ "activa": boolean }`).
+  > ⚠️ **Regla de Consistencia:** No se permite desactivar una sucursal si está marcada como almacén principal único (`esAlmacenPrincipal: true`), respondiendo `HTTP 400 Bad Request` para garantizar que siempre exista un almacén central de despacho.
+
+---
+
+## 11. Compras de Proveedores y Reemplazo Atómico
+
+Permite a los administradores registrar abastecimiento de mercadería con recálculo automático de Costo Promedio Ponderado (CPP), anular compras con reversión completa o corregir compras erróneas mediante reemplazo atómico en transacción.
+
+### 11.1 Listar Compras (`GET /api/compras`)
+Obtiene el historial paginado de compras registradas.
+
+- **Método:** `GET`
+- **Ruta:** `/api/compras?page=1&limit=20`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+
+#### Respuesta Exitosa (HTTP 200):
+```json
+{
+  "compras": [
+    {
+      "_id": "670e5000f1b4c90011990011",
+      "numeroCompra": "COM-261020-001",
+      "fecha": "2026-10-20T10:00:00.000Z",
+      "proveedor": "Textiles del Valle S.R.L.",
+      "monedaOrigen": "PEN",
+      "tipoCambio": 1.95,
+      "totalMonedaOrigen": 1000.00,
+      "totalBOB": 1950.00,
+      "estado": "COMPLETADA",
+      "items": [
+        {
+          "productoId": "670e10a2f1b4c90012345678",
+          "varianteId": "var-alp-neg-m",
+          "cantidad": 20,
+          "costoUnitarioBOB": 97.50,
+          "totalLineaBOB": 1950.00
+        }
+      ]
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "totalPages": 1
+}
+```
+
+---
+
+### 11.2 Registrar Compra con CPP (`POST /api/compras`)
+Registra una adquisición formal de prendas.  
+**Efectos inmediatos en el sistema:**
+1. Incrementa el `stockFisico` en el `NivelStock` de la sucursal de destino y en el catálogo global de variantes.
+2. Recalcula el **Costo Promedio Ponderado (CPP)** de cada variante en moneda nacional (BOB).
+3. Genera el asiento de Kárdex de tipo `ENTRADA` con el costo unitario y total.
+4. Descuenta los fondos egresados de la cuenta de tesorería seleccionada (`CuentaDinero`).
+
+- **Método:** `POST`
+- **Ruta:** `/api/compras`
+- **Auth:** `Authorization: Bearer <accessToken>` (`ADMIN`)
+
+#### Payload:
+```json
+{
+  "sucursalDestinoId": "670e1000f1b4c90011000001",
+  "cuentaDineroId": "670e2000f1b4c90011440022",
+  "proveedor": "Textiles del Valle S.R.L.",
+  "comprobanteReferencia": "FAC-9842",
+  "monedaOrigen": "PEN",
+  "tipoCambio": 1.95,
+  "notas": "Lote de temporada invierno confeccionado en Puno",
+  "items": [
+    {
+      "productoId": "670e10a2f1b4c90012345678",
+      "varianteId": "var-alp-neg-m",
+      "color": "Negro",
+      "colorSecundario": "Gris",
+      "talla": "M",
+      "cantidad": 20,
+      "costoUnitarioOrigen": 50.00
+    }
+  ]
+}
+```
+
+#### Respuesta Exitosa (HTTP 201):
+```json
+{
+  "message": "Compra registrada correctamente",
+  "compra": {
+    "_id": "670e5000f1b4c90011990011",
+    "numeroCompra": "COM-261020-001",
+    "estado": "COMPLETADA",
+    "totalBOB": 1950.00,
+    "items": [
+      {
+        "productoId": "670e10a2f1b4c90012345678",
+        "varianteId": "var-alp-neg-m",
+        "cantidad": 20,
+        "costoUnitarioBOB": 97.50,
+        "nuevoCostoPromedioBOB": 89.64,
+        "nuevoStock": 28
+      }
+    ]
   }
 }
 ```
+
+---
+
+### 11.3 Detalle de Compra y Snapshots (`GET /api/compras/:id`)
+Permite consultar el comprobante de compra con snapshots de auditoría inmutables (costo anterior, costo nuevo, stock antes y después).
+
+- **Método:** `GET`
+- **Ruta:** `/api/compras/670e5000f1b4c90011990011`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+
+---
+
+### 11.4 Anular Compra con Reversión (`DELETE /api/compras/:id`)
+Anula una compra errónea o cancelada con el proveedor.  
+**Efectos de reversión atómica:**
+1. Descuenta las unidades del inventario de la sucursal de destino y del catálogo global.
+2. Reintegra el dinero egresado a la cuenta bancaria o caja física de tesorería (`CuentaDinero`).
+3. Registra una contra-anotación en Kárdex.
+4. Marca el estado de la compra como `ANULADA` guardando `anuladaPor`, `fechaAnulacion` y `motivoAnulacion`.
+
+- **Método:** `DELETE`
+- **Ruta:** `/api/compras/670e5000f1b4c90011990011`
+- **Auth:** `Authorization: Bearer <accessToken>` (`ADMIN` o `VENDEDOR`)
+
+#### Payload (Opcional):
+```json
+{
+  "motivo": "Mercadería devuelta por fallas de tejido en costuras"
+}
+```
+
+#### Respuesta Exitosa (HTTP 200):
+```json
+{
+  "message": "Compra anulada exitosamente. Stock y egresos monetarios revertidos.",
+  "compra": {
+    "_id": "670e5000f1b4c90011990011",
+    "estado": "ANULADA",
+    "motivoAnulacion": "Mercadería devuelta por fallas de tejido en costuras"
+  }
+}
+```
+
+---
+
+### 11.5 Reemplazo Atómico / Clonación Corregida (`PUT /api/compras/:id`)
+Permite corregir una compra ya registrada cuando el usuario digitó cantidades incorrectas, costos equivocados o variantes erradas.  
+**Garantía Transaccional ACID:**
+En una única operación atómica de MongoDB, el sistema:
+1. Revierte la compra previa (liberando stocks y restituyendo saldos financieros en memoria/transacción).
+2. Registra la nueva versión corregida.
+3. Vincula las referencias cruzadas `reemplazaACompraId` y `reemplazadaPorCompraId` para una auditoría contable inalterable.
+
+- **Método:** `PUT`
+- **Ruta:** `/api/compras/670e5000f1b4c90011990011`
+- **Auth:** `Authorization: Bearer <accessToken>` (`ADMIN` o `VENDEDOR`)
+
+#### Payload:
+Envía el mismo esquema de registro de compra (`createCompraSchema`) con los datos corregidos, pudiendo adjuntar el campo opcional `motivo`:
+```json
+{
+  "sucursalDestinoId": "670e1000f1b4c90011000001",
+  "cuentaDineroId": "670e2000f1b4c90011440022",
+  "proveedor": "Textiles del Valle S.R.L.",
+  "comprobanteReferencia": "FAC-9842",
+  "monedaOrigen": "PEN",
+  "tipoCambio": 1.95,
+  "motivo": "Corrección de cantidad: llegaron 18 prendas en lugar de 20",
+  "items": [
+    {
+      "productoId": "670e10a2f1b4c90012345678",
+      "varianteId": "var-alp-neg-m",
+      "color": "Negro",
+      "colorSecundario": "Gris",
+      "talla": "M",
+      "cantidad": 18,
+      "costoUnitarioOrigen": 50.00
+    }
+  ]
+}
+```
+
+#### Respuesta Exitosa (HTTP 200):
+```json
+{
+  "message": "Compra corregida y reemplazada exitosamente",
+  "compra": {
+    "_id": "670e5099f1b4c90011990099",
+    "numeroCompra": "COM-261020-002",
+    "estado": "COMPLETADA",
+    "reemplazaACompraId": "670e5000f1b4c90011990011",
+    "totalBOB": 1755.00
+  }
+}
+```
+
+---
+
+### 11.6 Actualización de Metadatos de Compra (`PATCH /api/compras/:id`)
+Permite corregir notas, fecha, proveedor o el número de factura/comprobante de referencia de una compra completada sin alterar cantidades de inventario ni movimientos contables.
+
+- **Método:** `PATCH`
+- **Ruta:** `/api/compras/:id`
+- **Auth:** `Authorization: Bearer <accessToken>` (`ADMIN` o `VENDEDOR`)
+
+#### Payload:
+```json
+{
+  "proveedor": "Textiles del Valle S.R.L. - Sucursal Puno",
+  "comprobanteReferencia": "FAC-9842-RECTIFICADA",
+  "notas": "Se adjuntó factura electrónica escaneada por el proveedor",
+  "fecha": "2026-10-20T10:00:00.000Z"
+}
+```
+
+#### Respuesta Exitosa (HTTP 200):
+```json
+{
+  "message": "Compra actualizada exitosamente",
+  "compra": {
+    "_id": "670e5000f1b4c90011990011",
+    "numeroCompra": "COM-261020-001",
+    "proveedor": "Textiles del Valle S.R.L. - Sucursal Puno",
+    "comprobanteReferencia": "FAC-9842-RECTIFICADA",
+    "notas": "Se adjuntó factura electrónica escaneada por el proveedor"
+  }
+}
+```
+
+---
+
+## 12. Traspasos de Mercadería entre Sucursales
+
+Permite mover existencias entre tiendas físicas y almacenes centrales con flujo de dos pasos (Despacho en origen $\to$ Recepción en destino) para prevenir pérdidas de inventario en tránsito.
+
+### 12.1 Listar Traspasos (`GET /api/admin/traspasos`)
+Consulta las solicitudes de traspaso de inventario.
+
+- **Método:** `GET`
+- **Ruta:** `/api/admin/traspasos?estado=SOLICITADA&sucursalId=670e1000f1b4c90011000001`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+
+---
+
+### 12.2 Solicitar Traspaso (`POST /api/admin/traspasos`)
+Crea una solicitud formal de traspaso de prendas entre sucursales en estado `SOLICITADA`. Valida que la sucursal de origen cuente con stock suficiente.
+
+- **Método:** `POST`
+- **Ruta:** `/api/admin/traspasos`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+
+#### Payload:
+```json
+{
+  "sucursalOrigenId": "670e1000f1b4c90011000001",
+  "sucursalDestinoId": "670e1000f1b4c90011000002",
+  "notas": "Reposición de stock para fin de semana en Tienda San Miguel",
+  "items": [
+    {
+      "productoId": "670e10a2f1b4c90012345678",
+      "varianteId": "var-alp-neg-m",
+      "cantidad": 5
+    }
+  ]
+}
+```
+
+#### Respuesta Exitosa (HTTP 201):
+```json
+{
+  "_id": "670e6000f1b4c90011220033",
+  "numeroTraspaso": "TRS-261020-001",
+  "sucursalOrigenId": "670e1000f1b4c90011000001",
+  "sucursalDestinoId": "670e1000f1b4c90011000002",
+  "estado": "SOLICITADA",
+  "items": [
+    {
+      "productoId": "670e10a2f1b4c90012345678",
+      "varianteId": "var-alp-neg-m",
+      "cantidad": 5
+    }
+  ]
+}
+```
+
+---
+
+### 12.3 Despachar Traspaso (`POST /api/admin/traspasos/:id/despachar`)
+El encargado del almacén o sucursal de origen entrega la mercadería al transporte o chofer.  
+**Efecto:** Descuenta las existencias físicas de la sucursal de origen en `NivelStock` y asienta el movimiento `TRASPASO_SALIDA` en Kárdex. El traspaso pasa a estado `DESPACHADA`.
+
+- **Método:** `POST`
+- **Ruta:** `/api/admin/traspasos/670e6000f1b4c90011220033/despachar`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+
+#### Respuesta Exitosa (HTTP 200):
+```json
+{
+  "_id": "670e6000f1b4c90011220033",
+  "estado": "DESPACHADA",
+  "fechaDespacho": "2026-10-20T11:00:00.000Z"
+}
+```
+
+---
+
+### 12.4 Recibir Traspaso (`POST /api/admin/traspasos/:id/recibir`)
+El encargado de la sucursal de destino verifica la mercadería física recibida y confirma la entrada.  
+**Efecto:** Incrementa las existencias físicas en la sucursal de destino en `NivelStock` y asienta el movimiento `TRASPASO_ENTRADA` en Kárdex. El traspaso pasa a estado `RECIBIDA`.
+
+- **Método:** `POST`
+- **Ruta:** `/api/admin/traspasos/670e6000f1b4c90011220033/recibir`
+- **Auth:** `Authorization: Bearer <accessToken>` (`VENDEDOR` o `ADMIN`)
+
+#### Respuesta Exitosa (HTTP 200):
+```json
+{
+  "_id": "670e6000f1b4c90011220033",
+  "estado": "RECIBIDA",
+  "fechaRecepcion": "2026-10-20T12:30:00.000Z"
+}
+```
+

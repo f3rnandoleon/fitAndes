@@ -1,7 +1,7 @@
 import type { CentralApiAuth } from "@/lib/central-api";
 import { fetchCentralJson } from "@/lib/central-client";
 import { parsePedidoArray, parsePedidoDetail } from "@/lib/adapters/orders.adapter";
-import type { Pedido } from "@/types/pedidos";
+import type { Pedido, PedidoEntregaTracking } from "@/types/pedidos";
 import { logger } from "@/lib/logger";
 import { getRequestId } from "@/lib/request-context";
 
@@ -59,5 +59,28 @@ export async function getOrderDetail(auth: CentralApiAuth | null, orderId: strin
     return await fetchOrder(auth, orderId);
   } catch {
     return undefined;
+  }
+}
+
+export async function getOrderTracking(auth: CentralApiAuth | null, orderId: string): Promise<PedidoEntregaTracking | null> {
+  if (!auth?.userId || !orderId) return null;
+
+  try {
+    const result = await fetchCentralJson(
+      [
+        { path: `/entregas/${orderId}` },
+      ],
+      auth,
+      { timeoutMs: 10000, requestId: await getRequestId() }
+    );
+
+    if (!result.response.ok) {
+      return null;
+    }
+
+    return (result.data as PedidoEntregaTracking) ?? null;
+  } catch (error) {
+    logger.warn("Fetch order tracking failed", { orderId, error });
+    return null;
   }
 }

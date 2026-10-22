@@ -8,6 +8,7 @@ import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
 import {
   getCatalogProductAvailableStock,
   getCatalogProductPriceRange,
+  unwrapCatalogProducts,
   type CatalogProduct,
   type CatalogVariant,
 } from "@/types/catalogo";
@@ -74,7 +75,7 @@ async function getProductosPublicos(): Promise<ProductoPublico[]> {
     if (!res.ok) return [];
 
     const data = await res.json();
-    return Array.isArray(data) ? (data as ProductoPublico[]) : [];
+    return unwrapCatalogProducts(data) as ProductoPublico[];
   } catch {
     return [];
   }

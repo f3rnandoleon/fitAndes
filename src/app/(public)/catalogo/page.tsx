@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import CatalogoGrid from "@/components/catalogo/CatalogoGrid";
-import { catalogVariantIsAvailable, type CatalogProduct } from "@/types/catalogo";
+import {
+  catalogVariantIsAvailable,
+  unwrapCatalogProducts,
+  type CatalogProduct,
+} from "@/types/catalogo";
 
 export const metadata = {
   title: "Catálogo de Chompas Andinas y Poleras",
@@ -42,7 +46,12 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(10000),
     });
-    productos = res.ok ? productosConStock((await res.json()) as CatalogProduct[]) : [];
+    if (res.ok) {
+      const data = await res.json();
+      productos = productosConStock(unwrapCatalogProducts(data));
+    } else {
+      productos = [];
+    }
   } catch {
     productos = [];
   }

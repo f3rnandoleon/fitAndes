@@ -54,6 +54,9 @@ export interface ProductByCodeResponse {
   nombre: string;
   modelo: string;
   precioVenta: number;
+  sku?: string | null;
+  descripcion?: string | null;
+  categoria?: string | null;
   variante: CatalogVariant;
 }
 
@@ -129,5 +132,17 @@ export function getCatalogProductPriceRange(product: CatalogProduct): {
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   return { min, max, hasRange: min !== max };
+}
+
+export function unwrapCatalogProducts(data: unknown): CatalogProduct[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data as CatalogProduct[];
+  if (typeof data === "object" && data !== null) {
+    const record = data as Record<string, unknown>;
+    if (Array.isArray(record.data)) return record.data as CatalogProduct[];
+    if (Array.isArray(record.productos)) return record.productos as CatalogProduct[];
+    if (Array.isArray(record.products)) return record.products as CatalogProduct[];
+  }
+  return [];
 }
 

@@ -3,10 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import OrderActionsSection from "@/components/pedidos/OrderActionsSection";
 import OrderDeliveryEditSection from "@/components/pedidos/OrderDeliveryEditSection";
+import OrderTrackingSection from "@/components/pedidos/OrderTrackingSection";
 import PaymentReceiptSection from "@/components/pedidos/PaymentReceiptSection";
 import StockReservationTimer from "@/components/checkout/StockReservationTimer";
 import { authOptions } from "@/lib/auth-options";
-import { getOrderDetail } from "@/services/orders.service";
+import { getOrderDetail, getOrderTracking } from "@/services/orders.service";
 import {
   getPedidoDelivery,
   getPedidoDescuento,
@@ -66,7 +67,11 @@ export default async function PedidoDetallePage({
 
   const { id } = await params;
   const { paymentId } = await searchParams;
-  const pedido = await getOrderDetail({ userId: session.user.id, role: "CLIENTE", accessToken: session.accessToken }, id);
+  const auth = { userId: session.user.id, role: "CLIENTE" as const, accessToken: session.accessToken };
+  const [pedido, tracking] = await Promise.all([
+    getOrderDetail(auth, id),
+    getOrderTracking(auth, id),
+  ]);
   if (!pedido) notFound();
 
   const descuento = getPedidoDescuento(pedido);
@@ -122,6 +127,9 @@ export default async function PedidoDetallePage({
           status={pedido.estadoReservaStock}
         />
       )}
+
+      {/* Seguimiento de Guía y Despacho en tiempo real */}
+      <OrderTrackingSection pedido={pedido} tracking={tracking} />
 
       <div className="border overflow-hidden" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
         <div className="px-5 py-3 border-b" style={{ borderColor: "var(--border)" }}>

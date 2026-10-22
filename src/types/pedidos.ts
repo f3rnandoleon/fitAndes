@@ -67,6 +67,24 @@ export interface PedidoTotales {
   total?: number | null;
 }
 
+export interface PedidoEntregaTracking {
+  _id?: string;
+  pedidoId?: string;
+  numeroPedido?: string;
+  canal?: string;
+  metodo?: "WHATSAPP" | "PICKUP_POINT" | "SHIPPING_NATIONAL" | string;
+  estado?: "PENDING" | "PREPARING" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED" | string;
+  codigoSeguimiento?: string | null;
+  nombreTransportista?: string | null;
+  telefono?: string | null;
+  nombreDestinatario?: string | null;
+  preparadoEn?: string | null;
+  enTransitoEn?: string | null;
+  entregadoEn?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
 export interface Pedido {
   _id: string;
   id?: string;

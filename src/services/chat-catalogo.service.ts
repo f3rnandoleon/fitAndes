@@ -4,6 +4,7 @@ import {
   catalogVariantIsAvailable,
   getCatalogProductPriceRange,
   getCatalogVariantPrice,
+  unwrapCatalogProducts,
   type CatalogProduct,
   type CatalogVariant,
   type ProductByCodeResponse,
@@ -82,8 +83,9 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T | null>
 }
 
 export async function getPublicProducts(): Promise<CatalogProduct[] | null> {
-  const data = await fetchJson<CatalogProduct[]>("/productos/publicos");
-  return Array.isArray(data) ? data : data === null ? null : [];
+  const data = await fetchJson<unknown>("/productos/publicos");
+  if (data === null) return null;
+  return unwrapCatalogProducts(data);
 }
 
 export async function getProductDetail(productId: string): Promise<CatalogProduct | null | undefined> {
