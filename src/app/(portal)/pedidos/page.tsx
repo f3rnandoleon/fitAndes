@@ -16,7 +16,7 @@ export default async function PedidosPage() {
         <p className="text-xs uppercase mb-2" style={{ letterSpacing: "0.22em", color: "var(--subtle)" }}>
           Historial
         </p>
-        <h1 className="text-4xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
+        <h1 className="text-4xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}>
           Mis pedidos
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>

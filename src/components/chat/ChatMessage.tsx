@@ -58,7 +58,7 @@ export default function ChatMessage({ message, onAction, onSuggestion, onAddToCa
                   <p className="text-[11px] uppercase" style={{ letterSpacing: "0.12em", color: "#8f8478" }}>
                     Pedido
                   </p>
-                  <h3 className="mt-1 text-lg" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                  <h3 className="mt-1 text-lg" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
                     {card.title}
                   </h3>
                   <p className="mt-1 text-sm" style={{ color: "#5f564e" }}>

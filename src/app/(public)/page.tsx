@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { BiDevices, BiHistory, BiLogIn } from "react-icons/bi";
-import { FaWhatsapp } from "react-icons/fa";
 import { GrSecure } from "react-icons/gr";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
+import { formatPrice } from "@/lib/format";
 import {
   getCatalogProductAvailableStock,
   getCatalogProductPriceRange,
@@ -19,8 +19,6 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   (process.env.NEXTAUTH_URL ? `${process.env.NEXTAUTH_URL}/api` : undefined);
 
-const WHATSAPP_NUMBER = process.env.WHATSAPP_NUMBER || "59176574068";
-const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=Hola,%20me%20gustaría%20más%20información.`;
 
 type VariantePublica = CatalogVariant;
 
@@ -46,12 +44,6 @@ function totalStock(producto: ProductoPublico): number {
   });
 }
 
-function formatearPrecio(precio: number): string {
-  return `Bs. ${new Intl.NumberFormat("es-BO", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(precio)}`;
-}
 
 function esNuevo(createdAt?: string): boolean {
   if (!createdAt) return false;
@@ -143,7 +135,7 @@ export default async function HomePage() {
 
             <h1
               className="max-w-xl text-[2.9rem] leading-[0.95] sm:text-[4.2rem] lg:text-[5.4rem]"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}
+              style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}
             >
               Tradición
               <br />
@@ -187,7 +179,7 @@ export default async function HomePage() {
               <p className="text-xs uppercase mb-3 text-subtle" style={{ letterSpacing: "0.25em" }}>
                 Lo más nuevo
               </p>
-              <h2 className="text-4xl font-normal sm:text-5xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+              <h2 className="text-4xl font-normal sm:text-5xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
                 Recién llegados
               </h2>
             </div>
@@ -249,8 +241,8 @@ export default async function HomePage() {
                           return (
                             <p className="mt-3 text-sm sm:text-base text-foreground">
                               {priceRange.hasRange
-                                ? `${formatearPrecio(priceRange.min)} - ${formatearPrecio(priceRange.max)}`
-                                : formatearPrecio(priceRange.min)}
+                                ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
+                                : formatPrice(priceRange.min)}
                             </p>
                           );
                         })()}
@@ -270,7 +262,7 @@ export default async function HomePage() {
             <p className="text-xs uppercase mb-4 text-subtle" style={{ letterSpacing: "0.25em" }}>
               Crea tu cuenta
             </p>
-            <h2 className="text-4xl font-normal leading-tight sm:text-5xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+            <h2 className="text-4xl font-normal leading-tight sm:text-5xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
               Sigue tus pedidos
               <br />
               desde cualquier pantalla
@@ -321,7 +313,7 @@ export default async function HomePage() {
               <p className="text-xs uppercase mb-3 text-subtle" style={{ letterSpacing: "0.22em" }}>
                 Selección destacada
               </p>
-              <h2 className="text-3xl font-normal sm:text-4xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+              <h2 className="text-3xl font-normal sm:text-4xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
                 Lo más popular
               </h2>
             </div>
@@ -395,8 +387,8 @@ export default async function HomePage() {
                           return (
                             <p className="mt-1 text-sm text-foreground">
                               {priceRange.hasRange
-                                ? `${formatearPrecio(priceRange.min)} - ${formatearPrecio(priceRange.max)}`
-                                : formatearPrecio(priceRange.min)}
+                                ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
+                                : formatPrice(priceRange.min)}
                             </p>
                           );
                         })()}
@@ -410,102 +402,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <footer className="bg-foreground text-background">
-        <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-10 px-5 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:py-16">
-          <div>
-            <p
-              className="text-xl font-bold uppercase mb-4"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.3em" }}
-            >
-              FitAndes
-            </p>
-            <p className="text-sm leading-7 text-background/80">
-              Moda de alta calidad con un catálogo visual, claro y fácil de usar.
-            </p>
-          </div>
-
-          <div>
-            <p className="text-xs uppercase font-semibold mb-5 text-subtle" style={{ letterSpacing: "0.2em" }}>
-              Comprar
-            </p>
-            <div className="flex flex-col gap-3">
-              {[
-                { label: "Nueva colección", href: "/#nuevo" },
-                { label: "Catálogo completo", href: "/catalogo" },
-                { label: "Políticas y cambios", href: "/politicas" },
-              ].map((item) => (
-                <Link key={item.label} href={item.href} className="text-sm hover:opacity-50 transition-opacity text-background">
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs uppercase font-semibold mb-5 text-subtle" style={{ letterSpacing: "0.2em" }}>
-              Mi cuenta
-            </p>
-            <div className="flex flex-col gap-3">
-              {[
-                { label: "Ingresar", href: "/login" },
-                { label: "Crear cuenta", href: "/registro" },
-                { label: "Mis pedidos", href: "/pedidos" },
-              ].map((item) => (
-                <Link key={item.label} href={item.href} className="text-sm hover:opacity-50 transition-opacity text-background">
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs uppercase font-semibold mb-5 text-subtle" style={{ letterSpacing: "0.2em" }}>
-              Contacto
-            </p>
-            <div className="flex flex-col gap-3">
-              <a
-                href={WHATSAPP_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm hover:opacity-50 transition-opacity text-background"
-              >
-                <FaWhatsapp className="text-lg text-green-500" />
-                WhatsApp
-              </a>
-            </div>
-          </div>
-
-          {/*
-          <div>
-            <p className="text-xs uppercase font-semibold mb-5" style={{ letterSpacing: "0.2em", color: "#9c8f82" }}>
-              Atención al cliente
-            </p>
-            <div className="flex flex-col gap-3">
-              {["Catálogo por móvil", "Reservas guiadas", "Seguimiento de pedidos"].map((item) => (
-                <span key={item} className="text-sm" style={{ color: "#b9aea1" }}>{item}</span>
-              ))}
-            </div>
-          </div>
-            */}
-        </div>
-
-        <div className="border-t border-background/10 px-5 py-5 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-background/50 max-w-[1240px] mx-auto">
-          <p>
-            {`© ${new Date().getFullYear()} FitAndes. Todos los derechos reservados.`}
-          </p>
-          <div className="flex gap-4">
-            <Link href="/politicas#devoluciones" className="hover:text-background transition-colors">
-              Cambios y Devoluciones
-            </Link>
-            <Link href="/politicas#terminos" className="hover:text-background transition-colors">
-              Términos de Envío
-            </Link>
-            <Link href="/politicas#privacidad" className="hover:text-background transition-colors">
-              Privacidad
-            </Link>
-          </div>
-        </div>
-      </footer>
+      
 
 
     </main>

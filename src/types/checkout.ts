@@ -8,6 +8,8 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export interface PickupPointOption {
   id: string;
   name: string;
+  costoBOB?: number;
+  costoEstimadoBOB?: number;
 }
 
 export interface PickupScheduleOption {
@@ -21,18 +23,31 @@ export interface PickupScheduleOption {
 export interface ShippingDepartmentOption {
   name: string;
   branches: string[];
+  modalidadCobro?: string;
+  costoEstimadoBOB?: number;
+  tiempoEstimadoHoras?: string;
 }
 
 export interface ShippingCompanyOption {
   id: string;
   name: string;
+  modalidadCobro?: string;
+  costoEstimadoBOB?: number;
+  tiempoEstimadoHoras?: string;
   departments: ShippingDepartmentOption[];
+}
+
+export interface ShippingPolicy {
+  nationalFlatFee?: number;
+  currency?: string;
+  estimatedTime?: string | null;
 }
 
 export interface DeliveryOptionsConfig {
   pickupPoints: PickupPointOption[];
   pickupSchedules: PickupScheduleOption[];
   shippingCompanies: ShippingCompanyOption[];
+  shippingPolicy?: ShippingPolicy;
 }
 
 export interface CheckoutItemInput {
@@ -65,11 +80,20 @@ export interface CheckoutDeliveryInput {
   senderPhone?: string;
 }
 
+export interface ClienteInvitadoInput {
+  nombreCompleto: string;
+  telefono: string;
+  email?: string;
+  ci?: string;
+}
+
 export interface CheckoutSubmitPayload {
   items: CheckoutItemInput[];
   paymentMethod: PaymentMethod;
   delivery: CheckoutDeliveryInput;
   notes?: string;
+  esInvitado?: boolean;
+  clienteInvitado?: ClienteInvitadoInput;
 }
 
 export interface CheckoutSubmitResponse {

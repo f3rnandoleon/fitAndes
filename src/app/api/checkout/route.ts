@@ -56,10 +56,6 @@ export async function POST(request: NextRequest) {
   const requestId = await getRequestId();
   const auth = await getCheckoutAuth(request);
 
-  if (!auth || auth.role !== "CLIENTE") {
-    return NextResponse.json({ ok: false, message: "Debes iniciar sesion para finalizar la compra." }, { status: 401 });
-  }
-
   if (!CENTRAL_API_URL) {
     return NextResponse.json({ ok: false, message: "La API principal no esta configurada." }, { status: 500 });
   }
@@ -74,34 +70,48 @@ export async function POST(request: NextRequest) {
 
   const parsedPayload = checkoutPayloadSchema.safeParse(rawPayload);
   if (!parsedPayload.success) {
-    logger.warn("Checkout validation failed (schema)", { error: parsedPayload.error.format(), requestId, userId: auth.userId });
+    logger.warn("Checkout validation failed (schema)", { error: parsedPayload.error.format(), requestId, userId: auth?.userId });
     return NextResponse.json({ ok: false, message: firstZodIssueMessage(parsedPayload.error) }, { status: 400 });
   }
 
   const payload: CheckoutSubmitPayload = parsedPayload.data;
+  const isGuest = Boolean(payload.esInvitado || !auth || auth.role !== "CLIENTE");
+
+  if (isGuest) {
+    payload.esInvitado = true;
+  }
 
   const validationError = validateCheckoutPayload(payload);
   if (validationError) {
-    logger.warn("Checkout validation failed (business logic)", { validationError, requestId, userId: auth.userId });
+    logger.warn("Checkout validation failed (business logic)", { validationError, requestId, userId: auth?.userId });
     return NextResponse.json({ ok: false, message: validationError }, { status: 400 });
   }
 
-  logger.info("Checkout started", { requestId, userId: auth.userId, itemsCount: payload.items.length, paymentMethod: payload.paymentMethod });
+  logger.info("Checkout started", {
+    requestId,
+    isGuest,
+    userId: auth?.userId ?? "invitado",
+    itemsCount: payload.items.length,
+    paymentMethod: payload.paymentMethod
+  });
 
-  const syncResult = await syncRemoteCart(auth, payload.items, { requestId });
-  if (!syncResult.ok) {
-    logger.error("Checkout cart sync failed", { 
-      phase: syncResult.phase, 
-      status: syncResult.result?.response.status,
-      requestId, 
-      userId: auth.userId 
-    });
-    const errorData = parseJsonRecord(syncResult.result?.data);
-    const itemName = "item" in syncResult && syncResult.item ? (syncResult.item as { nombre: string }).nombre : "el producto";
-    const msg = syncResult.phase === "clear"
-      ? extractErrorMessage(errorData, "No pude sincronizar tu carrito con el sistema central.")
-      : extractErrorMessage(errorData, `No pude agregar ${itemName} al carrito del sistema central.`);
-    return NextResponse.json({ ok: false, message: msg }, { status: syncResult.result?.response.status ?? 502 });
+  // Sincronizar carrito remoto únicamente si el usuario está formalmente autenticado
+  if (!isGuest && auth) {
+    const syncResult = await syncRemoteCart(auth, payload.items, { requestId });
+    if (!syncResult.ok) {
+      logger.error("Checkout cart sync failed", { 
+        phase: syncResult.phase, 
+        status: syncResult.result?.response.status,
+        requestId, 
+        userId: auth.userId 
+      });
+      const errorData = parseJsonRecord(syncResult.result?.data);
+      const itemName = "item" in syncResult && syncResult.item ? (syncResult.item as { nombre: string }).nombre : "el producto";
+      const msg = syncResult.phase === "clear"
+        ? extractErrorMessage(errorData, "No pude sincronizar tu carrito con el sistema central.")
+        : extractErrorMessage(errorData, `No pude agregar ${itemName} al carrito del sistema central.`);
+      return NextResponse.json({ ok: false, message: msg }, { status: syncResult.result?.response.status ?? 502 });
+    }
   }
 
   try {
@@ -126,7 +136,7 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify(legacyCheckoutPayload),
         },
       ],
-      auth,
+      isGuest ? null : auth,
       { requestId }
     );
 
@@ -135,7 +145,7 @@ export async function POST(request: NextRequest) {
       logger.error("Checkout API submission failed", { 
         status: result.response.status, 
         requestId, 
-        userId: auth.userId,
+        userId: auth?.userId ?? "invitado",
         error: data
       });
       return NextResponse.json(
@@ -143,7 +153,7 @@ export async function POST(request: NextRequest) {
           ok: false,
           message: extractErrorMessage(
             data,
-            !auth.accessToken
+            !isGuest && !auth?.accessToken
               ? "Tu sesion actual no tiene el token del backend. Cierra sesion e inicia de nuevo para finalizar la compra."
               : "No pude registrar tu pedido en este momento. Intenta nuevamente."
           ),
@@ -154,23 +164,29 @@ export async function POST(request: NextRequest) {
 
     const { orderId, orderNumber } = extractOrderInfo(data);
     const total = payload.items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
+    const customerDisplayName = isGuest
+      ? payload.clienteInvitado?.nombreCompleto || payload.delivery.recipientName || "Cliente"
+      : auth?.fullname ?? "Cliente FitAndes";
+    const customerEmail = isGuest
+      ? payload.clienteInvitado?.email || undefined
+      : auth?.email ?? undefined;
+
     const whatsappUrl =
       payload.delivery.method === "WHATSAPP"
         ? buildWhatsappUrl({
-            customerName: auth.fullname ?? "Cliente FitAndes",
-            customerEmail: auth.email ?? "-",
+            customerName: customerDisplayName,
+            customerEmail,
             items: payload.items,
             delivery: payload.delivery,
             total,
-            orderNumber,
-            notes: payload.notes?.trim() ?? null,
+            orderNumber: orderNumber ?? undefined,
           })
         : null;
 
-    let paymentId: string | null = null;
+    let paymentId: string | null = (data && typeof data === "object" && "paymentId" in data && typeof data.paymentId === "string") ? data.paymentId : null;
     let warning: string | null = null;
 
-    if (payload.paymentMethod === "QR" && orderId) {
+    if (payload.paymentMethod === "QR" && orderId && !paymentId && auth) {
       const paymentSetup = await createQrPayment(auth, orderId, { requestId });
       paymentId = paymentSetup.paymentId;
       warning = paymentSetup.warning;
@@ -182,7 +198,7 @@ export async function POST(request: NextRequest) {
 
     logger.info("Checkout successful", { 
       requestId, 
-      userId: auth.userId, 
+      userId: auth?.userId ?? "invitado", 
       orderId, 
       orderNumber, 
       hasPayment: !!paymentId 
@@ -202,7 +218,7 @@ export async function POST(request: NextRequest) {
           : "Pedido registrado correctamente.",
     });
   } catch (error) {
-    logger.error("Checkout process critical failure", { error, requestId, userId: auth.userId });
+    logger.error("Checkout process critical failure", { error, requestId, userId: auth?.userId });
     return NextResponse.json(
       {
         ok: false,

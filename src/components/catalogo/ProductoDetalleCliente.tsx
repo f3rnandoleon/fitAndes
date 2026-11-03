@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FaWhatsapp } from "react-icons/fa";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
+import { formatPrice } from "@/lib/format";
+import { getWhatsAppLink } from "@/lib/constants";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor } from "@/lib/product-colors";
 import {
@@ -24,14 +26,8 @@ interface Props {
   tallaInicial?: string;
 }
 
-function formatPrice(value: number) {
-  return `Bs ${new Intl.NumberFormat("es-BO", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value)}`;
-}
 
-export default function ProductoDetalleCliente({ producto, colores: _colores, tallas: _tallas, colorInicial, tallaInicial }: Props) {
+export default function ProductoDetalleCliente({ producto, colorInicial, tallaInicial }: Props) {
   const { addItem } = useReservationCart();
   const productoDisponible = filterCatalogAvailableVariants(producto);
   const variantesDisponibles = productoDisponible.variantes;
@@ -99,7 +95,7 @@ export default function ProductoDetalleCliente({ producto, colores: _colores, ta
   const tallaWhatsapp = varianteSeleccionada?.talla ?? "-";
   const detalleWhatsapp = `${producto.nombre} - ${producto.modelo} - ${colorWhatsapp} - ${tallaWhatsapp} (${formatPrice(precioActual)})`;
   const mensajeWhatsapp = `Hola me interesa el producto: ${detalleWhatsapp} ${urlActual}`;
-  const whatsappUrl = `https://wa.me/59167113105?text=${encodeURIComponent(mensajeWhatsapp)}`;
+  const whatsappUrl = getWhatsAppLink(mensajeWhatsapp);
 
 
   useEffect(() => {
@@ -286,7 +282,7 @@ export default function ProductoDetalleCliente({ producto, colores: _colores, ta
               <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
                 {(producto.categoria ?? "Catalogo").toUpperCase()} {producto.nombre ? `· ${producto.nombre.toUpperCase()}` : ""}
               </p>
-              <h1 className="mt-3 text-[2.1rem] leading-[1.02] sm:text-[2.7rem] text-foreground" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
+              <h1 className="mt-3 text-[2.1rem] leading-[1.02] sm:text-[2.7rem] text-foreground" style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}>
                 {producto.modelo}
               </h1>
             </div>
@@ -307,7 +303,7 @@ export default function ProductoDetalleCliente({ producto, colores: _colores, ta
 
 
           <div className="mt-6 flex flex-wrap items-end gap-3">
-            <p className="text-[1.9rem] leading-none sm:text-[2.2rem] text-foreground" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+            <p className="text-[1.9rem] leading-none sm:text-[2.2rem] text-foreground" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
               {formatPrice(precioActual)}
             </p>
             {precioAnterior ? (

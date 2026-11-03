@@ -109,7 +109,7 @@ export default function PerfilPage() {
         </p>
         <h1
           className="text-3xl sm:text-4xl text-foreground font-serif"
-          style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}
+          style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}
         >
           Mi Perfil
         </h1>

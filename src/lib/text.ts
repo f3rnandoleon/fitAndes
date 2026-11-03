@@ -36,3 +36,16 @@ export function removeAccents(value: string): string {
     .toLowerCase()
     .trim();
 }
+
+/**
+ * Sanitizes a redirect URL to prevent Open Redirect attacks.
+ * Only allows relative paths that start with a single "/" and do not contain protocol-relative "//" or "/\".
+ */
+export function sanitizeCallbackUrl(value?: string | null, fallback = "/dashboard"): string {
+  if (!value || typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.startsWith("/\\")) {
+    return fallback;
+  }
+  return trimmed;
+}

@@ -99,7 +99,7 @@ export default async function PedidoDetallePage({
 
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-4xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
+          <h1 className="text-4xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}>
             {getPedidoNumero(pedido)}
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
@@ -160,7 +160,7 @@ export default async function PedidoDetallePage({
                     {itemColor}{itemColorSecundario ? ` / ${itemColorSecundario}` : ""} - {itemTalla} - x{item.cantidad}
                   </p>
                 </div>
-                <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                <p className="text-sm" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
                   Bs. {(getPedidoItemPrecioUnitario(item) * item.cantidad).toFixed(2)}
                 </p>
               </div>
@@ -205,7 +205,7 @@ export default async function PedidoDetallePage({
         ) : null}
         <div className="flex justify-between text-base pt-3 border-t" style={{ borderColor: "var(--border)" }}>
           <span style={{ color: "var(--foreground)" }}>Total</span>
-          <span style={{ color: "var(--foreground)", fontFamily: "Georgia, 'Times New Roman', serif" }}>
+          <span style={{ color: "var(--foreground)", fontFamily: "var(--font-serif, Georgia, serif)" }}>
             Bs. {total.toFixed(2)}
           </span>
         </div>

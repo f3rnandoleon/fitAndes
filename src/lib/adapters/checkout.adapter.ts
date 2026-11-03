@@ -67,17 +67,49 @@ export function buildLegacyDeliveryPayload(delivery: CheckoutDeliveryInput) {
 }
 
 export function buildCanonicalCheckoutPayload(payload: CheckoutSubmitPayload): CanonicalCheckoutPayload {
-  return {
+  const base: CanonicalCheckoutPayload = {
     metodoPago: payload.paymentMethod,
     entrega: buildCanonicalDeliveryPayload(payload.delivery),
     notas: compactText(payload.notes),
   };
+
+  if (payload.esInvitado) {
+    base.esInvitado = true;
+    base.clienteInvitado = payload.clienteInvitado;
+    base.items = payload.items.map((item) => ({
+      productoId: item.productoId || item.id,
+      variantId: item.variantId ?? undefined,
+      color: item.color,
+      talla: item.talla,
+      cantidad: item.cantidad,
+      precio: item.precio,
+    }));
+  }
+
+  return base;
 }
 
-export function buildLegacyCheckoutPayload(payload: CheckoutSubmitPayload) {
-  return {
+export interface LegacyCheckoutPayload {
+  metodoPago: CheckoutSubmitPayload["paymentMethod"];
+  delivery: ReturnType<typeof buildLegacyDeliveryPayload>;
+  notes?: string;
+  esInvitado?: boolean;
+  clienteInvitado?: CheckoutSubmitPayload["clienteInvitado"];
+  items?: CheckoutSubmitPayload["items"];
+}
+
+export function buildLegacyCheckoutPayload(payload: CheckoutSubmitPayload): LegacyCheckoutPayload {
+  const base: LegacyCheckoutPayload = {
     metodoPago: payload.paymentMethod,
     delivery: buildLegacyDeliveryPayload(payload.delivery),
     notes: compactText(payload.notes),
   };
+
+  if (payload.esInvitado) {
+    base.esInvitado = true;
+    base.clienteInvitado = payload.clienteInvitado;
+    base.items = payload.items;
+  }
+
+  return base;
 }

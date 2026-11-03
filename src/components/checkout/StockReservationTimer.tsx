@@ -59,7 +59,6 @@ export default function StockReservationTimer({
   // Stage calculation
   const isCritical = totalSeconds < 300 && !isExpired; // Less than 5 min
   const isWarning = totalSeconds >= 300 && totalSeconds < 900 && !isExpired; // 5 - 15 min
-  const isCalm = totalSeconds >= 900 && !isExpired; // > 15 min
 
   if (compact) {
     if (isExpired) {

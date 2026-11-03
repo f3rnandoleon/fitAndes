@@ -243,7 +243,14 @@ export default function ChatWidget() {
     }
   }
 
-  if (pathname === "/login" || pathname === "/registro") return null;
+  if (
+    pathname === "/login" ||
+    pathname === "/registro" ||
+    pathname === "/checkout" ||
+    pathname?.startsWith("/pagar")
+  ) {
+    return null;
+  }
 
   return (
     <>

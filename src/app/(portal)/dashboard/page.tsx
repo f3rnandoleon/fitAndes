@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { getOrders } from "@/services/orders.service";
+import { formatPrice } from "@/lib/format";
 import {
   getPedidoEstado,
   getPedidoEstadoTone,
@@ -36,7 +37,7 @@ export default async function DashboardPage() {
         <p className="text-xs uppercase mb-2" style={{ letterSpacing: "0.22em", color: "var(--subtle)" }}>
           Panel de cliente
         </p>
-        <h1 className="text-4xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "var(--foreground)" }}>
+        <h1 className="text-4xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400, color: "var(--foreground)" }}>
           Hola, {session.user.fullname.split(" ")[0]}
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
@@ -77,7 +78,7 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Total pedidos" value={totalPedidos.toString()} icon={<BoxIcon />} />
-        <StatCard label="Total gastado" value={`Bs. ${totalGastado.toFixed(2)}`} icon={<CashIcon />} />
+        <StatCard label="Total gastado" value={formatPrice(totalGastado)} icon={<CashIcon />} />
         <StatCard
           label="Último pedido"
           value={recientes[0] ? new Date(recientes[0].createdAt).toLocaleDateString("es-BO") : "-"}
@@ -87,7 +88,7 @@ export default async function DashboardPage() {
 
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
+          <h2 className="text-2xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}>
             Pedidos recientes
           </h2>
           <Link href="/pedidos" className="text-xs uppercase hover:opacity-60 transition-opacity" style={{ letterSpacing: "0.16em" }}>
@@ -127,7 +128,7 @@ function StatCard({ label, value, icon }: { label: string; value: string; icon: 
         <p className="text-xs uppercase mb-0.5" style={{ letterSpacing: "0.14em", color: "var(--subtle)" }}>
           {label}
         </p>
-        <p className="text-xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "var(--foreground)" }}>
+        <p className="text-xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400, color: "var(--foreground)" }}>
           {value}
         </p>
       </div>
@@ -191,8 +192,8 @@ function PedidoRow({ pedido }: { pedido: Pedido }) {
           <span className="text-[10px] uppercase px-3 py-1 border rounded-full font-medium" style={estadoColor[statusTone]}>
             {statusLabel}
           </span>
-          <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            Bs. {getPedidoTotal(pedido).toFixed(2)}
+          <p className="text-sm" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
+            {formatPrice(getPedidoTotal(pedido))}
           </p>
           <span className="text-xs" style={{ color: "var(--subtle)" }}>{"\u2192"}</span>
         </div>

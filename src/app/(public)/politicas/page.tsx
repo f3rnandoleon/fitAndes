@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import PoliticasView, { PoliticasData } from "@/components/politicas/PoliticasView";
+import { getWhatsAppLink, WHATSAPP_DISPLAY } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Políticas y Términos Legales | Fit Andes",
@@ -33,15 +34,15 @@ async function getPoliticas(): Promise<PoliticasData> {
   try {
     const res = await fetch(`${apiUrl}/public/politicas`, {
       next: { revalidate: 3600 },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(5000),
     });
+
     if (!res.ok) return DEFAULT_POLITICAS;
     const data = await res.json();
     return {
-      devoluciones: data.devoluciones ?? DEFAULT_POLITICAS.devoluciones,
-      privacidad: data.privacidad ?? DEFAULT_POLITICAS.privacidad,
-      terminos: data.terminos ?? DEFAULT_POLITICAS.terminos,
-      cookies: data.cookies,
+      devoluciones: data.devoluciones || DEFAULT_POLITICAS.devoluciones,
+      privacidad: data.privacidad || DEFAULT_POLITICAS.privacidad,
+      terminos: data.terminos || DEFAULT_POLITICAS.terminos,
     };
   } catch {
     return DEFAULT_POLITICAS;
@@ -52,26 +53,25 @@ export default async function PoliticasPage() {
   const politicas = await getPoliticas();
 
   return (
-    <main className="min-h-screen bg-[#fbf9f5] text-[#111111]">
-      <div className="max-w-[960px] mx-auto px-4 sm:px-6 py-8 sm:py-12 lg:py-16">
-        <div className="flex items-center gap-2 text-[10px] uppercase mb-8" style={{ letterSpacing: "0.16em", color: "#8f8478" }}>
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase mb-8 text-subtle tracking-[0.16em]">
           <Link href="/" className="hover:opacity-60 transition-opacity">
             Inicio
           </Link>
-          <span>{">"}</span>
-          <span style={{ color: "#d04d37" }}>Políticas y Condiciones</span>
+          <span>&gt;</span>
+          <span className="text-foreground font-medium">Políticas y Términos</span>
         </div>
 
-        <header className="mb-10 border-b border-border/60 pb-8">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-subtle mb-3">Información para Clientes</p>
-          <h1
-            className="text-4xl sm:text-5xl font-serif text-foreground leading-tight"
-            style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}
-          >
-            Políticas y Términos
+        <header className="mb-10 max-w-2xl">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-3">
+            Transparencia y Garantía
+          </p>
+          <h1 className="text-3xl sm:text-4xl text-foreground font-serif leading-tight">
+            Políticas de compra, cambios y devoluciones
           </h1>
-          <p className="mt-3 text-sm text-muted max-w-xl leading-relaxed">
-            Transparencia, confianza y seguridad en cada compra. Conoce cómo cuidamos tu experiencia con nosotros en Fit Andes.
+          <p className="mt-3 text-sm text-muted leading-relaxed">
+            Tu confianza y comodidad son lo primero. Conoce nuestras condiciones de servicio, garantías y políticas claras de envíos para toda Bolivia.
           </p>
         </header>
 
@@ -81,12 +81,12 @@ export default async function PoliticasPage() {
           <p className="text-xs text-muted">
             ¿Tienes alguna consulta adicional? Contáctanos por{" "}
             <a
-              href="https://wa.me/59167113105"
+              href={getWhatsAppLink("Hola, tengo una consulta sobre las políticas de compra y cambios.")}
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#25d366] font-medium hover:underline"
             >
-              WhatsApp al +591 67113105
+              WhatsApp al {WHATSAPP_DISPLAY}
             </a>
           </p>
         </div>

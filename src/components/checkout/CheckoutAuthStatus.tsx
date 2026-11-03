@@ -14,13 +14,13 @@ interface Props {
 }
 
 /**
- * Component to show the user's session status during checkout.
+ * Muestra el estado de la sesión durante el checkout o la opción de comprar como invitado.
  */
 export function CheckoutAuthStatus({ authenticated, user, loading, onLogin }: Props) {
   return (
-    <Card className="min-w-[280px] bg-white/80">
+    <Card className="min-w-[280px] bg-white/90">
       <p className="text-[10px] uppercase tracking-[0.16em] text-subtle mb-3">
-        Estado de sesion
+        {authenticated ? "Cuenta vinculada" : "Modo de compra"}
       </p>
       {authenticated ? (
         <div className="space-y-1">
@@ -28,15 +28,22 @@ export function CheckoutAuthStatus({ authenticated, user, loading, onLogin }: Pr
           <p className="text-[11px] text-muted">{user?.email}</p>
           {loading && (
             <p className="text-[10px] text-subtle mt-2 animate-pulse">
-              Sincronizando datos...
+              Sincronizando libreta de direcciones...
             </p>
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-foreground">Necesitas iniciar sesion para confirmar tu reserva.</p>
-          <Button variant="outline" size="sm" onClick={onLogin} className="w-full">
-            Iniciar sesion
+        <div className="space-y-2.5">
+          <div>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase tracking-wider">
+              Compra Rápida
+            </span>
+            <p className="text-xs text-muted mt-1.5 leading-relaxed">
+              Puedes finalizar sin crear contraseña. Si ya tienes cuenta:
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={onLogin} className="w-full text-xs">
+            Iniciar sesión
           </Button>
         </div>
       )}
