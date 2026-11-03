@@ -122,7 +122,7 @@ export default async function ProductoDetallePage({
     "@type": "Product",
     name: `${producto.nombre} - ${producto.modelo}`,
     image: fotos[0] || undefined,
-    description: `${producto.nombre} - ${producto.modelo}. Calidad boliviana garantizada por FitAndes.`,
+    description: `${producto.nombre} - ${producto.modelo}. Calidad y Confort.`,
     brand: {
       "@type": "Brand",
       name: "FitAndes",
