@@ -101,7 +101,7 @@ export default function PedidosListClient({ pedidos }: PedidosListClientProps) {
 
                   <p
                     className="text-sm font-semibold"
-                    style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+                    style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
                   >
                     Bs. {getPedidoTotal(pedido).toFixed(2)}
                   </p>

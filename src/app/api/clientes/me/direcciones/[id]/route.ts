@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth-options";
-import { CENTRAL_API_URL, parseJsonRecord, type CentralApiRole } from "@/lib/central-api";
+import { parseJsonRecord, type CentralApiRole } from "@/lib/central-api";
 import { fetchCentralJson } from "@/lib/central-client";
 import { extractErrorMessage } from "@/lib/adapters/orders.adapter";
 import { getRequestId } from "@/lib/request-context";

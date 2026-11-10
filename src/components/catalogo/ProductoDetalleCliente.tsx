@@ -5,12 +5,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FaWhatsapp } from "react-icons/fa";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
+import { formatPrice } from "@/lib/format";
+import { getWhatsAppLink } from "@/lib/constants";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor } from "@/lib/product-colors";
 import {
   filterCatalogAvailableVariants,
   getCatalogVariantAvailableStock,
   getCatalogVariantId,
+  getCatalogVariantPrice,
   type CatalogProduct,
   type CatalogVariant,
 } from "@/types/catalogo";
@@ -23,14 +26,8 @@ interface Props {
   tallaInicial?: string;
 }
 
-function formatPrice(value: number) {
-  return `Bs ${new Intl.NumberFormat("es-BO", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value)}`;
-}
 
-export default function ProductoDetalleCliente({ producto, colores: _colores, tallas: _tallas, colorInicial, tallaInicial }: Props) {
+export default function ProductoDetalleCliente({ producto, colorInicial, tallaInicial }: Props) {
   const { addItem } = useReservationCart();
   const productoDisponible = filterCatalogAvailableVariants(producto);
   const variantesDisponibles = productoDisponible.variantes;
@@ -86,16 +83,19 @@ export default function ProductoDetalleCliente({ producto, colores: _colores, ta
     producto.variantes.find((variante) => variante.descripcion?.trim())?.descripcion?.trim() ??
     "";
   const descuento = producto.descuento ?? 0;
-  const precioAnterior = descuento > 0 ? producto.precioVenta / (1 - descuento / 100) : null;
+  const precioActual = getCatalogVariantPrice(producto, varianteSeleccionada);
+  const tienePrecioDiferenciado =
+    Boolean(varianteSeleccionada?.precioVenta && varianteSeleccionada.precioVenta !== producto.precioVenta);
+  const precioAnterior = descuento > 0 ? precioActual / (1 - descuento / 100) : null;
   const imagenPrincipal = imagenesActivas[indiceImagenActual] ?? null;
   const imagenesActivasKey = imagenesActivas.join("|");
   const colorWhatsapp = varianteSeleccionada
     ? `${varianteSeleccionada.color}${varianteSeleccionada.colorSecundario ? ` / ${varianteSeleccionada.colorSecundario}` : ""}`
     : "-";
   const tallaWhatsapp = varianteSeleccionada?.talla ?? "-";
-  const detalleWhatsapp = `${producto.nombre} - ${producto.modelo} - ${colorWhatsapp} - ${tallaWhatsapp}`;
+  const detalleWhatsapp = `${producto.nombre} - ${producto.modelo} - ${colorWhatsapp} - ${tallaWhatsapp} (${formatPrice(precioActual)})`;
   const mensajeWhatsapp = `Hola me interesa el producto: ${detalleWhatsapp} ${urlActual}`;
-  const whatsappUrl = `https://wa.me/59167113105?text=${encodeURIComponent(mensajeWhatsapp)}`;
+  const whatsappUrl = getWhatsAppLink(mensajeWhatsapp);
 
 
   useEffect(() => {
@@ -170,7 +170,7 @@ export default function ProductoDetalleCliente({ producto, colores: _colores, ta
       colorSecundario: varianteSeleccionada.colorSecundario,
       talla: varianteSeleccionada.talla,
       cantidad,
-      precio: producto.precioVenta,
+      precio: precioActual,
       stockDisponible: stockActual,
     });
 
@@ -282,7 +282,7 @@ export default function ProductoDetalleCliente({ producto, colores: _colores, ta
               <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
                 {(producto.categoria ?? "Catalogo").toUpperCase()} {producto.nombre ? `· ${producto.nombre.toUpperCase()}` : ""}
               </p>
-              <h1 className="mt-3 text-[2.1rem] leading-[1.02] sm:text-[2.7rem] text-foreground" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
+              <h1 className="mt-3 text-[2.1rem] leading-[1.02] sm:text-[2.7rem] text-foreground" style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}>
                 {producto.modelo}
               </h1>
             </div>
@@ -303,8 +303,8 @@ export default function ProductoDetalleCliente({ producto, colores: _colores, ta
 
 
           <div className="mt-6 flex flex-wrap items-end gap-3">
-            <p className="text-[1.9rem] leading-none sm:text-[2.2rem] text-foreground" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-              {formatPrice(producto.precioVenta)}
+            <p className="text-[1.9rem] leading-none sm:text-[2.2rem] text-foreground" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
+              {formatPrice(precioActual)}
             </p>
             {precioAnterior ? (
               <p className="pb-1 text-sm line-through text-subtle/60">
@@ -314,6 +314,11 @@ export default function ProductoDetalleCliente({ producto, colores: _colores, ta
             {descuento > 0 ? (
               <span className="inline-flex rounded-full bg-danger/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-danger">
                 Ahorra {descuento}%
+              </span>
+            ) : null}
+            {tienePrecioDiferenciado && varianteSeleccionada?.talla ? (
+              <span className="inline-flex rounded-full bg-[#f4ede3] border border-[#e2d8cc] px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-[#8f8478] font-medium">
+                Precio para talla {varianteSeleccionada.talla}
               </span>
             ) : null}
           </div>
@@ -559,19 +564,38 @@ export default function ProductoDetalleCliente({ producto, colores: _colores, ta
             <div className="mt-4 flex flex-wrap gap-2.5">
               {tallasDisponibles.map((tallaDisponible) => {
                 const activa = tallaDisponible === varianteSeleccionada?.talla;
+                const varianteTalla =
+                  variantesDisponibles.find(
+                    (v) =>
+                      v.talla === tallaDisponible &&
+                      v.color === colorSeleccionado &&
+                      (!colorSecundarioSeleccionado || v.colorSecundario === colorSecundarioSeleccionado),
+                  ) ?? variantesDisponibles.find((v) => v.talla === tallaDisponible);
+                const precioTalla = getCatalogVariantPrice(producto, varianteTalla);
+                const tieneDiferencia = precioTalla !== producto.precioVenta;
+
                 return (
                   <button
                     key={tallaDisponible}
                     type="button"
                     onClick={() => seleccionarTalla(tallaDisponible)}
-                    className="min-w-12 rounded-full border px-4 py-2.5 text-sm transition-all active:scale-95"
+                    className="min-w-12 rounded-full border px-4 py-2.5 text-sm transition-all active:scale-95 inline-flex items-center justify-center gap-1.5"
                     style={{
                       borderColor: activa ? "#111111" : "#e2d8cc",
                       background: activa ? "#111111" : "#ffffff",
                       color: activa ? "#ffffff" : "#4f463d",
                     }}
                   >
-                    {tallaDisponible}
+                    <span>{tallaDisponible}</span>
+                    {tieneDiferencia ? (
+                      <span
+                        className={`text-[10px] font-mono tracking-tight ${
+                          activa ? "text-white/80" : "text-[#8f8478]"
+                        }`}
+                      >
+                        {formatPrice(precioTalla)}
+                      </span>
+                    ) : null}
                   </button>
                 );
               })}
@@ -724,7 +748,7 @@ export default function ProductoDetalleCliente({ producto, colores: _colores, ta
                 {producto.modelo} ha sido añadido a tu carrito correctamente.
               </p>
               <div className="mt-2 text-[10px] uppercase tracking-[0.12em] text-subtle">
-                {varianteSeleccionada?.color} / {varianteSeleccionada?.talla} · {cantidad} unidad{cantidad !== 1 ? 'es' : ''}
+                {varianteSeleccionada?.color} / {varianteSeleccionada?.talla} · {cantidad} unidad{cantidad !== 1 ? 'es' : ''} · {formatPrice(precioActual * cantidad)}
               </div>
             </div>
 

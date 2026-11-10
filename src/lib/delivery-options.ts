@@ -99,7 +99,6 @@ export function getSchedulesForDate(
 ): PickupScheduleOption[] {
   const date = new Date(dateStr + "T00:00:00");
   const dayOfWeek = date.getDay();
-  const minimumDelivery = getMinimumDeliveryDate(now);
 
   return config.pickupSchedules.filter((schedule) => {
     // Must match the weekday

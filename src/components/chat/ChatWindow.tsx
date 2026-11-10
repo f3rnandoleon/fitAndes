@@ -79,7 +79,7 @@ export default function ChatWindow({
             <p className="text-[10px] uppercase" style={{ letterSpacing: "0.18em", color: "#8f8478" }}>
               FitAndes Chat
             </p>
-            <h2 className="mt-1 text-lg sm:text-xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+            <h2 className="mt-1 text-lg sm:text-xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
               Asistente de productos
             </h2>
             <p className="mt-1 max-w-xs text-xs leading-5" style={{ color: "#8f8478" }}>

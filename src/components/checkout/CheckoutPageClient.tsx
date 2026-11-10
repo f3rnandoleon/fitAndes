@@ -25,10 +25,8 @@ import { CheckoutSummarySidebar } from "@/components/checkout/CheckoutSummarySid
 import { CheckoutAuthStatus } from "@/components/checkout/CheckoutAuthStatus";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-
-function sanitizeCallbackUrl(path: string) {
-  return path.startsWith("/") ? path : "/checkout";
-}
+import { Input } from "@/components/ui/Input";
+import { sanitizeCallbackUrl } from "@/lib/text";
 
 function buildDefaultAddress(context: CheckoutCustomerContext | null) {
   if (!context?.defaultAddress) return "";
@@ -49,8 +47,17 @@ export default function CheckoutPageClient() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { items, totalAmount, totalItems, updateQuantity, removeItem, clearCart } = useReservationCart();
+
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("WHATSAPP");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("EFECTIVO");
+
+  // Datos para compra como invitado
+  const [guestName, setGuestName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestCI, setGuestCI] = useState("");
+
+  // Campos de entrega
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -65,6 +72,7 @@ export default function CheckoutPageClient() {
   const [senderCI, setSenderCI] = useState("");
   const [senderPhone, setSenderPhone] = useState("");
   const [notes, setNotes] = useState("");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [prefillLoading, setPrefillLoading] = useState(false);
@@ -77,6 +85,16 @@ export default function CheckoutPageClient() {
   const shippingDepartments = getShippingDepartments(deliveryConfig);
   const shippingCompanies = getShippingCompaniesByDepartment(department, deliveryConfig);
   const shippingBranches = getShippingBranches(department, shippingCompany, deliveryConfig);
+
+  // Cálculo de tarifa de flete nacional
+  const nationalFlatFee = deliveryConfig.shippingPolicy?.nationalFlatFee ?? 10;
+  const shippingCost = deliveryMethod === "SHIPPING_NATIONAL" ? nationalFlatFee : 0;
+  const shippingLabel =
+    deliveryMethod === "PICKUP_POINT"
+      ? "Gratis (0.00 Bs)"
+      : deliveryMethod === "SHIPPING_NATIONAL"
+      ? `Bs ${nationalFlatFee}.00`
+      : "Por coordinar";
 
   useEffect(() => {
     let cancelled = false;
@@ -123,7 +141,6 @@ export default function CheckoutPageClient() {
   useEffect(() => {
     if (deliveryMethod !== "PICKUP_POINT") return;
 
-    // Auto-select first pickup point if current one is invalid
     if (!pickupPointOptions.some((option) => option.name === address)) {
       setAddress("");
       setPickupDate("");
@@ -209,13 +226,6 @@ export default function CheckoutPageClient() {
   }
 
   function validateForm() {
-    const normalizedPhone = phone.replace(/\D/g, "");
-    const normalizedSenderPhone = senderPhone.replace(/\D/g, "");
-
-    if (!authenticated) {
-      return "Inicia sesión para registrar tu pedido en el historial.";
-    }
-
     if (items.length === 0) {
       return "Tu carrito está vacío.";
     }
@@ -228,6 +238,20 @@ export default function CheckoutPageClient() {
     if (notes.trim().length > 300) {
       return "Las observaciones no pueden superar los 300 caracteres.";
     }
+
+    // Validar datos de comprador si compra como invitado
+    if (!authenticated) {
+      if (!guestName.trim()) {
+        return "Por favor ingresa tu nombre completo.";
+      }
+      const rawGuestPhone = guestPhone.replace(/\D/g, "");
+      if (rawGuestPhone.length < 7) {
+        return "Por favor ingresa un número de celular válido para coordinar tu pedido.";
+      }
+    }
+
+    const normalizedPhone = (authenticated ? phone : guestPhone || phone).replace(/\D/g, "");
+    const normalizedSenderPhone = (authenticated ? senderPhone : guestPhone || senderPhone).replace(/\D/g, "");
 
     if (deliveryMethod === "PICKUP_POINT") {
       if (pickupPointOptions.length === 0) {
@@ -247,32 +271,33 @@ export default function CheckoutPageClient() {
       }
 
       if (!pickupTime.trim()) {
-        return "Selecciona una hora especifica para la entrega.";
+        return "Selecciona una hora específica para la entrega.";
       }
 
-      if (normalizedPhone.length < 8) {
+      if (normalizedPhone.length < 7) {
         return "Ingresa un celular válido para coordinar la entrega.";
       }
     }
 
     if (deliveryMethod === "SHIPPING_NATIONAL") {
       if (shippingDepartments.length === 0 || shippingCompanies.length === 0) {
-        return "No pude cargar las opciones de envio del sistema central.";
+        return "No pude cargar las opciones de envío del sistema central.";
       }
 
       if (paymentMethod !== "QR") {
-        return "El envio nacional solo admite pago QR.";
+        return "El envío nacional solo admite pago QR.";
       }
 
       if (!department.trim() || !shippingCompany.trim() || !branch.trim()) {
         return "Selecciona departamento, empresa y sucursal de encomienda.";
       }
 
-      if (!senderCI.trim()) {
-        return "Ingresa el CI del destinatario.";
+      const activeCI = authenticated ? senderCI : guestCI || senderCI;
+      if (!activeCI.trim()) {
+        return "Ingresa el CI del destinatario para la guía de encomienda.";
       }
 
-      if (normalizedSenderPhone.length < 8) {
+      if (normalizedSenderPhone.length < 7) {
         return "Ingresa un celular válido del destinatario.";
       }
     }
@@ -284,7 +309,6 @@ export default function CheckoutPageClient() {
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
-      if (!authenticated) goToLogin();
       return;
     }
 
@@ -297,11 +321,14 @@ export default function CheckoutPageClient() {
       pendingWhatsappWindow.opener = null;
     }
 
-    // Build the scheduled delivery string: "Lunes 7 de Julio 14:30"
     const pickupScheduleValue =
       deliveryMethod === "PICKUP_POINT" && pickupDate && pickupTime
         ? `${formatDateLabel(pickupDate)} ${pickupTime}`
         : "";
+
+    const activeCustomerName = authenticated ? (session?.user?.fullname ?? "Cliente") : guestName.trim();
+    const activeCustomerPhone = authenticated ? phone.trim() : (guestPhone.trim() || phone.trim());
+    const activeCustomerCI = authenticated ? senderCI.trim() : (guestCI.trim() || senderCI.trim());
 
     const checkoutPayload = {
       items,
@@ -309,18 +336,27 @@ export default function CheckoutPageClient() {
       delivery: {
         method: deliveryMethod,
         address: address.trim(),
-        phone: phone.trim(),
-        recipientName: recipientName.trim(),
+        phone: activeCustomerPhone,
+        recipientName: recipientName.trim() || activeCustomerName,
         scheduledAt: pickupScheduleValue,
         department: department.trim(),
         city: city.trim(),
         shippingCompany: shippingCompany.trim(),
         branch: branch.trim(),
-        senderName: senderName.trim(),
-        senderCI: senderCI.trim(),
-        senderPhone: senderPhone.trim(),
+        senderName: senderName.trim() || activeCustomerName,
+        senderCI: activeCustomerCI,
+        senderPhone: senderPhone.trim() || activeCustomerPhone,
       },
       notes: notes.trim(),
+      esInvitado: !authenticated,
+      clienteInvitado: !authenticated
+        ? {
+            nombreCompleto: activeCustomerName,
+            telefono: activeCustomerPhone,
+            email: guestEmail.trim() || undefined,
+            ci: activeCustomerCI || undefined,
+          }
+        : undefined,
     };
 
     if (paymentMethod === "QR") {
@@ -368,7 +404,7 @@ export default function CheckoutPageClient() {
       router.refresh();
     } catch {
       pendingWhatsappWindow?.close();
-      setError("Ocurrio un problema al finalizar tu compra. Intenta nuevamente.");
+      setError("Ocurrió un problema al finalizar tu compra. Intenta nuevamente.");
       setLoading(false);
     }
   }
@@ -404,7 +440,7 @@ export default function CheckoutPageClient() {
   return (
     <main className="min-h-[calc(100vh-82px)] bg-gradient-to-b from-background to-surface/40 px-4 py-6 pb-28 sm:px-6 sm:py-8 sm:pb-32 lg:py-12 lg:pb-12">
       <div className="max-w-[1240px] mx-auto">
-        <header className="mb-8 rounded-[28px] border bg-white px-5 py-6 sm:mb-10 sm:px-6" style={{ borderColor: "#ece6dc" }}>
+        <header className="mb-8 rounded-[28px] border bg-white px-5 py-6 sm:mb-10 sm:px-6 border-border shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-2xl">
               <p className="text-[10px] uppercase mb-2 tracking-[0.2em] text-subtle">
@@ -414,7 +450,7 @@ export default function CheckoutPageClient() {
                 Finalizar compra
               </h1>
               <p className="mt-4 text-sm text-muted leading-relaxed">
-                Revisa tu pedido y los detalles antes de finalizar la compra.
+                Revisa tus prendas, datos de entrega y el método de pago antes de confirmar.
               </p>
             </div>
 
@@ -429,17 +465,69 @@ export default function CheckoutPageClient() {
 
         <div className="grid gap-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
           <div className="space-y-6 sm:space-y-8">
+            {/* Formulario de Comprador Invitado */}
             {!authenticated && (
-              <div className="rounded-[20px] bg-accent/10 border border-accent/20 p-5">
-                <h3 className="text-sm font-semibold text-accent mb-2">Inicia sesión para comprar</h3>
-                <p className="text-sm text-muted">
-                  Puedes revisar tu carrito, pero necesitarás iniciar sesión para registrar y confirmar el pedido.
-                </p>
-              </div>
+              <section>
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <h2 className="text-xs uppercase tracking-widest text-subtle font-semibold">
+                    1. Datos de quien compra (Invitado)
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={goToLogin}
+                    className="text-xs text-foreground font-medium underline underline-offset-2 hover:opacity-75"
+                  >
+                    ¿Ya tienes cuenta? Iniciar sesión
+                  </button>
+                </div>
+                <Card className="rounded-[28px] space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Input
+                      label="Nombre y Apellidos *"
+                      value={guestName}
+                      onChange={(e) => {
+                        setGuestName(e.target.value);
+                        if (!recipientName) setRecipientName(e.target.value);
+                      }}
+                      placeholder="Ej. Rodrigo Mendoza"
+                      required
+                    />
+                    <Input
+                      label="Celular WhatsApp *"
+                      type="tel"
+                      value={guestPhone}
+                      onChange={(e) => {
+                        setGuestPhone(e.target.value);
+                        if (!phone) setPhone(e.target.value);
+                      }}
+                      placeholder="Ej. 76543210"
+                      required
+                    />
+                    <Input
+                      label="Correo Electrónico (Opcional)"
+                      type="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      placeholder="Para enviarte el recibo"
+                    />
+                    <Input
+                      label="Cédula de Identidad (CI)"
+                      value={guestCI}
+                      onChange={(e) => {
+                        setGuestCI(e.target.value);
+                        if (!senderCI) setSenderCI(e.target.value);
+                      }}
+                      placeholder="Requerido si es envío nacional"
+                    />
+                  </div>
+                </Card>
+              </section>
             )}
-            
+
             <section>
-              <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle">Productos en reserva</h2>
+              <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle font-semibold">
+                {!authenticated ? "2. Prendas en reserva" : "Prendas en reserva"}
+              </h2>
               <CheckoutCartSummary
                 items={items}
                 updateQuantity={updateQuantity}
@@ -448,7 +536,9 @@ export default function CheckoutPageClient() {
             </section>
 
             <section>
-              <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle">Datos de entrega</h2>
+              <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle font-semibold">
+                {!authenticated ? "3. Modalidad y datos de entrega" : "Datos de entrega"}
+              </h2>
               <CheckoutDeliverySection
                 method={deliveryMethod}
                 setMethod={setDeliveryMethod}
@@ -457,9 +547,9 @@ export default function CheckoutPageClient() {
                 error={deliveryOptionsError}
                 address={address}
                 setAddress={setAddress}
-                phone={phone}
+                phone={phone || guestPhone}
                 setPhone={setPhone}
-                recipientName={recipientName}
+                recipientName={recipientName || guestName}
                 setRecipientName={setRecipientName}
                 pickupDate={pickupDate}
                 setPickupDate={setPickupDate}
@@ -473,27 +563,30 @@ export default function CheckoutPageClient() {
                 setShippingCompany={setShippingCompany}
                 branch={branch}
                 setBranch={setBranch}
-                senderCI={senderCI}
+                senderCI={senderCI || guestCI}
                 setSenderCI={setSenderCI}
-                senderPhone={senderPhone}
+                senderPhone={senderPhone || guestPhone}
                 setSenderPhone={setSenderPhone}
               />
             </section>
 
             {deliveryMethod !== "WHATSAPP" && (
               <section>
-                <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle">Método de pago</h2>
+                <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle font-semibold">
+                  {!authenticated ? "4. Método de pago" : "Método de pago"}
+                </h2>
                 <Card className="space-y-4 rounded-[28px]">
                   {[
-                    { value: "EFECTIVO", label: "Efectivo", description: "Pago al momento de la entrega." },
-                    { value: "QR", label: "QR", description: "Sube tu comprobante despues de crear el pedido." },
+                    { value: "EFECTIVO", label: "Efectivo", description: "Pago presencial al momento del encuentro." },
+                    { value: "QR", label: "Transferencia QR BancoSol", description: "Paga con QR desde cualquier banco y sube tu comprobante." },
                   ].map((option) => {
                     const disabled = deliveryMethod === "SHIPPING_NATIONAL" && option.value !== "QR";
                     return (
                       <label
                         key={option.value}
-                        className={`block rounded-[20px] border px-4 py-3 transition-all ${disabled ? "cursor-not-allowed bg-surface/20 opacity-50" : "cursor-pointer active:scale-[0.98]"
-                          } ${paymentMethod === option.value ? "border-foreground bg-surface/30" : "border-border bg-white"}`}
+                        className={`block rounded-[20px] border px-4 py-3.5 transition-all ${
+                          disabled ? "cursor-not-allowed bg-surface/20 opacity-50" : "cursor-pointer active:scale-[0.99]"
+                        } ${paymentMethod === option.value ? "border-foreground bg-surface/40 shadow-xs" : "border-border bg-white"}`}
                       >
                         <div className="flex items-start gap-3">
                           <input
@@ -508,7 +601,7 @@ export default function CheckoutPageClient() {
                           <div>
                             <p className="text-sm font-medium text-foreground">{option.label}</p>
                             <p className="mt-1 text-xs text-muted">
-                              {disabled ? "No disponible para envio nacional." : option.description}
+                              {disabled ? "El envío nacional solo admite pago por transferencia QR." : option.description}
                             </p>
                           </div>
                         </div>
@@ -520,13 +613,15 @@ export default function CheckoutPageClient() {
             )}
 
             <section>
-              <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle">Observaciones</h2>
-              <Card padding="none" className="overflow-hidden rounded-[28px]">
+              <h2 className="mb-4 px-1 text-xs uppercase tracking-widest text-subtle font-semibold">
+                Instrucciones u observaciones
+              </h2>
+              <Card padding="none" className="overflow-hidden rounded-[28px] border border-border">
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  rows={4}
-                  placeholder="Instrucciones especiales para tu entrega..."
+                  rows={3}
+                  placeholder="Referencias adicionales de entrega, horarios preferidos o aclaraciones..."
                   className="w-full resize-none bg-transparent p-4 text-sm outline-none placeholder:text-subtle/50"
                 />
               </Card>
@@ -537,6 +632,8 @@ export default function CheckoutPageClient() {
             <CheckoutSummarySidebar
               totalAmount={totalAmount}
               totalItems={totalItems}
+              shippingCost={shippingCost}
+              shippingLabel={shippingLabel}
               loading={loading}
               error={error}
               onSubmit={handleSubmit}

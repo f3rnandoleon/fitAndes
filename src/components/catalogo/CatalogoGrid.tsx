@@ -1,31 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FiSliders } from "react-icons/fi";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor, sortProductColors } from "@/lib/product-colors";
-import { catalogVariantIsAvailable, getCatalogProductAvailableStock, type CatalogProduct } from "@/types/catalogo";
+import { formatPrice } from "@/lib/format";
+import {
+  catalogVariantIsAvailable,
+  getCatalogProductAvailableStock,
+  getCatalogProductPriceRange,
+  type CatalogProduct,
+} from "@/types/catalogo";
 
 type OrdenKey = "ventas" | "fecha" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
 
 const ORDENES: Array<{ key: OrdenKey; label: string }> = [
-  { key: "ventas", label: "Lo mas Popular" },
-  { key: "fecha", label: "Lo mas Nuevo" },
-  { key: "descuento", label: "Descuento" },
+  { key: "ventas", label: "Lo más popular" },
+  { key: "fecha", label: "Lo más nuevo" },
+  { key: "descuento", label: "Mayor descuento" },
   { key: "precio-desc", label: "Precio: mayor a menor" },
   { key: "precio-asc", label: "Precio: menor a mayor" },
-  { key: "nombre-asc", label: "Nombre, ascendente" },
-  { key: "nombre-desc", label: "Nombre, descendente" },
+  { key: "nombre-asc", label: "Nombre (A-Z)" },
+  { key: "nombre-desc", label: "Nombre (Z-A)" },
 ];
-
-function formatearPrecio(precio: number): string {
-  return `Bs ${new Intl.NumberFormat("es-BO", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(precio)}`;
-}
 
 function esNuevo(createdAt?: string): boolean {
   if (!createdAt) return false;
@@ -62,24 +62,53 @@ interface CatalogoGridProps {
 }
 
 export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridProps) {
-  const [busqueda, setBusqueda] = useState(filtroInicial?.busqueda ?? "");
-  const [colorFiltro, setColorFiltro] = useState(filtroInicial?.color ?? "");
-  const [categoriaFiltro, setCategoriaFiltro] = useState(filtroInicial?.categoria ?? "");
-  const [tallaFiltro, setTallaFiltro] = useState(filtroInicial?.talla ?? "");
-  const [orden, setOrden] = useState<OrdenKey>("ventas");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
+
+  const [busqueda, setBusqueda] = useState(filtroInicial?.busqueda ?? searchParams?.get("q") ?? "");
+  const [colorFiltro, setColorFiltro] = useState(filtroInicial?.color ?? searchParams?.get("color") ?? "");
+  const [categoriaFiltro, setCategoriaFiltro] = useState(filtroInicial?.categoria ?? searchParams?.get("categoria") ?? "");
+  const [tallaFiltro, setTallaFiltro] = useState(filtroInicial?.talla ?? searchParams?.get("talla") ?? "");
+  const [orden, setOrden] = useState<OrdenKey>((searchParams?.get("orden") as OrdenKey) ?? "ventas");
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
 
   const productosConStock = productos.filter(productoTieneStock);
-  const categorias = Array.from(new Set(productosConStock.map((producto) => producto.categoria).filter((value): value is string => Boolean(value)))).sort();
-  const categoriaActiva = categoriaFiltro || categorias[0] || "";
 
-  const productosDeCategoria = productosConStock.filter(p => p.categoria === categoriaActiva);
+  // Categorías disponibles
+  const categorias = Array.from(
+    new Set(productosConStock.map((producto) => producto.categoria).filter((value): value is string => Boolean(value)))
+  ).sort();
 
-  const colores = sortProductColors(Array.from(new Set(productosDeCategoria.flatMap((producto) => variantesConStock(producto).map((variante) => variante.color)))));
-  
-  const tallas = Array.from(new Set(productosDeCategoria.flatMap((producto) => variantesConStock(producto).map((variante) => variante.talla)))).sort(
-    (a, b) => a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }),
+  // Filtrado de productos para extraer colores y tallas contextuales
+  const productosBaseFiltro = categoriaFiltro && categoriaFiltro !== "todas"
+    ? productosConStock.filter((p) => p.categoria?.toLowerCase() === categoriaFiltro.toLowerCase())
+    : productosConStock;
+
+  const colores = sortProductColors(
+    Array.from(new Set(productosBaseFiltro.flatMap((producto) => variantesConStock(producto).map((variante) => variante.color))))
   );
+
+  const tallas = Array.from(
+    new Set(productosBaseFiltro.flatMap((producto) => variantesConStock(producto).map((variante) => variante.talla)))
+  ).sort((a, b) => a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }));
+
+  // Sincronizar filtros en la URL del navegador sin recargar la página
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (busqueda.trim()) params.set("q", busqueda.trim());
+    if (categoriaFiltro && categoriaFiltro !== "todas") params.set("categoria", categoriaFiltro);
+    if (colorFiltro) params.set("color", colorFiltro);
+    if (tallaFiltro) params.set("talla", tallaFiltro);
+    if (orden && orden !== "ventas") params.set("orden", orden);
+
+    const qs = params.toString();
+    const newUrl = qs ? `/catalogo?${qs}` : "/catalogo";
+    
+    startTransition(() => {
+      window.history.replaceState(null, "", newUrl);
+    });
+  }, [busqueda, categoriaFiltro, colorFiltro, tallaFiltro, orden, router]);
 
   const termino = busqueda.trim().toLowerCase();
   const filtrados = productosConStock.filter((producto) => {
@@ -91,8 +120,12 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
       (producto.categoria ?? "").toLowerCase().includes(termino);
 
     const coincideColor = !colorFiltro || variantesDisponibles.some((variante) => variante.color === colorFiltro);
-    const coincideCategoria = producto.categoria === categoriaActiva;
+    const coincideCategoria =
+      !categoriaFiltro ||
+      categoriaFiltro === "todas" ||
+      producto.categoria?.toLowerCase() === categoriaFiltro.toLowerCase();
     const coincideTalla = !tallaFiltro || variantesDisponibles.some((variante) => variante.talla === tallaFiltro);
+
     return coincideBusqueda && coincideColor && coincideCategoria && coincideTalla;
   });
 
@@ -102,10 +135,16 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
         return (b.totalVendidos ?? 0) - (a.totalVendidos ?? 0);
       case "descuento":
         return (b.descuento ?? 0) - (a.descuento ?? 0);
-      case "precio-desc":
-        return b.precioVenta - a.precioVenta;
-      case "precio-asc":
-        return a.precioVenta - b.precioVenta;
+      case "precio-desc": {
+        const pA = getCatalogProductPriceRange(a).max;
+        const pB = getCatalogProductPriceRange(b).max;
+        return pB - pA;
+      }
+      case "precio-asc": {
+        const pA = getCatalogProductPriceRange(a).min;
+        const pB = getCatalogProductPriceRange(b).min;
+        return pA - pB;
+      }
       case "nombre-asc":
         return a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
       case "nombre-desc":
@@ -117,30 +156,44 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
     }
   });
 
-  const filtrosActivos = [termino, colorFiltro, tallaFiltro].filter(Boolean).length;
+  const filtrosActivos = [termino, colorFiltro, tallaFiltro, categoriaFiltro && categoriaFiltro !== "todas" ? categoriaFiltro : ""].filter(Boolean).length;
 
   function limpiarFiltros() {
     setBusqueda("");
     setColorFiltro("");
     setTallaFiltro("");
+    setCategoriaFiltro("");
   }
 
   return (
     <div className="flex flex-col gap-6 lg:gap-10">
-      {/* Pestañas de categorías obligatorias */}
+      {/* Pestañas de categorías con opción 'Todas' para no forzar ninguna */}
       {categorias.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide" role="tablist" aria-label="Categorías de prendas">
+          <button
+            type="button"
+            onClick={() => setCategoriaFiltro("")}
+            className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm ${
+              !categoriaFiltro || categoriaFiltro === "todas"
+                ? "bg-foreground text-background border-foreground font-semibold"
+                : "bg-white text-muted border-border hover:bg-background"
+            }`}
+            aria-pressed={!categoriaFiltro || categoriaFiltro === "todas"}
+          >
+            Todas las prendas
+          </button>
           {categorias.map((categoria) => {
-            const activa = categoria === categoriaActiva;
+            const activa = categoriaFiltro.toLowerCase() === categoria.toLowerCase();
             return (
               <button
                 key={categoria}
                 type="button"
                 onClick={() => setCategoriaFiltro(categoria)}
-                className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm ${activa
-                  ? "bg-foreground text-background border-foreground font-semibold"
-                  : "bg-white text-muted border-border hover:bg-background"
-                  }`}
+                className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm ${
+                  activa
+                    ? "bg-foreground text-background border-foreground font-semibold"
+                    : "bg-white text-muted border-border hover:bg-background"
+                }`}
                 aria-pressed={activa}
               >
                 {categoria}
@@ -151,7 +204,6 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
-
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <div className="hidden lg:block rounded-[var(--radius-lg)] border border-border bg-white px-5 py-5 sm:px-6 shadow-sm">
             <p className="text-[10px] uppercase tracking-[0.2em] text-subtle">
@@ -174,9 +226,9 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
                 <button
                   type="button"
                   onClick={limpiarFiltros}
-                  className="inline-flex items-center rounded-full border border-border px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-subtle"
+                  className="inline-flex items-center rounded-full border border-border px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-subtle hover:text-foreground hover:border-foreground transition-colors"
                 >
-                  Limpiar filtros
+                  Limpiar filtros ({filtrosActivos})
                 </button>
               ) : null}
             </div>
@@ -185,7 +237,7 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
           <div className={`${filtrosAbiertos ? "block" : "hidden"} rounded-[var(--radius-lg)] border border-border bg-white px-5 py-5 sm:px-6 lg:block shadow-sm`}>
             <div>
               <p className="text-[10px] uppercase mb-3 tracking-[0.18em] text-subtle">
-                Buscar
+                Buscar en catálogo
               </p>
               <input
                 type="text"
@@ -205,7 +257,7 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
                   <button
                     type="button"
                     onClick={() => setColorFiltro("")}
-                    className="text-[10px] uppercase tracking-[0.14em] text-subtle"
+                    className="text-[10px] uppercase tracking-[0.14em] text-subtle hover:underline"
                   >
                     Limpiar
                   </button>
@@ -219,12 +271,13 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
                       key={color}
                       type="button"
                       title={color}
+                      aria-label={`Filtrar por color ${color}`}
                       onClick={() => setColorFiltro((actual) => (actual === color ? "" : color))}
                       className="h-10 w-10 rounded-full border transition-all hover:scale-110 active:scale-95"
                       style={{
                         ...colorStyle(color),
                         borderColor: activo ? "var(--foreground)" : isLightProductColor(color) ? "var(--subtle)" : "var(--border)",
-                        boxShadow: activo ? "0 0 0 3px rgba(0,0,0,0.08)" : "none",
+                        boxShadow: activo ? "0 0 0 3px rgba(0,0,0,0.15)" : "none",
                       }}
                       aria-pressed={activo}
                     />
@@ -232,7 +285,6 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
                 })}
               </div>
             </div>
-
 
             <div className="mt-6">
               <div className="mb-4 flex items-center justify-between gap-3">
@@ -243,7 +295,7 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
                   <button
                     type="button"
                     onClick={() => setTallaFiltro("")}
-                    className="text-[10px] uppercase tracking-[0.14em] text-subtle"
+                    className="text-[10px] uppercase tracking-[0.14em] text-subtle hover:underline"
                   >
                     Limpiar
                   </button>
@@ -285,7 +337,7 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
                   {productosVisibles.length} resultado{productosVisibles.length !== 1 ? "s" : ""} para explorar.
                 </p>
               </div>
-              
+
               <button
                 type="button"
                 onClick={() => setFiltrosAbiertos((actual) => !actual)}
@@ -321,10 +373,21 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
 
           {productosVisibles.length === 0 ? (
             <div className="rounded-[var(--radius-lg)] border border-border bg-white px-6 py-16 text-center shadow-sm">
-              <p className="text-xl uppercase tracking-[0.18em] text-foreground" style={{ fontFamily: "Georgia, serif" }}>Sin resultados</p>
-              <p className="text-sm mt-3 text-subtle">
-                Prueba con otro término o limpia los filtros para ver más productos.
+              <p className="text-xl uppercase tracking-[0.18em] text-foreground" style={{ fontFamily: "Georgia, serif" }}>
+                Sin resultados
               </p>
+              <p className="text-sm mt-3 text-subtle">
+                No encontramos prendas con los filtros actuales. Prueba limpiando los filtros para ver todo el catálogo.
+              </p>
+              {filtrosActivos > 0 && (
+                <button
+                  type="button"
+                  onClick={limpiarFiltros}
+                  className="mt-5 inline-flex items-center rounded-full border border-foreground bg-foreground text-background px-6 py-3 text-[11px] uppercase tracking-[0.16em] active:scale-95 transition-transform"
+                >
+                  Ver todo el catálogo
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:gap-6 xl:grid-cols-3">
@@ -339,13 +402,13 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
   );
 }
 
-function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: CatalogProduct, colorFiltro?: string, tallaFiltro?: string }) {
+function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: CatalogProduct; colorFiltro?: string; tallaFiltro?: string }) {
   const variantesDisponibles = variantesConStock(producto);
 
   let imagenes = imagenesDeProducto(producto);
   if (colorFiltro || tallaFiltro) {
-    const varianteElegida = variantesDisponibles.find(v => 
-      (!colorFiltro || v.color === colorFiltro) && (!tallaFiltro || v.talla === tallaFiltro)
+    const varianteElegida = variantesDisponibles.find(
+      (v) => (!colorFiltro || v.color === colorFiltro) && (!tallaFiltro || v.talla === tallaFiltro)
     );
     if (varianteElegida) {
       const imagenesVariante = imagenesDeVariante(varianteElegida);
@@ -366,15 +429,15 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
   const stock = totalStock(producto);
   const colores = sortProductColors(Array.from(new Set(variantesDisponibles.map((variante) => variante.color))));
   const tallas = Array.from(new Set(variantesDisponibles.map((variante) => variante.talla))).sort((a, b) =>
-    a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }),
+    a.localeCompare(b, "es", { numeric: true, sensitivity: "base" })
   );
 
   return (
     <Link href={href} className="group block">
-      <article className="h-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-white transition-all duration-300 hover:-translate-y-1 active:scale-95 hover:shadow-[0_18px_40px_rgba(17,17,17,0.06)]">
+      <article className="h-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-white transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] hover:shadow-[0_18px_40px_rgba(17,17,17,0.06)]">
         <div className="relative aspect-[3/4] overflow-hidden bg-background">
           {descuento > 0 && (
-            <span className="absolute left-3 top-3 z-10 rounded-full bg-accent px-3 py-1 text-[10px] uppercase text-white tracking-[0.12em]">
+            <span className="absolute left-3 top-3 z-10 rounded-full bg-danger px-3 py-1 text-[10px] uppercase text-white tracking-[0.12em]">
               -{descuento}%
             </span>
           )}
@@ -389,7 +452,6 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
               imagenes={imagenes}
               alt={producto.nombre}
               imgClassName="group-hover:scale-105 transition-transform duration-500"
-              duracionMs={2800}
               mostrarControles={false}
             />
           ) : (
@@ -408,16 +470,23 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
 
         <div className="p-4 sm:p-5">
           <p className="text-[10px] uppercase tracking-[0.14em] text-subtle">
-            {(producto.nombre ?? '').toUpperCase()}
+            {(producto.nombre ?? "").toUpperCase()}
           </p>
-          <h3 className="mt-2 min-h-[42px] text-sm leading-6 sm:min-h-[50px] sm:text-[0.98rem] text-foreground">
+          <h3 className="mt-2 min-h-[42px] text-sm leading-6 sm:min-h-[50px] sm:text-[0.98rem] text-foreground font-medium">
             {producto.modelo}
           </h3>
-          <p className="mt-4 text-xl font-semibold sm:text-2xl text-foreground" style={{ fontFamily: "Georgia, serif" }}>
-            {formatearPrecio(producto.precioVenta)}
-          </p>
+          {(() => {
+            const priceRange = getCatalogProductPriceRange(producto);
+            return (
+              <p className="mt-3 text-lg font-semibold sm:text-xl text-foreground font-serif">
+                {priceRange.hasRange
+                  ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
+                  : formatPrice(priceRange.min)}
+              </p>
+            );
+          })()}
           <p className={`mt-2 text-[11px] ${stock > 0 ? "text-subtle" : "text-danger"}`}>
-            {stock > 0 ? `${stock} unidades disponibles` : "Sin stock"}
+            {stock > 0 ? `${stock} disponibles` : "Sin stock"}
           </p>
 
           <div className="mt-4 flex items-center justify-between gap-3">
@@ -430,6 +499,7 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
                     ...colorStyle(color),
                     borderColor: isLightProductColor(color) ? "var(--subtle)" : "var(--border)",
                   }}
+                  title={color}
                 />
               ))}
               {colores.length > 4 ? (

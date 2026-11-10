@@ -1,6 +1,6 @@
 import { primeraImagenDeProducto, primeraImagenDeVariante } from "@/lib/catalogo-imagenes";
 import type { ChatAction, OrderCardData, ProductCardData } from "@/lib/chat/types";
-import { filterCatalogAvailableVariants, type CatalogProduct } from "@/types/catalogo";
+import { filterCatalogAvailableVariants, getCatalogVariantPrice, type CatalogProduct } from "@/types/catalogo";
 import { getPedidoEstado, getPedidoItemColor, getPedidoItemNombre, getPedidoItemTalla, getPedidoNumero, getPedidoTotal, type Pedido } from "@/types/pedidos";
 import { formatPrice, formatDate } from "@/lib/format";
 
@@ -31,13 +31,15 @@ export function buildProductCard(
     { type: "show_similar", label: "Similares", productId: product._id },
   ];
 
+  const price = getCatalogVariantPrice(product, preferredVariant);
+
   return {
     type: "product",
     id: product._id,
     title: product.nombre,
     model: product.modelo,
-    subtitle: [product.modelo, formatPrice(product.precioVenta)].join(" · "),
-    price: product.precioVenta,
+    subtitle: [product.modelo, formatPrice(price)].join(" · "),
+    price,
     image,
     description,
     detailHref: `/catalogo/${product._id}`,

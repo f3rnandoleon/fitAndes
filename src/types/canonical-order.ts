@@ -33,4 +33,19 @@ export interface CanonicalCheckoutPayload {
   metodoPago: PaymentMethod;
   entrega: CanonicalDelivery;
   notas?: string;
+  esInvitado?: boolean;
+  clienteInvitado?: {
+    nombreCompleto: string;
+    telefono: string;
+    email?: string;
+    ci?: string;
+  };
+  items?: Array<{
+    productoId: string;
+    variantId?: string;
+    color: string;
+    talla: string;
+    cantidad: number;
+    precio: number;
+  }>;
 }

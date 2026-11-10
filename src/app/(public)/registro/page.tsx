@@ -1,7 +1,8 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { sanitizeCallbackUrl } from "@/lib/text";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
@@ -9,8 +10,8 @@ import logo from "../../../../public/fitAndes.png";
 
 export default function RegistroPage() {
   const router = useRouter();
-  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-  const callbackUrl = searchParams?.get("callbackUrl") || "/dashboard";
+  const searchParams = useSearchParams();
+  const callbackUrl = sanitizeCallbackUrl(searchParams.get("callbackUrl"));
   const [form, setForm] = useState({
     fullname: "",
     email: "",
@@ -94,7 +95,7 @@ export default function RegistroPage() {
           href="/"
           className="text-2xl uppercase font-bold z-10"
           style={{
-            fontFamily: "Georgia, 'Times New Roman', serif",
+            fontFamily: "var(--font-serif, Georgia, serif)",
             letterSpacing: "0.25em",
             color: "#1a1a1a",
           }}
@@ -115,7 +116,7 @@ export default function RegistroPage() {
           </p>
           <h1
             className="text-5xl leading-tight mb-4"
-            style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "var(--foreground)" }}
+            style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400, color: "var(--foreground)" }}
           >
             Crea tu cuenta
             <br />
@@ -154,7 +155,7 @@ export default function RegistroPage() {
             href="/"
             className="inline-flex lg:hidden text-xl uppercase font-bold mb-4"
             style={{
-              fontFamily: "Georgia, 'Times New Roman', serif",
+              fontFamily: "var(--font-serif, Georgia, serif)",
               letterSpacing: "0.2em",
               color: "var(--foreground)",
             }}
@@ -172,7 +173,7 @@ export default function RegistroPage() {
           <div className="mb-8">
             <h2
               className="text-4xl mb-2"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}
+              style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}
             >
               Crear cuenta
             </h2>
@@ -275,13 +276,13 @@ export default function RegistroPage() {
 
           <p className="mt-6 text-center text-sm" style={{ color: "var(--muted)" }}>
             ¿Ya tienes cuenta?{" "}
-            <Link href="/login" className="hover:opacity-60 transition-opacity font-medium" style={{ color: "var(--foreground)" }}>
+            <Link href={`/login${callbackUrl !== "/dashboard" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`} className="hover:opacity-60 transition-opacity font-medium" style={{ color: "var(--foreground)" }}>
               Inicia sesión
             </Link>
           </p>
 
           <div className="mt-6 active:scale-95">
-            <GoogleAuthButton callbackUrl="/dashboard" text="signup_with" promptText="o registrate con Google" />
+            <GoogleAuthButton callbackUrl={callbackUrl} text="signup_with" promptText="o registrate con Google" />
           </div>
         </div>
       </div>

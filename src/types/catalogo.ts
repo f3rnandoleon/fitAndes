@@ -21,6 +21,8 @@ export interface CatalogVariant {
   imagenes?: Array<string | null | undefined> | null;
   codigoBarra?: string | null;
   qrCode?: string | null;
+  precioVenta?: number | null;
+  precioCosto?: number | null;
   medidas?: CatalogVariantMedidas | null;
 }
 
@@ -30,10 +32,18 @@ export interface CatalogProduct {
   modelo: string;
   categoria?: string | null;
   precioVenta: number;
+  precioMinimo?: number | null;
+  precioMaximo?: number | null;
+  tieneRangoPrecios?: boolean | null;
+  precioDisplay?: string | null;
   sku?: string | null;
   descuento?: number | null;
   createdAt?: string;
   totalVendidos?: number;
+  stockTotal?: number;
+  stockReservadoTotal?: number | null;
+  stockDisponible?: number | null;
+  estado?: string | null;
   imagen?: string | null;
   imagenes?: Array<string | null | undefined> | null;
   variantes: CatalogVariant[];
@@ -44,6 +54,9 @@ export interface ProductByCodeResponse {
   nombre: string;
   modelo: string;
   precioVenta: number;
+  sku?: string | null;
+  descripcion?: string | null;
+  categoria?: string | null;
   variante: CatalogVariant;
 }
 
@@ -63,6 +76,9 @@ export function getCatalogVariantAvailableStock(variant: CatalogVariant): number
 }
 
 export function getCatalogProductAvailableStock(product: CatalogProduct): number {
+  if (typeof product.stockDisponible === "number" && Number.isFinite(product.stockDisponible)) {
+    return Math.max(0, product.stockDisponible);
+  }
   return product.variantes.reduce((sum, variant) => sum + getCatalogVariantAvailableStock(variant), 0);
 }
 
@@ -76,3 +92,57 @@ export function filterCatalogAvailableVariants(product: CatalogProduct): Catalog
     variantes: product.variantes.filter(catalogVariantIsAvailable),
   };
 }
+
+export function getCatalogVariantPrice(product: CatalogProduct, variant?: CatalogVariant | null): number {
+  if (variant && typeof variant.precioVenta === "number" && Number.isFinite(variant.precioVenta) && variant.precioVenta > 0) {
+    return variant.precioVenta;
+  }
+  return typeof product.precioVenta === "number" && Number.isFinite(product.precioVenta) ? product.precioVenta : 0;
+}
+
+export function getCatalogProductPriceRange(product: CatalogProduct): {
+  min: number;
+  max: number;
+  hasRange: boolean;
+  display?: string | null;
+} {
+  if (
+    typeof product.precioMinimo === "number" &&
+    typeof product.precioMaximo === "number" &&
+    Number.isFinite(product.precioMinimo) &&
+    Number.isFinite(product.precioMaximo)
+  ) {
+    return {
+      min: product.precioMinimo,
+      max: product.precioMaximo,
+      hasRange: product.tieneRangoPrecios ?? product.precioMinimo !== product.precioMaximo,
+      display: product.precioDisplay ?? null,
+    };
+  }
+
+  const basePrice = typeof product.precioVenta === "number" && Number.isFinite(product.precioVenta) ? product.precioVenta : 0;
+  const availableVariants = product.variantes?.length ? product.variantes.filter(catalogVariantIsAvailable) : [];
+  const variantsToInspect = availableVariants.length > 0 ? availableVariants : (product.variantes || []);
+
+  if (variantsToInspect.length === 0) {
+    return { min: basePrice, max: basePrice, hasRange: false };
+  }
+
+  const prices = variantsToInspect.map((v) => getCatalogVariantPrice(product, v));
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  return { min, max, hasRange: min !== max };
+}
+
+export function unwrapCatalogProducts(data: unknown): CatalogProduct[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data as CatalogProduct[];
+  if (typeof data === "object" && data !== null) {
+    const record = data as Record<string, unknown>;
+    if (Array.isArray(record.data)) return record.data as CatalogProduct[];
+    if (Array.isArray(record.productos)) return record.productos as CatalogProduct[];
+    if (Array.isArray(record.products)) return record.products as CatalogProduct[];
+  }
+  return [];
+}
+

@@ -22,13 +22,22 @@ export const CENTRAL_API_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.AP
 const RETRYABLE_CENTRAL_STATUSES = new Set([400, 403, 404, 405, 422]);
 
 export function buildCentralApiHeaders(
-  auth: CentralApiAuth,
+  auth?: CentralApiAuth | null,
   options?: { includeJsonContentType?: boolean; requestId?: string }
 ) {
-  const headers: Record<string, string> = {
-    "x-user-id": auth.userId,
-    "x-user-role": auth.role,
-  };
+  const headers: Record<string, string> = {};
+
+  if (auth?.userId) {
+    headers["x-user-id"] = auth.userId;
+  }
+
+  if (auth?.role) {
+    headers["x-user-role"] = auth.role;
+  }
+
+  if (auth?.accessToken) {
+    headers.Authorization = `Bearer ${auth.accessToken}`;
+  }
 
   if (options?.requestId) {
     headers["x-request-id"] = options.requestId;
@@ -38,10 +47,6 @@ export function buildCentralApiHeaders(
     headers["Content-Type"] = "application/json";
   }
 
-  if (auth.accessToken) {
-    headers.Authorization = `Bearer ${auth.accessToken}`;
-  }
-
   return headers;
 }
 
@@ -49,59 +54,58 @@ export function parseJsonRecord(data: unknown): Record<string, unknown> | null {
   return data && typeof data === "object" ? (data as Record<string, unknown>) : null;
 }
 
-export function readString(source: Record<string, unknown> | null, ...keys: string[]): string | null {
+export function readString(source: Record<string, unknown> | null | undefined, ...keys: string[]): string | null {
+  if (!source) return null;
   for (const key of keys) {
-    const value = source?.[key];
+    const value = source[key];
     if (typeof value === "string" && value.trim()) {
-      return value;
+      return value.trim();
+    }
+    if (typeof value === "number") {
+      return String(value);
     }
   }
 
   return null;
 }
 
-function shouldRetryCentralAttempt(status: number, hasMoreAttempts: boolean) {
-  return hasMoreAttempts && RETRYABLE_CENTRAL_STATUSES.has(status);
-}
-
 export async function fetchCentralApiWithFallback(
   attempts: CentralApiAttempt[],
-  options?: { timeoutMs?: number },
+  options?: { timeoutMs?: number; requestId?: string }
 ): Promise<CentralApiResult> {
-  if (!CENTRAL_API_URL) {
-    throw new Error("Central API URL is not configured.");
-  }
-
   const timeoutMs = options?.timeoutMs ?? 10000;
-  let lastResult: CentralApiResult | null = null;
-  let lastError: unknown = null;
+  let lastError: unknown;
 
-  for (const [attemptIndex, attempt] of attempts.entries()) {
+  for (let index = 0; index < attempts.length; index += 1) {
+    const attempt = attempts[index];
+    const url = `${CENTRAL_API_URL}${attempt.path}`;
+
     try {
-      const response = await fetch(`${CENTRAL_API_URL}${attempt.path}`, {
+      const response = await fetch(url, {
         ...attempt.init,
-        cache: attempt.init?.cache ?? "no-store",
-        signal: attempt.init?.signal ?? AbortSignal.timeout(timeoutMs),
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
-      const data = await response.json().catch(() => null);
-      lastResult = { response, data, attemptIndex };
+      const contentType = response.headers.get("content-type") ?? "";
+      const isJson = contentType.includes("application/json");
+      const data = isJson ? await response.json().catch(() => null) : await response.text().catch(() => "");
 
-      if (response.ok || !shouldRetryCentralAttempt(response.status, attemptIndex < attempts.length - 1)) {
-        return lastResult;
+      if (response.ok) {
+        return { response, data, attemptIndex: index };
       }
+
+      if (RETRYABLE_CENTRAL_STATUSES.has(response.status) && index < attempts.length - 1) {
+        continue;
+      }
+
+      return { response, data, attemptIndex: index };
     } catch (error) {
       lastError = error;
-
-      if (attemptIndex === attempts.length - 1) {
-        throw error;
+      if (index < attempts.length - 1) {
+        continue;
       }
     }
   }
 
-  if (lastResult) {
-    return lastResult;
-  }
-
-  throw lastError instanceof Error ? lastError : new Error("No se pudo completar la solicitud a la API central.");
+  throw lastError instanceof Error ? lastError : new Error("No pude conectar con el sistema central.");
 }

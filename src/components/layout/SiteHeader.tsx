@@ -20,8 +20,9 @@ interface Props {
 const NAV_LINKS = [
   { label: "Inicio", href: "/" },
   { label: "Catálogo", href: "/catalogo" },
-  { label: "Selección", href: "/#seleccion" },
-  { label: "Nuevo", href: "/#nuevo" },
+  { label: "Sucursales", href: "/ubicaciones" },
+  { label: "Nosotros", href: "/nosotros" },
+  { label: "FAQ", href: "/faq" },
   { label: "Políticas", href: "/politicas" },
 ];
 
@@ -76,7 +77,7 @@ export default function SiteHeader({ authenticated = false, fullname, firstName:
               href="/"
 
               className="text-lg uppercase font-bold sm:text-xl md:text-2xl text-foreground"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.24em" }}
+              style={{ fontFamily: "var(--font-serif, Georgia, serif)", letterSpacing: "0.24em" }}
             >
               <Image
                 src={logo}

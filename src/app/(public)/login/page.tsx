@@ -5,12 +5,9 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
+import { sanitizeCallbackUrl } from "@/lib/text";
 import logo from "../../../../public/fitAndes.png";
 
-function sanitizeCallbackUrl(value: string | null) {
-  if (!value || !value.startsWith("/")) return "/dashboard";
-  return value;
-}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,7 +53,7 @@ export default function LoginPage() {
           href="/"
           className="text-2xl uppercase font-bold z-10"
           style={{
-            fontFamily: "Georgia, 'Times New Roman', serif",
+            fontFamily: "var(--font-serif, Georgia, serif)",
             letterSpacing: "0.25em",
             color: "#1a1a1a",
           }}
@@ -77,7 +74,7 @@ export default function LoginPage() {
           </p>
           <h1
             className="text-5xl leading-tight mb-4"
-            style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, color: "var(--foreground)" }}
+            style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400, color: "var(--foreground)" }}
           >
             Tu tienda, en
             <br />
@@ -101,7 +98,7 @@ export default function LoginPage() {
             href="/"
             className="inline-flex lg:hidden text-xl uppercase font-bold mb-4"
             style={{
-              fontFamily: "Georgia, 'Times New Roman', serif",
+              fontFamily: "var(--font-serif, Georgia, serif)",
               letterSpacing: "0.2em",
               color: "#1a1a1a",
             }}
@@ -119,7 +116,7 @@ export default function LoginPage() {
           <div className="mb-8">
             <h2
               className="text-4xl mb-2"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}
+              style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}
             >
               Bienvenido
             </h2>

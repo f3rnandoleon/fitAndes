@@ -18,6 +18,7 @@
    - [5.3 Ficha Técnica de Prenda y Medidas Corporales (`GET /api/productos/publicos/:id`)](#53-ficha-técnica-de-prenda-y-medidas-corporales-get-apiproductospublicosid)
    - [5.4 Opciones de Entrega, Horarios y Courier (`GET /api/delivery-options`)](#54-opciones-de-entrega-horarios-y-courier-get-apidelivery-options)
    - [5.5 Políticas Legales y Devoluciones (`GET /api/public/politicas`)](#55-políticas-legales-y-devoluciones-get-apipublicpoliticas)
+   - [5.6 Ubicaciones de Tiendas y Google Maps (`GET /api/ubicaciones`)](#56-ubicaciones-de-tiendas-y-google-maps-get-apiubicaciones)
 6. [Módulo 2: Autenticación, Registro y Perfil de Cliente](#6-módulo-2-autenticación-registro-y-perfil-de-cliente)
    - [6.1 Registro de Nueva Cuenta (`POST /api/auth/signup`)](#61-registro-de-nueva-cuenta-post-apiauthsignup)
    - [6.2 Inicio de Sesión Credenciales (`POST /api/auth/login`)](#62-inicio-de-sesión-credenciales-post-apiauthlogin)
@@ -68,7 +69,7 @@ La tienda web interactúa con el backend central construido sobre **Next.js API 
 ## 2. Autenticación, Cabeceras y Seguridad
 
 ### 2.1 Peticiones Públicas (Sin Autenticación)
-Para consultar catálogo, ficha de producto, políticas y opciones de transporte:
+Para consultar catálogo, ficha de producto, políticas, opciones de transporte y ubicaciones de tiendas con Google Maps:
 ```http
 Accept: application/json
 ```
@@ -303,8 +304,43 @@ Retorna el objeto individual del producto idéntico a la estructura mostrada en 
 
 ---
 
+### 5.3.1 Productos Relacionados y Recomendados (`GET /api/productos/publicos/:id/relacionados`)
+Devuelve hasta 4 productos activos recomendados relacionados con la prenda actual para la sección de *"También te podría interesar"* del storefront.
+
+* **Método:** `GET`
+* **Ruta:** `/api/productos/publicos/:id/relacionados`
+* **Parámetros de Ruta:** `:id` (ObjectId de la prenda actual).
+* **Reglas:**
+  1. Filtra productos activos de la misma categoría que cuentan con stock vendible en despacho web (`stock - stockReservado > 0`).
+  2. Si la categoría no reúne 4 productos, se complementa con las prendas más vendidas del catálogo.
+  3. Los datos retornan sanitizados sin campos internos (`precioCosto`, `costoOrigen`, etc.).
+
+#### Respuesta Exitosa (`HTTP 200`):
+```json
+{
+  "ok": true,
+  "data": [
+    {
+      "_id": "670e10a2f1b4c90012345688",
+      "nombre": "Chompa Cuello Redondo Alpaca",
+      "modelo": "Andina Ligera",
+      "categoria": "Chompas",
+      "precioVenta": 130.00,
+      "precioMinimo": 130.00,
+      "precioMaximo": 130.00,
+      "tieneRangoPrecios": false,
+      "precioDisplay": "Bs 130.00",
+      "stockDisponible": 8,
+      "variantes": [ ... ]
+    }
+  ]
+}
+```
+
+---
+
 ### 5.4 Opciones de Entrega, Horarios y Courier (`GET /api/delivery-options`)
-Retorna los puntos de encuentro físicos en la ciudad de La Paz (estaciones de teleférico, plazas céntricas) con sus días y franjas horarias oficiales, así como las empresas de transporte interdepartamental y sus terminales.
+Retorna los puntos de encuentro físicos en la ciudad de La Paz (estaciones de teleférico, plazas céntricas) con sus días y franjas horarias oficiales, así como las empresas de transporte interdepartamental y sus tarifas estimadas de flete.
 
 * **Método:** `GET`
 * **Ruta:** `/api/delivery-options`
@@ -321,15 +357,21 @@ curl -X GET https://control-ventas-azure.vercel.app/api/delivery-options \
   "pickupPoints": [
     {
       "id": "teleferico-central",
-      "name": "Estación Teleférico Central (Línea Roja - Av. Manco Cápac)"
+      "name": "Estación Teleférico Central (Línea Roja - Av. Manco Cápac)",
+      "costoBOB": 0.00,
+      "costoEstimadoBOB": 0.00
     },
     {
       "id": "plaza-estudiante",
-      "name": "Plaza del Estudiante (El Prado)"
+      "name": "Plaza del Estudiante (El Prado)",
+      "costoBOB": 0.00,
+      "costoEstimadoBOB": 0.00
     },
     {
       "id": "teleferico-iglesias",
-      "name": "Estación Teleférico Iglesia del Carmen (Línea Morada - Obelisco)"
+      "name": "Estación Teleférico Iglesia del Carmen (Línea Morada - Obelisco)",
+      "costoBOB": 0.00,
+      "costoEstimadoBOB": 0.00
     }
   ],
   "pickupSchedules": [
@@ -352,9 +394,15 @@ curl -X GET https://control-ventas-azure.vercel.app/api/delivery-options \
     {
       "id": "bolivar-cargo",
       "name": "Bolivar Cargo",
+      "modalidadCobro": "PAGO_EN_DESTINO",
+      "costoEstimadoBOB": 0.00,
+      "tiempoEstimadoHoras": "24 a 48 horas hábiles",
       "departments": [
         {
           "name": "Cochabamba",
+          "modalidadCobro": "PAGO_EN_DESTINO",
+          "costoEstimadoBOB": 0.00,
+          "tiempoEstimadoHoras": "24 a 48 horas hábiles",
           "branches": [
             "Terminal Central Cochabamba",
             "Av. Blanco Galindo Km 4"
@@ -362,6 +410,9 @@ curl -X GET https://control-ventas-azure.vercel.app/api/delivery-options \
         },
         {
           "name": "Santa Cruz",
+          "modalidadCobro": "PAGO_EN_DESTINO",
+          "costoEstimadoBOB": 0.00,
+          "tiempoEstimadoHoras": "24 a 48 horas hábiles",
           "branches": [
             "Terminal Bimodal Santa Cruz (Plataforma 12)",
             "Sucursal Plan 3000"
@@ -369,6 +420,9 @@ curl -X GET https://control-ventas-azure.vercel.app/api/delivery-options \
         },
         {
           "name": "Oruro",
+          "modalidadCobro": "PAGO_EN_DESTINO",
+          "costoEstimadoBOB": 0.00,
+          "tiempoEstimadoHoras": "24 a 48 horas hábiles",
           "branches": [
             "Terminal de Buses Oruro"
           ]
@@ -409,6 +463,54 @@ Provee las políticas dinámicas de la empresa configuradas desde administració
     "version": "1.0",
     "activo": true
   }
+}
+```
+
+---
+
+### 5.6 Ubicaciones de Tiendas y Google Maps (`GET /api/ubicaciones`)
+Retorna las sucursales y puntos de retiro activos que están marcados con `visibleEnWebYAgente: true`. Permite mostrar en la página web la sección **"Nuestras Tiendas / Ubicaciones"**, botones directos de *"Abrir en Google Maps"*, mapas interactivos con coordenadas (`lat`, `lng`), referencias de cómo llegar y horarios de atención.
+
+* **Método:** `GET`
+* **Ruta:** `/api/ubicaciones`
+* **Rate Limit:** 100 req/min por IP.
+
+#### Parámetros de Consulta Opcionales (Query Params):
+| Parámetro | Tipo | Requerido | Descripción | Ejemplo |
+|---|---|---|---|---|
+| `ciudad` | `string` | No | Filtra sucursales por ciudad (insensible a mayúsculas/minúsculas) | `?ciudad=La Paz` |
+
+#### Ejemplo de Petición:
+```bash
+curl -X GET "https://control-ventas-azure.vercel.app/api/ubicaciones?ciudad=La%20Paz" \
+  -H "Accept: application/json"
+```
+
+#### Respuesta Exitosa (`HTTP 200`):
+```json
+{
+  "total": 1,
+  "ubicaciones": [
+    {
+      "id": "670e1000f1b4c90011000002",
+      "nombre": "Tienda Central - San Pedro",
+      "codigo": "TDA-01",
+      "tipo": "TIENDA_FISICA",
+      "ciudad": "La Paz",
+      "direccion": "Av. 20 de Octubre esq. Conchitas #1450",
+      "telefono": "+591 67113105",
+      "permiteVentaPOS": true,
+      "permiteRetiroCliente": true,
+      "ubicacionMapa": {
+        "googleMapsUrl": "https://www.google.com/maps?q=-16.5042,-68.1345",
+        "embedUrl": "",
+        "lat": -16.5042,
+        "lng": -68.1345,
+        "referencia": "A media cuadra de la Plaza San Pedro, Galería Central, Local 12",
+        "horariosTexto": "Lunes a Sábado de 09:30 a 20:00"
+      }
+    }
+  ]
 }
 ```
 
@@ -797,6 +899,74 @@ Diseñado para envíos a Cochabamba, Santa Cruz, Oruro, Sucre, Tarija, etc.
       "nombreRemitente": "Daniela Vargas Romero",
       "ciRemitente": "8765432 LP",
       "telefonoRemitente": "59178965412"
+    }
+  }
+}
+```
+
+---
+
+### 8.4 Modalidad C: Compra como Invitado (Guest Checkout sin Registro)
+Permite a compradores de la tienda web realizar checkout sin necesidad de iniciar sesión ni crear una cuenta previa. No exige cabecera `Authorization: Bearer`.
+
+* **Método:** `POST`
+* **Ruta:** `/api/pedidos/checkout`
+* **Cabeceras:** `Content-Type: application/json` (NO requiere Bearer token).
+
+#### Payload Ejemplo (Invitado con Envío Nacional):
+```json
+{
+  "esInvitado": true,
+  "clienteInvitado": {
+    "nombreCompleto": "Carlos Morales Mendoza",
+    "telefono": "78965412",
+    "email": "carlos.morales@gmail.com",
+    "ci": "6543210 LP"
+  },
+  "items": [
+    {
+      "productoId": "670e10a2f1b4c90012345678",
+      "variantId": "670e10a2f1b4c90012345679",
+      "color": "Negro",
+      "talla": "M",
+      "cantidad": 2,
+      "precio": 140.00
+    }
+  ],
+  "metodoPago": "QR",
+  "entrega": {
+    "metodo": "SHIPPING_NATIONAL",
+    "departamento": "Cochabamba",
+    "ciudad": "Cochabamba",
+    "empresaEnvio": "Bolivar Cargo",
+    "sucursal": "Terminal Central Cochabamba"
+  },
+  "notas": "Enviar a nombre de Carlos Morales."
+}
+```
+
+#### Respuesta Exitosa Estándar (`HTTP 201 Created`):
+```json
+{
+  "ok": true,
+  "orderId": "670e3001f1b4c90011223344",
+  "paymentId": "670e3002f1b4c90011223345",
+  "codigo": "WEB-MLK5T5B3-7EF4B7",
+  "expiresAt": "2026-10-20T21:00:00.000Z",
+  "message": "Pedido creado correctamente",
+  "pedido": {
+    "_id": "670e3001f1b4c90011223344",
+    "numeroPedido": "WEB-MLK5T5B3-7EF4B7",
+    "canal": "WEB",
+    "estadoPedido": "PENDING_PAYMENT",
+    "estadoPago": "PENDING",
+    "estadoReservaStock": "RESERVED",
+    "datosClienteInvitado": {
+      "nombreCompleto": "Carlos Morales Mendoza",
+      "telefono": "78965412",
+      "email": "carlos.morales@gmail.com",
+      "ci": "6543210 LP",
+      "origen": "WEB"
     }
   }
 }

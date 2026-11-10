@@ -1,7 +1,6 @@
 import { CheckoutDeliveryInput, CheckoutItemInput } from "@/types/checkout";
 import { formatPrice } from "@/lib/format";
-
-const WHATSAPP_NUMBER = process.env.WHATSAPP_NUMBER ?? "59176574068";
+import { WHATSAPP_NUMBER } from "@/lib/constants";
 
 /**
  * Generates a human-readable label for the delivery method.
@@ -28,35 +27,40 @@ export function buildWhatsappUrl({
   delivery,
   total,
   orderNumber,
-  notes,
 }: {
-  customerName: string;
-  customerEmail: string;
+  customerName?: string;
+  customerEmail?: string;
   items: CheckoutItemInput[];
   delivery: CheckoutDeliveryInput;
   total: number;
-  orderNumber?: string | null;
-  notes?: string | null;
+  orderNumber?: string;
 }): string {
-  const lines = [
-    "Hola FitAndes, quiero confirmar este pedido web:",
-    orderNumber ? `Pedido: ${orderNumber}` : "Pedido: nuevo registro web",
+  const lines: string[] = [
+    "Hola, acabo de registrar un pedido en FitAndes:",
     "",
-    `Cliente: ${customerName}`,
-    `Correo: ${customerEmail}`,
+    `Pedido: ${orderNumber ?? "Pendiente de confirmacion"}`,
+    `Cliente: ${customerName ?? "Cliente FitAndes"}`,
+    customerEmail ? `Correo: ${customerEmail}` : "",
     `Entrega: ${getDeliveryLabel(delivery)}`,
-  ];
+  ].filter(Boolean);
 
   if (delivery.phone) {
-    lines.push(`Celular de contacto: ${delivery.phone}`);
+    lines.push(`Telefono: ${delivery.phone}`);
   }
 
-  if (delivery.senderPhone) {
-    lines.push(`Celular remitente: ${delivery.senderPhone}`);
+  if (delivery.address && delivery.method !== "PICKUP_POINT") {
+    lines.push(`Direccion: ${delivery.address}`);
   }
 
-  if (notes) {
-    lines.push(`Observaciones: ${notes}`);
+  if (delivery.department && delivery.method === "SHIPPING_NATIONAL") {
+    lines.push(
+      `Departamento: ${delivery.department}`,
+      delivery.shippingCompany ? `Empresa: ${delivery.shippingCompany}` : "",
+      delivery.branch ? `Sucursal: ${delivery.branch}` : "",
+      delivery.senderName ? `Destinatario: ${delivery.senderName}` : "",
+      delivery.senderCI ? `CI: ${delivery.senderCI}` : "",
+      delivery.senderPhone ? `Celular destinatario: ${delivery.senderPhone}` : ""
+    );
   }
 
   lines.push("", "Productos:");

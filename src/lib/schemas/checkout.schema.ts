@@ -34,11 +34,20 @@ export const checkoutDeliverySchema = z.object({
   senderPhone: z.string().trim().max(40).optional(),
 });
 
+export const clienteInvitadoSchema = z.object({
+  nombreCompleto: z.string().trim().min(2, "Ingresa tu nombre completo."),
+  telefono: z.string().trim().min(7, "Ingresa un número de celular válido."),
+  email: z.string().trim().email("Correo electrónico inválido.").optional().or(z.literal("")),
+  ci: z.string().trim().optional(),
+});
+
 export const checkoutPayloadSchema = z.object({
   items: z.array(checkoutItemSchema).min(1, "Debes enviar al menos un producto."),
   paymentMethod: paymentMethodEnum,
   delivery: checkoutDeliverySchema,
   notes: z.string().trim().max(300, "Las observaciones no pueden superar los 300 caracteres.").optional(),
+  esInvitado: z.boolean().optional(),
+  clienteInvitado: clienteInvitadoSchema.optional(),
 });
 
 export type CheckoutPayloadInput = z.infer<typeof checkoutPayloadSchema>;

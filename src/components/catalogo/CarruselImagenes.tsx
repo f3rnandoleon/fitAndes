@@ -11,6 +11,7 @@ interface Props {
   duracionMs?: number;
   mostrarIndicadores?: boolean;
   mostrarControles?: boolean;
+  autoPlay?: boolean;
 }
 
 export default function CarruselImagenes({
@@ -18,9 +19,10 @@ export default function CarruselImagenes({
   alt,
   className = "",
   imgClassName = "",
-  duracionMs = 2800,
+  duracionMs = 3000,
   mostrarIndicadores = true,
   mostrarControles = true,
+  autoPlay = false,
 }: Props) {
   const [indiceActual, setIndiceActual] = useState(0);
   const claveImagenes = imagenes.join("|");
@@ -42,16 +44,43 @@ export default function CarruselImagenes({
   }, [claveImagenes]);
 
   useEffect(() => {
-    if (imagenes.length <= 1) return;
+    if (!autoPlay || imagenes.length <= 1) return;
+
+    // Respetar preferencias de accesibilidad de movimiento reducido
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
 
     const intervalo = window.setInterval(() => {
       setIndiceActual((actual) => (actual + 1) % imagenes.length);
     }, duracionMs);
 
     return () => window.clearInterval(intervalo);
-  }, [duracionMs, imagenes.length, claveImagenes]);
+  }, [autoPlay, duracionMs, imagenes.length, claveImagenes]);
 
   if (imagenes.length === 0) return null;
+
+  // En tarjetas de producto (sin controles): imagen principal fija y segunda imagen en hover (estilo e-commerce moda)
+  if (!mostrarControles && imagenes.length > 1) {
+    return (
+      <div className={`relative h-full w-full overflow-hidden ${className}`.trim()}>
+        <Image
+          src={imagenes[0]}
+          alt={alt}
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className={`object-cover transition-transform duration-500 group-hover:scale-105 ${imgClassName}`.trim()}
+        />
+        <Image
+          src={imagenes[1]}
+          alt={`${alt} vista alternativa`}
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className={`object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${imgClassName}`.trim()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`relative h-full w-full overflow-hidden ${className}`.trim()}>
@@ -77,7 +106,7 @@ export default function CarruselImagenes({
             onClick={manejarControl(-1)}
             className="absolute left-3 top-1/2 z-10 hidden md:flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85 bg-foreground/50 border-background/30 text-background"
           >
-            {"\u2039"}
+            {"‹"}
           </button>
           <button
             type="button"
@@ -85,7 +114,7 @@ export default function CarruselImagenes({
             onClick={manejarControl(1)}
             className="absolute right-3 top-1/2 z-10 hidden md:flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border text-sm transition-opacity hover:opacity-85 bg-foreground/50 border-background/30 text-background"
           >
-            {"\u203A"}
+            {"›"}
           </button>
         </>
       )}

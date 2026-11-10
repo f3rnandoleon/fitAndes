@@ -68,7 +68,14 @@ export default async function PedidoDetallePage({
   const { id } = await params;
   const { paymentId } = await searchParams;
   const auth = { userId: session.user.id, role: "CLIENTE" as const, accessToken: session.accessToken };
+<<<<<<< HEAD
   const pedido = await getOrderDetail(auth, id);
+=======
+  const [pedido, tracking] = await Promise.all([
+    getOrderDetail(auth, id),
+    getOrderTracking(auth, id),
+  ]);
+>>>>>>> 828b2756dfbf383aeeb12efb4a064add2cacad00
   if (!pedido) notFound();
 
   const tracking = await getOrderTracking(auth, id);
@@ -98,7 +105,7 @@ export default async function PedidoDetallePage({
 
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-4xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400 }}>
+          <h1 className="text-4xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}>
             {getPedidoNumero(pedido)}
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
@@ -126,6 +133,9 @@ export default async function PedidoDetallePage({
           status={pedido.estadoReservaStock}
         />
       )}
+
+      {/* Seguimiento de Guía y Despacho en tiempo real */}
+      <OrderTrackingSection pedido={pedido} tracking={tracking} />
 
       <div className="border overflow-hidden" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
         <div className="px-5 py-3 border-b" style={{ borderColor: "var(--border)" }}>
@@ -156,7 +166,7 @@ export default async function PedidoDetallePage({
                     {itemColor}{itemColorSecundario ? ` / ${itemColorSecundario}` : ""} - {itemTalla} - x{item.cantidad}
                   </p>
                 </div>
-                <p className="text-sm" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                <p className="text-sm" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
                   Bs. {(getPedidoItemPrecioUnitario(item) * item.cantidad).toFixed(2)}
                 </p>
               </div>
@@ -201,7 +211,7 @@ export default async function PedidoDetallePage({
         ) : null}
         <div className="flex justify-between text-base pt-3 border-t" style={{ borderColor: "var(--border)" }}>
           <span style={{ color: "var(--foreground)" }}>Total</span>
-          <span style={{ color: "var(--foreground)", fontFamily: "Georgia, 'Times New Roman', serif" }}>
+          <span style={{ color: "var(--foreground)", fontFamily: "var(--font-serif, Georgia, serif)" }}>
             Bs. {total.toFixed(2)}
           </span>
         </div>

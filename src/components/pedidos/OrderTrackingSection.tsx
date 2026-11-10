@@ -1,202 +1,198 @@
 "use client";
 
 import { useState } from "react";
-import type { OrderTracking, TrackingEstado } from "@/types/pedidos";
-import { Badge } from "@/components/ui/Badge";
+import type { Pedido, PedidoEntregaTracking } from "@/types/pedidos";
 
-interface OrderTrackingSectionProps {
-  tracking: OrderTracking | null;
-  metodoEntrega?: string | null;
+interface Props {
+  pedido: Pedido;
+  tracking: PedidoEntregaTracking | null;
 }
 
-const ESTADOS_MAP: Record<string, { label: string; badge: "default" | "success" | "warning" | "danger" | "accent"; step: number }> = {
-  PENDING: { label: "En espera de preparación", badge: "default", step: 1 },
-  PREPARING: { label: "Preparando paquete", badge: "warning", step: 2 },
-  READY: { label: "Listo para despacho / recojo", badge: "accent", step: 2 },
-  IN_TRANSIT: { label: "En camino / En tránsito", badge: "accent", step: 3 },
-  DELIVERED: { label: "Entregado con éxito", badge: "success", step: 4 },
-  CANCELLED: { label: "Envío cancelado", badge: "danger", step: 0 },
-};
+const STEPS = [
+  { key: "PENDING", label: "Pedido Registrado", desc: "En cola de almacén" },
+  { key: "PREPARING", label: "Preparando", desc: "Empaquetado y rotulado" },
+  { key: "IN_TRANSIT", label: "En Camino", desc: "Despachado con transportista" },
+  { key: "DELIVERED", label: "Entregado", desc: "Recibido satisfactoriamente" },
+];
 
-function formatDate(dateStr?: string | null) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  if (!Number.isFinite(d.getTime())) return null;
-  return d.toLocaleDateString("es-BO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function getStepIndex(estado?: string | null): number {
+  if (!estado) return 0;
+  switch (estado.toUpperCase()) {
+    case "PREPARING":
+    case "PREPARACION":
+      return 1;
+    case "IN_TRANSIT":
+    case "EN_TRANSITO":
+    case "DESPACHADO":
+      return 2;
+    case "DELIVERED":
+    case "ENTREGADO":
+      return 3;
+    case "CANCELLED":
+    case "CANCELADO":
+      return -1;
+    default:
+      return 0;
+  }
 }
 
-export default function OrderTrackingSection({ tracking, metodoEntrega }: OrderTrackingSectionProps) {
+export default function OrderTrackingSection({ pedido, tracking }: Props) {
   const [copied, setCopied] = useState(false);
 
-  // Si no hay tracking asignado aún
-  if (!tracking) {
-    // Si es recojo presencial en punto de encuentro
-    if (metodoEntrega === "PICKUP_POINT" || metodoEntrega === "PICKUP_LAPAZ") {
-      return (
-        <div className="border p-5 rounded-lg space-y-2" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-          <p className="text-xs uppercase tracking-wider text-subtle font-medium">
-            Seguimiento de Entrega
-          </p>
-          <div className="flex items-center gap-3 text-sm text-muted">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Punto de encuentro en La Paz. Tu pedido será llevado en el horario programado.</span>
-          </div>
-        </div>
-      );
-    }
+  // If order was cancelled, don't show normal tracking steps
+  const isCancelled =
+    pedido.estadoPedido === "CANCELLED" ||
+    pedido.orderStatus === "CANCELLED" ||
+    tracking?.estado === "CANCELLED";
 
-    return (
-      <div className="border p-5 rounded-lg space-y-2" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-        <p className="text-xs uppercase tracking-wider text-subtle font-medium">
-          Seguimiento de Envío (Courier / Flota)
-        </p>
-        <p className="text-sm text-muted">
-          Una vez verificado tu pago y despachado el paquete, verás aquí el número de guía de transporte y el estado en ruta.
-        </p>
-      </div>
-    );
+  if (isCancelled) {
+    return null;
   }
 
-  const estadoInfo = ESTADOS_MAP[tracking.estado] ?? {
-    label: tracking.estado,
-    badge: "default" as const,
-    step: 1,
-  };
+  const currentStep = getStepIndex(tracking?.estado ?? pedido.estadoEntrega ?? pedido.fulfillmentStatus);
+  const carrier = tracking?.nombreTransportista || pedido.delivery?.shippingCompany || pedido.entrega?.empresaEnvio;
+  const trackingCode = tracking?.codigoSeguimiento;
+  const recipient = tracking?.nombreDestinatario || pedido.delivery?.recipientName || pedido.delivery?.senderName;
 
-  const handleCopyGuide = () => {
-    if (!tracking.codigoSeguimiento) return;
-    navigator.clipboard.writeText(tracking.codigoSeguimiento);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyCode = async () => {
+    if (!trackingCode) return;
+    try {
+      await navigator.clipboard.writeText(trackingCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
   };
-
-  const currentStep = estadoInfo.step;
 
   return (
-    <div className="border p-5 sm:p-6 rounded-lg space-y-5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-      {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-3 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+    <div
+      className="border rounded-xl p-5 sm:p-6 space-y-6"
+      style={{
+        borderColor: "var(--border, #ece6dc)",
+        background: "var(--surface, #ffffff)",
+      }}
+    >
+      <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b" style={{ borderColor: "var(--border, #ece6dc)" }}>
         <div>
-          <p className="text-xs uppercase tracking-wider text-subtle font-medium">
-            Seguimiento de Despacho
+          <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground" style={{ letterSpacing: "0.14em", color: "#8f8478" }}>
+            Despacho y Envío
           </p>
-          <h2 className="text-lg font-serif mt-1 font-semibold text-foreground">
-            {tracking.nombreTransportista ?? "Transporte Interdepartamental"}
-          </h2>
+          <h3 className="text-base sm:text-lg font-medium text-foreground mt-0.5">
+            Estado de tu Entrega
+          </h3>
         </div>
-        <Badge variant={estadoInfo.badge}>{estadoInfo.label}</Badge>
+        {carrier ? (
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#f5efe6] text-[#6d5d4d] border border-[#e5dac9]">
+            {carrier}
+          </span>
+        ) : null}
       </div>
 
-      {/* Código de Guía Destacado */}
-      {tracking.codigoSeguimiento ? (
-        <div className="p-3.5 rounded-lg border flex items-center justify-between gap-3 bg-background/60" style={{ borderColor: "var(--border)" }}>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-subtle">
-              Número de Guía de Transporte
+      {/* Timeline Steps */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {STEPS.map((step, idx) => {
+          const isCompleted = idx < currentStep;
+          const isCurrent = idx === currentStep;
+
+          return (
+            <div key={step.key} className="flex flex-col items-center text-center space-y-2">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${isCompleted
+                    ? "bg-[#2f6b43] text-white"
+                    : isCurrent
+                      ? "bg-[#d04d37] text-white ring-4 ring-[#d04d37]/20"
+                      : "bg-[#f0ebe3] text-[#a4998d]"
+                  }`}
+              >
+                {isCompleted ? (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  idx + 1
+                )}
+              </div>
+              <div>
+                <p
+                  className={`text-xs font-medium ${isCurrent ? "text-[#d04d37] font-semibold" : isCompleted ? "text-[#2f6b43]" : "text-[#8f8478]"
+                    }`}
+                >
+                  {step.label}
+                </p>
+                <p className="text-[10px] text-[#a4998d] leading-tight mt-0.5">{step.desc}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Logistics & Tracking Code Details */}
+      {(trackingCode || carrier || tracking?.enTransitoEn || tracking?.entregadoEn) && (
+        <div
+          className="rounded-lg p-4 space-y-2.5 text-xs border"
+          style={{ background: "#fbf9f5", borderColor: "#ede5d8" }}
+        >
+          {trackingCode ? (
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-[#8f8478]">Número de Guía / Código:</span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-semibold text-sm text-[#111111] bg-white px-2 py-0.5 rounded border border-[#e5dac9]">
+                  {trackingCode}
+                </span>
+                <button
+                  type="button"
+                  onClick={copyCode}
+                  className="text-[11px] px-2 py-1 bg-white border border-[#e5dac9] rounded text-[#6d5d4d] hover:bg-[#f5efe6] transition-colors"
+                >
+                  {copied ? "¡Copiado!" : "Copiar"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[#8f8478] italic">
+              El transportista asignará el número de guía en cuanto el paquete esté en tránsito.
             </p>
-            <p className="font-mono text-base sm:text-lg font-semibold tracking-wide text-foreground mt-0.5">
-              {tracking.codigoSeguimiento}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleCopyGuide}
-            className="px-3 py-1.5 text-xs font-medium rounded border border-border/80 hover:bg-surface transition-colors shrink-0"
-            style={{ color: "var(--foreground)" }}
-          >
-            {copied ? "✓ Copiado" : "Copiar guía"}
-          </button>
-        </div>
-      ) : null}
+          )}
 
-      {/* Timeline de Pasos */}
-      {tracking.estado !== "CANCELLED" && (
-        <div className="pt-2">
-          <p className="text-[11px] uppercase tracking-wider text-subtle mb-4">
-            Progreso del Envío
-          </p>
-          <div className="grid grid-cols-4 gap-2 relative">
-            {/* Paso 1: Confirmado */}
-            <div className="text-center">
-              <div
-                className={`w-7 h-7 mx-auto rounded-full flex items-center justify-center text-xs font-semibold mb-1.5 ${
-                  currentStep >= 1 ? "bg-accent text-white" : "bg-muted/20 text-muted"
-                }`}
-              >
-                1
-              </div>
-              <p className="text-[11px] font-medium text-foreground">Confirmado</p>
+          {recipient ? (
+            <div className="flex justify-between flex-wrap gap-1 text-[#6d5d4d]">
+              <span className="text-[#8f8478]">Destinatario:</span>
+              <span className="font-medium text-[#111111]">{recipient}</span>
             </div>
+          ) : null}
 
-            {/* Paso 2: Preparado */}
-            <div className="text-center">
-              <div
-                className={`w-7 h-7 mx-auto rounded-full flex items-center justify-center text-xs font-semibold mb-1.5 ${
-                  currentStep >= 2 ? "bg-accent text-white" : "bg-muted/20 text-muted"
-                }`}
-              >
-                2
-              </div>
-              <p className="text-[11px] font-medium text-foreground">Empaquetado</p>
-              {formatDate(tracking.preparadoEn) && (
-                <p className="text-[9px] text-subtle mt-0.5">{formatDate(tracking.preparadoEn)}</p>
-              )}
+          {tracking?.enTransitoEn ? (
+            <div className="flex justify-between flex-wrap gap-1 text-[#6d5d4d]">
+              <span className="text-[#8f8478]">Despachado en:</span>
+              <span>
+                {new Date(tracking.enTransitoEn).toLocaleDateString("es-BO", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
             </div>
+          ) : null}
 
-            {/* Paso 3: En Tránsito */}
-            <div className="text-center">
-              <div
-                className={`w-7 h-7 mx-auto rounded-full flex items-center justify-center text-xs font-semibold mb-1.5 ${
-                  currentStep >= 3 ? "bg-accent text-white" : "bg-muted/20 text-muted"
-                }`}
-              >
-                3
-              </div>
-              <p className="text-[11px] font-medium text-foreground">En camino</p>
-              {formatDate(tracking.enTransitoEn) && (
-                <p className="text-[9px] text-subtle mt-0.5">{formatDate(tracking.enTransitoEn)}</p>
-              )}
+          {tracking?.entregadoEn ? (
+            <div className="flex justify-between flex-wrap gap-1 text-[#2f6b43]">
+              <span className="font-medium">Entregado en:</span>
+              <span>
+                {new Date(tracking.entregadoEn).toLocaleDateString("es-BO", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
             </div>
-
-            {/* Paso 4: Entregado */}
-            <div className="text-center">
-              <div
-                className={`w-7 h-7 mx-auto rounded-full flex items-center justify-center text-xs font-semibold mb-1.5 ${
-                  currentStep >= 4 ? "bg-success text-white" : "bg-muted/20 text-muted"
-                }`}
-              >
-                4
-              </div>
-              <p className="text-[11px] font-medium text-foreground">Entregado</p>
-              {formatDate(tracking.entregadoEn) && (
-                <p className="text-[9px] text-subtle mt-0.5">{formatDate(tracking.entregadoEn)}</p>
-              )}
-            </div>
-          </div>
+          ) : null}
         </div>
       )}
-
-      {/* Detalles del destinatario y notas */}
-      <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs" style={{ borderColor: "var(--border)" }}>
-        {tracking.nombreDestinatario && (
-          <div>
-            <span className="text-subtle">Consignatario: </span>
-            <span className="text-foreground font-medium">{tracking.nombreDestinatario}</span>
-          </div>
-        )}
-        {tracking.telefono && (
-          <div>
-            <span className="text-subtle">Celular de contacto: </span>
-            <span className="text-foreground font-medium">{tracking.telefono}</span>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

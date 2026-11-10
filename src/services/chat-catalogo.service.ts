@@ -1,6 +1,14 @@
 import { primeraImagenDeProducto } from "@/lib/catalogo-imagenes";
 import type { SearchProductsParams } from "@/lib/chat/types";
-import { catalogVariantIsAvailable, type CatalogProduct, type CatalogVariant, type ProductByCodeResponse } from "@/types/catalogo";
+import {
+  catalogVariantIsAvailable,
+  getCatalogProductPriceRange,
+  getCatalogVariantPrice,
+  unwrapCatalogProducts,
+  type CatalogProduct,
+  type CatalogVariant,
+  type ProductByCodeResponse,
+} from "@/types/catalogo";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "";
 
@@ -75,10 +83,16 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T | null>
 }
 
 export async function getPublicProducts(): Promise<CatalogProduct[] | null> {
+<<<<<<< HEAD
   const data = await fetchJson<CatalogProduct[] | { data?: CatalogProduct[] }>("/productos/publicos");
   if (Array.isArray(data)) return data;
   if (data && typeof data === "object" && Array.isArray(data.data)) return data.data;
   return data === null ? null : [];
+=======
+  const data = await fetchJson<unknown>("/productos/publicos");
+  if (data === null) return null;
+  return unwrapCatalogProducts(data);
+>>>>>>> 828b2756dfbf383aeeb12efb4a064add2cacad00
 }
 
 export async function getProductDetail(productId: string): Promise<CatalogProduct | null | undefined> {
@@ -184,9 +198,16 @@ export async function searchProducts(params: SearchProductsParams): Promise<Cata
 
     if (!byColorOrSize) return false;
 
-    const price = toNumber(product.precioVenta);
-    if (params.minPrice !== null && params.minPrice !== undefined && price < params.minPrice) return false;
-    if (params.maxPrice !== null && params.maxPrice !== undefined && price > params.maxPrice) return false;
+    const matchingVariant =
+      color || talla
+        ? product.variantes.find((variant) => matchVariant(variant, color, talla) && catalogVariantIsAvailable(variant))
+        : null;
+    const priceRange = matchingVariant
+      ? { min: getCatalogVariantPrice(product, matchingVariant), max: getCatalogVariantPrice(product, matchingVariant) }
+      : getCatalogProductPriceRange(product);
+
+    if (params.minPrice !== null && params.minPrice !== undefined && priceRange.max < params.minPrice) return false;
+    if (params.maxPrice !== null && params.maxPrice !== undefined && priceRange.min > params.maxPrice) return false;
 
     if (!query || recentQuery) return true;
     return scoreProduct(product, query) > 0;
