@@ -61,8 +61,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const requestId = await getRequestId();
   const auth = await getPaymentAuth(request);
 
-  if (!auth || auth.role !== "CLIENTE") {
-    return NextResponse.json({ message: "Debes iniciar sesion para subir el comprobante." }, { status: 401 });
+  if (auth && auth.role !== "CLIENTE" && auth.role !== "ADMIN" && auth.role !== "VENDEDOR") {
+    return NextResponse.json({ message: "No autorizado para subir comprobante." }, { status: 403 });
   }
 
   if (!CENTRAL_API_URL) {
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    logger.info("Payment receipt upload successful", { requestId, paymentId: id });
+    logger.info("Payment receipt upload successful", { requestId, paymentId: id, isGuest: !auth });
 
     return NextResponse.json(result.data);
   } catch (error) {

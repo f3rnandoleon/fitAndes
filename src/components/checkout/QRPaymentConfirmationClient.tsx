@@ -79,21 +79,38 @@ export default function QRPaymentConfirmationClient() {
       window.localStorage.removeItem("fitandes-pending-checkout");
       clearCart();
 
+      const isGuest = Boolean(payload?.esInvitado);
+
       if (!uploadResponse.ok) {
-        // El pedido se creo pero el comprobante fallo. 
-        // Redirigimos al detalle para que lo intente de nuevo ahi.
-        router.push(`/pedidos/${checkoutData.orderId}`);
+        // El pedido se creó pero el comprobante falló.
+        if (isGuest) {
+          router.push(
+            `/checkout/confirmacion?orderId=${checkoutData.orderId}&numero=${encodeURIComponent(
+              checkoutData.orderNumber || ""
+            )}&metodo=${encodeURIComponent(payload?.delivery?.method || "")}&comprobante=0`
+          );
+        } else {
+          router.push(`/pedidos/${checkoutData.orderId}`);
+        }
         return;
       }
 
       setSuccess(true);
 
       setTimeout(() => {
-        router.push(`/pedidos/${checkoutData.orderId}`);
-        router.refresh();
+        if (isGuest) {
+          router.push(
+            `/checkout/confirmacion?orderId=${checkoutData.orderId}&numero=${encodeURIComponent(
+              checkoutData.orderNumber || ""
+            )}&metodo=${encodeURIComponent(payload?.delivery?.method || "")}&comprobante=1`
+          );
+        } else {
+          router.push(`/pedidos/${checkoutData.orderId}`);
+          router.refresh();
+        }
       }, 1500);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Ocurrio un error al procesar tu pedido.";
+      const message = err instanceof Error ? err.message : "Ocurrió un error al procesar tu pedido.";
       setError(message);
       setProcessing(false);
     }
@@ -125,7 +142,7 @@ export default function QRPaymentConfirmationClient() {
           </svg>
         </div>
         <h2 className="text-2xl font-serif mb-2">¡Pedido creado con éxito!</h2>
-        <p className="text-sm text-muted">Hemos recibido tu pago y tu pedido ya está registrado. Te redirigiremos en un momento.</p>
+        <p className="text-sm text-muted">Hemos recibido tu comprobante bancario y tu pedido ya está registrado. Te redirigiremos en un momento.</p>
       </Card>
     );
   }
@@ -165,7 +182,7 @@ export default function QRPaymentConfirmationClient() {
                 </svg>
               </div>
               <p className="text-sm font-medium mb-1">{file ? file.name : "Sube tu comprobante aquí"}</p>
-              <p className="text-xs text-muted">El pedido se creará al subir el archivo</p>
+              <p className="text-xs text-muted">El pedido se creará y la reserva se extenderá al subir el archivo</p>
             </label>
           </div>
 
@@ -176,7 +193,7 @@ export default function QRPaymentConfirmationClient() {
               {processing ? "Procesando pedido..." : "Confirmar y Finalizar Pedido"}
             </Button>
             <p className="mt-4 text-[11px] text-center text-muted">
-              Al hacer clic, tu pedido se registrará en el sistema y se notificará al equipo.
+              Al hacer clic, tu pedido se registrará en el sistema y se notificará de inmediato al equipo.
             </p>
           </div>
         </div>

@@ -3,12 +3,12 @@ import Link from "next/link";
 import { SITE_NAME, SITE_URL, getWhatsAppLink } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "Sobre Nosotros | FitAndes",
+  title: "Sobre Nosotros | Fit Andes",
   description:
-    "Conoce la historia, valores y el compromiso de FitAndes con la confección textil y artesanal boliviana.",
+    "Conoce la historia, valores y el compromiso de FitAndes con la confección textil y artesanal.",
   openGraph: {
-    title: "Sobre Nosotros - FitAndes",
-    description: "Confección boliviana de alta calidad con identidad andina.",
+    title: "Sobre Nosotros - Fit Andes",
+    description: "Confección de calidad con identidad andina.",
     url: `${SITE_URL}/nosotros`,
     siteName: SITE_NAME,
   },
@@ -27,7 +27,7 @@ export default function NosotrosPage() {
             Moda con Identidad Andina
           </h1>
           <p className="text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-            Nacidos en el corazón de Bolivia, combinamos la calidez y maestría del tejido andino con
+            Nacidos en el corazón de los Andes, combinamos la calidez y maestría del tejido andino con
             siluetas contemporáneas pensadas para tu día a día.
           </p>
         </div>
@@ -42,30 +42,24 @@ export default function NosotrosPage() {
             </h2>
             <p className="text-sm sm:text-base text-muted leading-relaxed">
               En <strong>FitAndes</strong> creemos que una prenda no solo abriga: cuenta una historia.
-              Cada una de nuestras chompas y poleras está pensada para resistir el paso del tiempo, utilizando
+              Cada una de las chompas y poleras está pensada para resistir el paso del tiempo, utilizando
               fibras seleccionadas por su suavidad, durabilidad y textura única.
             </p>
-            <p className="text-sm sm:text-base text-muted leading-relaxed">
-              Trabajamos con confeccionistas locales en talleres bolivianos, rescatando el legado del tejido artesanal
-              y fusionándolo con acabados de corte internacional.
-            </p>
+
           </div>
           <div className="bg-surface rounded-2xl p-8 border border-border/60 shadow-sm space-y-4">
             <h3 className="text-sm uppercase tracking-widest text-accent font-semibold">
               Nuestros Pilares
             </h3>
             <ul className="space-y-3 text-sm text-foreground/90">
-              <li className="flex items-start gap-2.5">
-                <span className="text-accent font-bold">✓</span>
-                <span><strong>Calidad 100% Boliviana:</strong> Confeccionado éticamente en La Paz y El Alto.</span>
-              </li>
+
               <li className="flex items-start gap-2.5">
                 <span className="text-accent font-bold">✓</span>
                 <span><strong>Fibras nobles:</strong> Hilos térmicos y algodones de alta densidad para máxima resistencia.</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="text-accent font-bold">✓</span>
-                <span><strong>Comercio Transparente:</strong> Precios justos directos de taller al cliente, sin intermediarios inflados.</span>
+                <span><strong>Comercio Transparente:</strong> Precios justos directos de taller al cliente.</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="text-accent font-bold">✓</span>

@@ -21,9 +21,6 @@ const NAV_LINKS = [
   { label: "Inicio", href: "/" },
   { label: "Catálogo", href: "/catalogo" },
   { label: "Sucursales", href: "/ubicaciones" },
-  { label: "Nosotros", href: "/nosotros" },
-  { label: "FAQ", href: "/faq" },
-  { label: "Políticas", href: "/politicas" },
 ];
 
 export default function SiteHeader({ authenticated = false, fullname, firstName: firstNameProp, email }: Props) {
@@ -68,14 +65,11 @@ export default function SiteHeader({ authenticated = false, fullname, firstName:
                 </Link>
               ))}
             </nav>
-
-
           </div>
 
           <div className="flex justify-center md:justify-self-center">
             <Link
               href="/"
-
               className="text-lg uppercase font-bold sm:text-xl md:text-2xl text-foreground"
               style={{ fontFamily: "var(--font-serif, Georgia, serif)", letterSpacing: "0.24em" }}
             >

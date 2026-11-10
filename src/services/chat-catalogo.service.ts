@@ -83,16 +83,9 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T | null>
 }
 
 export async function getPublicProducts(): Promise<CatalogProduct[] | null> {
-<<<<<<< HEAD
-  const data = await fetchJson<CatalogProduct[] | { data?: CatalogProduct[] }>("/productos/publicos");
-  if (Array.isArray(data)) return data;
-  if (data && typeof data === "object" && Array.isArray(data.data)) return data.data;
-  return data === null ? null : [];
-=======
   const data = await fetchJson<unknown>("/productos/publicos");
   if (data === null) return null;
   return unwrapCatalogProducts(data);
->>>>>>> 828b2756dfbf383aeeb12efb4a064add2cacad00
 }
 
 export async function getProductDetail(productId: string): Promise<CatalogProduct | null | undefined> {

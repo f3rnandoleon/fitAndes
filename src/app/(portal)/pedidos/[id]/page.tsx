@@ -68,17 +68,13 @@ export default async function PedidoDetallePage({
   const { id } = await params;
   const { paymentId } = await searchParams;
   const auth = { userId: session.user.id, role: "CLIENTE" as const, accessToken: session.accessToken };
-<<<<<<< HEAD
-  const pedido = await getOrderDetail(auth, id);
-=======
+
   const [pedido, tracking] = await Promise.all([
     getOrderDetail(auth, id),
     getOrderTracking(auth, id),
   ]);
->>>>>>> 828b2756dfbf383aeeb12efb4a064add2cacad00
-  if (!pedido) notFound();
 
-  const tracking = await getOrderTracking(auth, id);
+  if (!pedido) notFound();
 
   const descuento = getPedidoDescuento(pedido);
   const subtotal = getPedidoSubtotal(pedido);
@@ -216,11 +212,6 @@ export default async function PedidoDetallePage({
           </span>
         </div>
       </div>
-
-      <OrderTrackingSection
-        tracking={tracking}
-        metodoEntrega={delivery?.method}
-      />
 
       <PaymentReceiptSection
         pedido={pedido}

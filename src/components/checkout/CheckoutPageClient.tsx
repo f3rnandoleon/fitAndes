@@ -79,6 +79,8 @@ export default function CheckoutPageClient() {
   const [deliveryConfig, setDeliveryConfig] = useState<DeliveryOptionsConfig>(EMPTY_DELIVERY_OPTIONS);
   const [deliveryOptionsLoading, setDeliveryOptionsLoading] = useState(true);
   const [deliveryOptionsError, setDeliveryOptionsError] = useState("");
+  const [systemWarning, setSystemWarning] = useState<string | null>(null);
+  const [isSystemReadOnly, setIsSystemReadOnly] = useState<boolean>(false);
 
   const authenticated = status === "authenticated" && session?.user?.role === "CLIENTE";
   const pickupPointOptions = deliveryConfig.pickupPoints;
@@ -122,6 +124,34 @@ export default function CheckoutPageClient() {
       })
       .finally(() => {
         if (!cancelled) setDeliveryOptionsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetch("/api/estado", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json().catch(() => null);
+        if (cancelled) return;
+
+        if (data?.readOnly) {
+          setIsSystemReadOnly(true);
+          setSystemWarning(
+            "El sistema central se encuentra temporalmente en modo de consulta por mantenimiento. Las compras web están en pausa temporal."
+          );
+        } else if (!response.ok || (data && data.mongodbConnected === false)) {
+          setSystemWarning(
+            "El sistema central de pedidos se encuentra en mantenimiento técnico programado. Si experimentas problemas al confirmar tu orden, te sugerimos coordinar directamente por WhatsApp."
+          );
+        }
+      })
+      .catch(() => {
+        // En caso de fallo de red aislado, no bloqueamos la UI
       });
 
     return () => {
@@ -226,6 +256,10 @@ export default function CheckoutPageClient() {
   }
 
   function validateForm() {
+    if (isSystemReadOnly) {
+      return "El sistema se encuentra temporalmente en mantenimiento. Por favor contáctanos por WhatsApp (+591 67113105) para apartar tus prendas.";
+    }
+
     if (items.length === 0) {
       return "Tu carrito está vacío.";
     }
@@ -400,7 +434,11 @@ export default function CheckoutPageClient() {
         pendingWhatsappWindow?.close();
       }
 
-      router.push(data.orderId ? `/pedidos/${data.orderId}` : "/pedidos");
+      if (!authenticated) {
+        router.push(`/checkout/confirmacion?orderId=${data.orderId || ""}&numero=${encodeURIComponent(data.orderNumber || "")}&metodo=${encodeURIComponent(deliveryMethod)}`);
+      } else {
+        router.push(data.orderId ? `/pedidos/${data.orderId}` : "/pedidos");
+      }
       router.refresh();
     } catch {
       pendingWhatsappWindow?.close();
@@ -462,6 +500,35 @@ export default function CheckoutPageClient() {
             />
           </div>
         </header>
+
+        {systemWarning && (
+          <div className="rounded-[24px] border border-amber-200/90 bg-amber-50/80 p-4 sm:p-5 text-amber-900 shadow-xs mb-8">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <span className="text-2xl shrink-0" aria-hidden="true">
+                ℹ️
+              </span>
+              <div className="text-xs sm:text-sm leading-relaxed space-y-1.5">
+                <p className="font-semibold text-amber-950">
+                  Aviso de disponibilidad del sistema
+                </p>
+                <p className="text-amber-900">
+                  {systemWarning}
+                </p>
+                <p className="pt-0.5 text-xs">
+                  ¿Prefieres asegurar tus prendas inmediatamente?{" "}
+                  <a
+                    href="https://wa.me/59167113105?text=Hola%20Fit%20Andes%2C%20quisiera%20coordinar%20mi%20pedido%20directamente"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-amber-950 underline underline-offset-2 hover:opacity-80"
+                  >
+                    Chatea con nosotros por WhatsApp (+591 67113105)
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
           <div className="space-y-6 sm:space-y-8">
@@ -635,6 +702,7 @@ export default function CheckoutPageClient() {
               shippingCost={shippingCost}
               shippingLabel={shippingLabel}
               loading={loading}
+              disabled={isSystemReadOnly}
               error={error}
               onSubmit={handleSubmit}
               authenticated={authenticated}

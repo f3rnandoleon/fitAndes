@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s | FitAndes",
   },
   description:
-    "Explora nuestra colección exclusiva de chompas andinas tejidas con maestría y una amplia variedad de poleras modernas. Calidad boliviana.",
+    "Explora nuestra colección exclusiva de chompas andinas tejidas con maestría y una amplia variedad de poleras modernas.",
   keywords: [
     "chompas andinas",
     "poleras",

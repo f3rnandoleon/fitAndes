@@ -22,7 +22,7 @@ export default function CarruselImagenes({
   duracionMs = 3000,
   mostrarIndicadores = true,
   mostrarControles = true,
-  autoPlay = false,
+  autoPlay = true,
 }: Props) {
   const [indiceActual, setIndiceActual] = useState(0);
   const claveImagenes = imagenes.join("|");

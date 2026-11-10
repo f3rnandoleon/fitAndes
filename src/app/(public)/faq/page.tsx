@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   description:
     "Respuestas a las dudas más comunes sobre envíos nacionales, pagos QR, reservas de stock y sucursales en FitAndes.",
   openGraph: {
-    title: "Preguntas Frecuentes - FitAndes",
-    description: "Todo lo que necesitas saber para comprar en FitAndes Bolivia.",
+    title: "Preguntas Frecuentes - Fit Andes",
+    description: "Todo lo que necesitas saber para comprar en Fit Andes.",
     url: `${SITE_URL}/faq`,
     siteName: SITE_NAME,
   },
@@ -23,7 +23,7 @@ const FAQS = [
   {
     pregunta: "¿A qué ciudades realizan envíos y cuál es el costo?",
     respuesta:
-      "Realizamos envíos a toda Bolivia (Santa Cruz, Cochabamba, Oruro, Potosí, Chuquisaca, Tarija, Beni y Pando) a través de empresas de transporte terrestre y encomienda express. La tarifa plana de despacho es de Bs. 10. Para La Paz, puedes recoger gratis en nuestras tiendas físicas.",
+      "Realizamos envíos a toda Bolivia (Santa Cruz, Cochabamba, Oruro, Potosí, Chuquisaca, Tarija, Beni y Pando) a través de empresas de transporte terrestre y encomienda express. La tarifa plana de despacho es de Bs. 20. Para La Paz, puedes recoger gratis en nuestras tiendas físicas.",
   },
   {
     pregunta: "¿Cuánto tiempo demora en llegar mi pedido?",
@@ -35,11 +35,7 @@ const FAQS = [
     respuesta:
       "Aceptamos pagos mediante código QR Simple (Banco Unión, BCP, BNB, Mercantil, Fassil/BancoSol, etc.), transferencias directas y pago en efectivo al retirar tu prenda en nuestras tiendas físicas autorizadas.",
   },
-  {
-    pregunta: "¿Cómo funciona la reserva de stock de 30 minutos?",
-    respuesta:
-      "Cuando añades prendas a tu carrito y comienzas el proceso de compra, el sistema aparta automáticamente las unidades en nuestro inventario central durante 30 minutos. Así nadie más puede comprar tu talla mientras completas tus datos de entrega o tu pago.",
-  },
+
   {
     pregunta: "¿Qué pasa si la talla que elegí no me queda?",
     respuesta:

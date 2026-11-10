@@ -146,3 +146,43 @@ export function unwrapCatalogProducts(data: unknown): CatalogProduct[] {
   return [];
 }
 
+
+export interface PublicBanner {
+  _id: string;
+  titulo: string;
+  descripcion?: string | null;
+  imagenDesktopUrl: string;
+  imagenMobileUrl?: string | null;
+  tipoAccion?: "WHATSAPP" | "URL" | "CATALOGO" | string;
+  whatsappNumero?: string | null;
+  whatsappMensaje?: string | null;
+  actionUrl?: string | null;
+  activo?: boolean;
+  orden?: number;
+  fechaInicio?: string | null;
+  fechaFin?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CatalogPaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export function unwrapCatalogPagination(data: unknown): CatalogPaginationMeta {
+  if (data && typeof data === "object") {
+    const record = data as Record<string, unknown>;
+    const total = typeof record.total === "number" ? record.total : 0;
+    const page = typeof record.page === "number" ? record.page : 1;
+    const limit = typeof record.limit === "number" ? record.limit : 24;
+    const totalPages =
+      typeof record.totalPages === "number"
+        ? record.totalPages
+        : Math.max(1, Math.ceil(total / (limit || 1)));
+    return { total, page, limit, totalPages };
+  }
+  return { total: 0, page: 1, limit: 24, totalPages: 1 };
+}

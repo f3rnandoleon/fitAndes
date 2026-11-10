@@ -17,11 +17,7 @@
    - [5.1 Producto Público Sanitizado](#51-producto-público-sanitizado)
    - [5.2 Producto Interno Enriquecido con Stock Multisucursal](#52-producto-interno-enriquecido-con-stock-multisucursal)
    - [5.3 Pedido Unificado](#53-pedido-unificado)
-<<<<<<< HEAD
-   - [5.4 Sucursal y Configuración de Caja](#54-sucursal-y-configuración-de-caja)
-=======
    - [5.4 Sucursal, Geolocalización Google Maps y Configuración de Caja](#54-sucursal-geolocalización-google-maps-y-configuración-de-caja)
->>>>>>> 828b2756dfbf383aeeb12efb4a064add2cacad00
    - [5.5 Compra a Proveedor y Costo Promedio Ponderado (CPP)](#55-compra-a-proveedor-y-costo-promedio-ponderado-cpp)
 6. [Catálogo de Endpoints por Dominio](#6-catálogo-de-endpoints-por-dominio)
    - [6.1 Salud y Estado Técnico](#61-salud-y-estado-técnico)
@@ -50,6 +46,7 @@
    - [6.24 Gestión de Usuarios Administrativos](#624-gestión-de-usuarios-administrativos)
    - [6.25 Uploads Multimedia](#625-uploads-multimedia)
    - [6.26 Operaciones, Mantenimiento y Cron](#626-operaciones-mantenimiento-y-cron)
+   - [6.27 Biblioteca de Banners Web (Carrusel Home y Campañas)](#627-biblioteca-de-banners-web-carrusel-home-y-campañas)
 7. [Variables de Entorno](#7-variables-de-entorno)
 
 ---
@@ -106,11 +103,7 @@ El helper [`resolveApiAuth`](file:///c:/proyectos/control-ventas/src/libs/resolv
 ### 3.2 Matriz de Acceso por Rol
 | Dominio | CLIENTE | VENDEDOR | ADMIN |
 |---|---|---|---|
-<<<<<<< HEAD
-| Catálogo público / Políticas / Delivery Options | Sí | Sí | Sí |
-=======
 | Catálogo público / Políticas / Delivery Options / Ubicaciones | Sí | Sí | Sí |
->>>>>>> 828b2756dfbf383aeeb12efb4a064add2cacad00
 | Búsqueda por código/SKU (`/api/productos/by-code/:code`) | Sí (sanitizado) | Sí | Sí |
 | Catálogo interno (`/api/productos`) | No | Sí | Sí |
 | Carrito y Checkout de cliente | Sí | No | No |
@@ -140,19 +133,11 @@ Para facilitar la integración desde aplicaciones web externas (como el Storefro
   - `Access-Control-Allow-Headers: Content-Type, Authorization, x-user-id, x-user-role, x-request-id`
   - `Access-Control-Max-Age: 86400`
 - **Preflight `OPTIONS`:** Interceptado a nivel de middleware retornando `HTTP 204 No Content` con cabeceras CORS inmediatas sin requerir autenticación.
-<<<<<<< HEAD
-- **Rutas Públicas Habilitadas:** `/api/public/*`, `/api/productos/publicos*`, `/api/productos/by-code/*`, `/api/delivery-options*`, `/api/estado*`, `/api/auth/signup`.
-
-### 4.2 Rate Limiting (en Memoria)
-- **Login / Signup / Auth:** 5 peticiones/min por IP.
-- **Catálogo Público (`/api/productos/publicos`, `/api/productos/by-code`, `/api/delivery-options`):** 100 peticiones/min por IP.
-=======
 - **Rutas Públicas Habilitadas:** `/api/public/*`, `/api/productos/publicos*`, `/api/productos/by-code/*`, `/api/delivery-options*`, `/api/ubicaciones*`, `/api/estado*`, `/api/auth/signup`.
 
 ### 4.2 Rate Limiting (en Memoria)
 - **Login / Signup / Auth:** 5 peticiones/min por IP.
 - **Catálogo Público (`/api/productos/publicos`, `/api/productos/by-code`, `/api/delivery-options`, `/api/ubicaciones`):** 100 peticiones/min por IP.
->>>>>>> 828b2756dfbf383aeeb12efb4a064add2cacad00
 - **Lectura protegida (`GET`):** 60 peticiones/min por usuario.
 - **Escritura protegida (`POST`, `PUT`, `PATCH`, `DELETE`):** 30 peticiones/min por usuario.
 - **Respuesta 429:** `{ "message": "Demasiadas solicitudes. Inténtalo más tarde." }` con cabecera `Retry-After: 60`.
@@ -299,13 +284,8 @@ En endpoints administrativos (`/api/productos` y `/api/productos/:id`), cada var
 }
 ```
 
-<<<<<<< HEAD
-### 5.4 Sucursal y Configuración de Caja
-Define las propiedades operativas de cada local o almacén, controlando si el personal de caja debe abrir turno formalmente o puede operar con caja libre:
-=======
 ### 5.4 Sucursal, Geolocalización Google Maps y Configuración de Caja
 Define las propiedades operativas de cada local o almacén, su ubicación en Google Maps (para compartir en la Tienda Web y con el Agente de WhatsApp) y si el personal de caja debe abrir turno formalmente o puede operar con caja libre:
->>>>>>> 828b2756dfbf383aeeb12efb4a064add2cacad00
 ```json
 {
   "_id": "670e1000f1b4c90011000001",
@@ -315,8 +295,6 @@ Define las propiedades operativas de cada local o almacén, su ubicación en Goo
   "direccion": "Av. Montenegro #1234",
   "ciudad": "La Paz",
   "telefono": "59170123456",
-<<<<<<< HEAD
-=======
   "ubicacionMapa": {
     "googleMapsUrl": "https://www.google.com/maps?q=-16.5401,-68.0789",
     "embedUrl": "",
@@ -326,7 +304,6 @@ Define las propiedades operativas de cada local o almacén, su ubicación en Goo
     "horariosTexto": "Lunes a Sábado de 09:30 a 20:00"
   },
   "visibleEnWebYAgente": true,
->>>>>>> 828b2756dfbf383aeeb12efb4a064add2cacad00
   "permiteVentaPOS": true,
   "permiteDespachoWeb": false,
   "permiteRetiroCliente": true,
@@ -381,6 +358,28 @@ Documento de adquisición que incrementa inventario y recalcula atómicamente el
 }
 ```
 
+### 5.16 Modelo Banner (Biblioteca de Campañas y Carrusel Web)
+Esquema de almacenamiento de banners promocionales gestionados desde `/dashboard/admin/banners` para alimentar el carrusel dinámico inteligente de la tienda web y redirigir consultas de clientes a WhatsApp (+591 67113105):
+```json
+{
+  "_id": "6724a1b0c9e0110001000001",
+  "titulo": "Colección Invierno 2026",
+  "descripcion": "Chompas y poleras térmicas de alpaca.",
+  "imagenDesktopUrl": "https://res.cloudinary.com/dq1jeikev/image/upload/v1778000000/banner_desktop.jpg",
+  "imagenMobileUrl": "https://res.cloudinary.com/dq1jeikev/image/upload/v1778000000/banner_mobile.jpg",
+  "tipoAccion": "WHATSAPP",
+  "whatsappNumero": "67113105",
+  "whatsappMensaje": "¡Hola! Vi el banner de la Colección Invierno y deseo más información.",
+  "enlaceUrl": null,
+  "activo": true,
+  "orden": 1,
+  "fechaInicio": "2026-06-01T00:00:00.000Z",
+  "fechaFin": "2026-08-31T23:59:59.000Z",
+  "createdAt": "2026-11-06T03:00:00.000Z",
+  "updatedAt": "2026-11-06T03:00:00.000Z"
+}
+```
+
 ---
 
 ## 6. Catálogo de Endpoints por Dominio
@@ -400,6 +399,7 @@ Documento de adquisición que incrementa inventario y recalcula atómicamente el
 | `GET` | `/api/productos/by-code/:code` | Pública | Búsqueda directa por código de prenda (código de barra, QR o SKU). Sanitizada para clientes públicos (oculta costos y existencias internas) |
 | `GET` | `/api/delivery-options` | Pública | Lista de puntos de recojo, horarios y empresas de envío por departamento |
 | `GET` | `/api/ubicaciones` | Pública | Lista de sucursales y puntos de retiro públicos (`activa: true`, `visibleEnWebYAgente: true`) con enlace de Google Maps (`googleMapsUrl`), coordenadas (`lat`, `lng`), referencia y horarios de atención. Soporta filtro `?ciudad=` |
+| `GET` | `/api/public/banners` | Pública | Lista de banners promocionales activos y vigentes para el carrusel de la tienda web, con enlace precalculado de WhatsApp (+591 67113105) y URLs de Cloudinary |
 
 ---
 
@@ -512,10 +512,7 @@ Documento de adquisición que incrementa inventario y recalcula atómicamente el
 |---|---|---|---|
 | `GET` | `/api/integrations/whatsapp/products/search` | API Key Bot | Búsqueda ultra-rápida y compacta para IA (`?q=`, `?color=`, `?talla=`, `?minPrecio=`, `?maxPrecio=`, `?limit=`). Filtra prendas activas con variantes con stock vendible en sucursales de despacho web y aplica optimización Cloudinary (`f_auto,q_auto,w_800`) |
 | `GET` | `/api/integrations/whatsapp/products/:id/measurements` | API Key Bot | Consulta de medidas anatómicas por talla y colores disponibles para asesoría de clientes |
-<<<<<<< HEAD
-=======
 | `GET` | `/api/integrations/whatsapp/locations` | API Key Bot | Consulta de tiendas físicas y puntos de retiro públicos (`activa: true`, `visibleEnWebYAgente: true`) con enlace de Google Maps (`googleMapsUrl`), coordenadas (`lat`, `lng`), dirección, referencia, horarios y teléfono. Soporta filtro opcional `?ciudad=` |
->>>>>>> 828b2756dfbf383aeeb12efb4a064add2cacad00
 | `POST` | `/api/integrations/whatsapp/orders` | API Key Bot | Creación de pedido con idempotencia, reserva hasta fin de día (La Paz UTC-4) e instrucciones de BancoSol |
 | `POST` | `/api/integrations/whatsapp/payments/:id/proof`| API Key Bot | Subida de captura de comprobante enviada por el cliente, prórroga de reserva 48h y notificación a Telegram |
 | `GET` | `/api/integrations/whatsapp/orders/:nro` | API Key Bot | Consulta de estado de orden filtrada por número de teléfono del cliente (`?phone=`) |
@@ -547,17 +544,10 @@ Documento de adquisición que incrementa inventario y recalcula atómicamente el
 ### 6.15 Sucursales y Stock Multitienda
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
-<<<<<<< HEAD
-| `GET` | `/api/admin/sucursales` | `ADMIN`, `VENDEDOR` | Listado de sucursales (tiendas físicas, almacenes y puntos de retiro) con flags de venta POS, despacho web y requerimiento de caja |
-| `POST` | `/api/admin/sucursales` | `ADMIN` | Alta de nueva sucursal (`nombre`, `codigo`, `tipo`, `permiteVentaPOS`, `permiteDespachoWeb`, `permiteRetiroCliente`, `requiereAperturaCaja`) |
-| `GET` | `/api/admin/sucursales/:id` | `ADMIN` | Detalle de sucursal y configuración operativa |
-| `PUT` | `/api/admin/sucursales/:id` | `ADMIN` | Modificación de datos y políticas de la sucursal (ej. activar o desactivar `requiereAperturaCaja`) |
-=======
 | `GET` | `/api/admin/sucursales` | `ADMIN`, `VENDEDOR` | Listado de sucursales (tiendas físicas, almacenes y puntos de retiro) con ubicación Google Maps (`ubicacionMapa`), visibilidad web/agente (`visibleEnWebYAgente`), flags de venta POS, despacho web y requerimiento de caja |
 | `POST` | `/api/admin/sucursales` | `ADMIN` | Alta de nueva sucursal (`nombre`, `codigo`, `tipo`, `ubicacionMapa`, `visibleEnWebYAgente`, `permiteVentaPOS`, `permiteDespachoWeb`, `permiteRetiroCliente`, `requiereAperturaCaja`) |
 | `GET` | `/api/admin/sucursales/:id` | `ADMIN`, `VENDEDOR` | Detalle de sucursal, geolocalización y configuración operativa |
 | `PUT` | `/api/admin/sucursales/:id` | `ADMIN` | Modificación de datos, coordenadas/enlace de Google Maps (`ubicacionMapa`), visibilidad en Web/Agente y políticas operativas de la sucursal |
->>>>>>> 828b2756dfbf383aeeb12efb4a064add2cacad00
 | `PATCH` | `/api/admin/sucursales/:id` | `ADMIN` | Activa o desactiva lógicamente la sucursal (`{ activa: boolean }`, impidiendo desactivar el almacén principal) |
 | `GET` | `/api/admin/productos/:id/stock-sucursales` | `ADMIN`, `VENDEDOR` | Desglose pormenorizado de niveles de stock (`stockFisico`, `stockReservado`, `stockDisponible`) por cada sucursal para el producto |
 
@@ -674,6 +664,20 @@ Todos los endpoints requieren rol `ADMIN`:
 | `POST` | `/api/admin/ops/verify-core` | `ADMIN` | Test E2E de verificación del núcleo transaccional |
 | `GET` | `/api/admin/audit-events` | `ADMIN` | Consulta de la pista de auditoría inmutable de eventos de dominio |
 | `GET/POST`| `/api/admin/cron/reservas-expiradas`| Cron Secret | Proceso desatendido que libera stock de pedidos vencidos con candado distribuido `CronLock` |
+
+---
+
+### 6.27 Biblioteca de Banners Web (Carrusel Home y Campañas)
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| `GET` | `/api/public/banners` | Pública | Retorna banners activos y vigentes para el carrusel de la tienda web con enlace directo precalculado de WhatsApp (+591 67113105) |
+| `GET` | `/api/admin/banners` | `ADMIN` | Consulta la biblioteca completa de banners (activos e inactivos) ordenados por prioridad |
+| `POST` | `/api/admin/banners` | `ADMIN` | Crea un nuevo banner en la biblioteca (Cloudinary, título, acción de WhatsApp / URL y vigencia) |
+| `GET` | `/api/admin/banners/:id` | `ADMIN` | Obtiene el detalle de un banner por ID |
+| `PUT` | `/api/admin/banners/:id` | `ADMIN` | Actualiza los datos o imágenes de un banner existente |
+| `PATCH` | `/api/admin/banners/:id/toggle` | `ADMIN` | Activa o desactiva instantáneamente el banner en la tienda web con un solo clic |
+| `DELETE`| `/api/admin/banners/:id` | `ADMIN` | Elimina un banner de la biblioteca |
+| `POST` | `/api/uploads/banners` | `ADMIN` | Sube fotografía de banner (desktop o móvil) a Cloudinary (máx. 5 MB) |
 
 ---
 

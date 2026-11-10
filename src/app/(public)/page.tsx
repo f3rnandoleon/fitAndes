@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BiDevices, BiHistory, BiLogIn } from "react-icons/bi";
-import { GrSecure } from "react-icons/gr";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
+import HomeBannerCarousel from "@/components/home/HomeBannerCarousel";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
 import { formatPrice } from "@/lib/format";
 import {
@@ -11,6 +10,7 @@ import {
   unwrapCatalogProducts,
   type CatalogProduct,
   type CatalogVariant,
+  type PublicBanner,
 } from "@/types/catalogo";
 import imagen from "../../../public/banner-main.png";
 
@@ -18,7 +18,6 @@ const API_URL =
   process.env.API_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
   (process.env.NEXTAUTH_URL ? `${process.env.NEXTAUTH_URL}/api` : undefined);
-
 
 type VariantePublica = CatalogVariant;
 
@@ -43,7 +42,6 @@ function totalStock(producto: ProductoPublico): number {
     variantes: producto.variantes ?? [],
   });
 }
-
 
 function esNuevo(createdAt?: string): boolean {
   if (!createdAt) return false;
@@ -73,8 +71,30 @@ async function getProductosPublicos(): Promise<ProductoPublico[]> {
   }
 }
 
+async function getPublicBanners(): Promise<PublicBanner[]> {
+  if (!API_URL) return [];
+
+  try {
+    const res = await fetch(`${API_URL}/public/banners`, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    return Array.isArray(data) ? (data as PublicBanner[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function HomePage() {
-  const productos = await getProductosPublicos();
+  const [productos, banners] = await Promise.all([
+    getProductosPublicos(),
+    getPublicBanners(),
+  ]);
+
   const productosDisponibles = productos.filter((producto) => totalStock(producto) > 0);
 
   const recienLlegados = [...productosDisponibles]
@@ -85,9 +105,9 @@ export default async function HomePage() {
     })
     .slice(0, 3);
 
-  const recienLlegadosIds = new Set(recienLlegados.map(p => p._id));
+  const recienLlegadosIds = new Set(recienLlegados.map((p) => p._id));
   const seleccionBase = [...productosDisponibles]
-    .filter(p => !recienLlegadosIds.has(p._id))
+    .filter((p) => !recienLlegadosIds.has(p._id))
     .sort((a, b) => {
       const vendidosA = normalizarNumero(a.totalVendidos);
       const vendidosB = normalizarNumero(b.totalVendidos);
@@ -96,82 +116,71 @@ export default async function HomePage() {
       return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
     });
 
-  const seleccion = (seleccionBase.length > 0 ? seleccionBase : productos.filter(p => !recienLlegadosIds.has(p._id))).slice(0, 4);
-  /*const categorias = Array.from(new Set(productosDisponibles.map((producto) => producto.categoria).filter(Boolean)));
-  const heroStats = [
-    { label: "Piezas activas", value: `${productosDisponibles.length}` },
-    { label: "Categorías", value: `${categorias.length || 1}` },
-    { label: "Compra guiada", value: "WhatsApp + web" },
-  ];*/
-  const beneficios = [
-    { icon: <BiHistory />, title: "Historial de pedidos", desc: "Consulta cada compra desde tu cuenta sin perder el hilo." },
-    { icon: <GrSecure />, title: "Cuenta segura", desc: "Sesión protegida y flujo simple para volver a comprar rápido." },
-    { icon: <BiLogIn />, title: "Registro en segundos", desc: "Sin formularios largos ni pasos innecesarios." },
-    { icon: <BiDevices />, title: "Catálogo actualizado", desc: "Navega el catálogo y reserva tus productos favoritos." },
-  ];
+  const seleccion = (seleccionBase.length > 0 ? seleccionBase : productos.filter((p) => !recienLlegadosIds.has(p._id))).slice(0, 4);
 
   return (
     <main className="min-h-screen bg-background text-foreground font-sans">
-      <section
-        id="inicio"
-        className="relative isolate overflow-hidden"
-        style={{ background: "linear-gradient(140deg, #b8b0a5 0%, #d7d0c6 44%, #e8e2d8 100%)" }}
-      >
-        <Image
-          src={imagen}
-          alt="Nueva Colección"
-          priority
-          fill
-          sizes="100vw"
-          className="pointer-events-none object-cover object-center  lg:object-right"
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(245,242,238,0.94)_0%,rgba(245,242,238,0.78)_34%,rgba(245,242,238,0.16)_100%)]" />
-        <div className="absolute -left-20 top-12 h-56 w-56 rounded-full bg-white/20 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-[#b8965a]/12 blur-3xl" />
+      {/* Carrusel de Banners Dinámicos del Sistema Central o Fallback Hero */}
+      {banners.length > 0 ? (
+        <HomeBannerCarousel banners={banners} />
+      ) : (
+        <section
+          id="inicio"
+          className="relative isolate overflow-hidden"
+          style={{ background: "linear-gradient(140deg, #b8b0a5 0%, #d7d0c6 44%, #e8e2d8 100%)" }}
+        >
+          <Image
+            src={imagen}
+            alt="Nueva Colección"
+            priority
+            fill
+            sizes="100vw"
+            className="pointer-events-none object-cover object-center lg:object-right"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(245,242,238,0.94)_0%,rgba(245,242,238,0.78)_34%,rgba(245,242,238,0.16)_100%)]" />
+          <div className="absolute -left-20 top-12 h-56 w-56 rounded-full bg-white/20 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-[#b8965a]/12 blur-3xl" />
 
-        <div className="relative z-10 mx-auto grid max-w-[1240px] gap-8 px-5 py-14 sm:px-6 sm:py-18 lg:grid-cols-[minmax(0,1.05fr)_360px] lg:items-end lg:py-24">
-          <div className="max-w-2xl">
-
-
-            <h1
-              className="max-w-xl text-[2.9rem] leading-[0.95] sm:text-[4.2rem] lg:text-[5.4rem]"
-              style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}
-            >
-              Tradición
-              <br />
-              y estilo para
-              <br />
-              tu día a día
-            </h1>
-
-            <p className="mt-5 max-w-lg text-base leading-7 sm:text-lg text-muted">
-              Descubre prendas listas para reserva: chompas y poleras diseñadas con una experiencia pensada para verse bien y sentirse cómodo en cualquier ocasión.
-            </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/catalogo"
-                className="inline-flex items-center justify-center gap-3 rounded-full px-6 py-4 text-[11px] uppercase bg-foreground text-background transition-all hover:translate-y-[-2px] active:scale-95"
-                style={{ letterSpacing: "0.18em" }}
+          <div className="relative z-10 mx-auto grid max-w-[1240px] gap-8 px-5 py-14 sm:px-6 sm:py-18 lg:grid-cols-[minmax(0,1.05fr)_360px] lg:items-end lg:py-24">
+            <div className="max-w-2xl">
+              <h1
+                className="max-w-xl text-[2.9rem] leading-[0.95] sm:text-[4.2rem] lg:text-[5.4rem]"
+                style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}
               >
-                Explorar catálogo
-                <span aria-hidden="true">→</span>
-              </Link>
-              <Link
-                href="/#nuevo"
-                className="inline-flex items-center justify-center gap-3 rounded-full border border-border px-6 py-4 text-[11px] uppercase transition-all hover:bg-white active:scale-95 bg-white/45 text-foreground"
-                style={{ letterSpacing: "0.18em" }}
-              >
-                Ver novedades
-              </Link>
+                Tradición
+                <br />
+                y estilo para
+                <br />
+                tu día a día
+              </h1>
+
+              <p className="mt-5 max-w-lg text-base leading-7 sm:text-lg text-muted">
+                Descubre prendas listas para reserva: chompas y poleras diseñadas con una experiencia pensada para verse bien y sentirse cómodo en cualquier ocasión.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/catalogo"
+                  className="inline-flex items-center justify-center gap-3 rounded-full px-6 py-4 text-[11px] uppercase bg-foreground text-background transition-all hover:translate-y-[-2px] active:scale-95"
+                  style={{ letterSpacing: "0.18em" }}
+                >
+                  Explorar catálogo
+                  <span aria-hidden="true">→</span>
+                </Link>
+                <Link
+                  href="/#nuevo"
+                  className="inline-flex items-center justify-center gap-3 rounded-full border border-border px-6 py-4 text-[11px] uppercase transition-all hover:bg-white active:scale-95 bg-white/45 text-foreground"
+                  style={{ letterSpacing: "0.18em" }}
+                >
+                  Ver novedades
+                </Link>
+              </div>
             </div>
-
           </div>
+        </section>
+      )}
 
-
-        </div>
-      </section>
-
+      {/* Sección Recién Llegados */}
       <section id="nuevo" className="px-5 py-16 sm:px-6 sm:py-20 lg:py-24" style={{ background: "#f5f2ee" }}>
         <div className="mx-auto max-w-[1240px]">
           <div className="mb-10 flex flex-col gap-4 sm:mb-14 sm:flex-row sm:items-end sm:justify-between">
@@ -183,7 +192,6 @@ export default async function HomePage() {
                 Recién llegados
               </h2>
             </div>
-
           </div>
 
           {recienLlegados.length === 0 ? (
@@ -197,7 +205,7 @@ export default async function HomePage() {
                 const badge = esNuevo(item.createdAt) ? "Nuevo" : "Disponible";
 
                 return (
-                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block " >
+                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block">
                     <article className="overflow-hidden rounded-[var(--radius-lg)] border bg-white shadow-[0_14px_40px_rgba(17,17,17,0.04)] transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
                       <div className="relative mb-4 overflow-hidden bg-surface-soft aspect-[3/4]">
                         <div
@@ -256,97 +264,40 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="px-5 py-16 sm:px-6 sm:py-18 bg-surface">
-        <div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[minmax(0,1fr)_480px] lg:items-start">
-          <div className="max-w-xl">
-            <p className="text-xs uppercase mb-4 text-subtle" style={{ letterSpacing: "0.25em" }}>
-              Crea tu cuenta
-            </p>
-            <h2 className="text-4xl font-normal leading-tight sm:text-5xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
-              Sigue tus pedidos
-              <br />
-              desde cualquier pantalla
-            </h2>
-            <p className="mt-5 text-sm leading-7 sm:text-base text-muted">
-              Crea tu cuenta gratis y accede al historial completo de tus compras, estado del pedido y reservas guardadas con un flujo más cómodo.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/registro"
-                className="inline-flex items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase bg-foreground text-background transition-all hover:opacity-85 active:scale-95"
-                style={{ letterSpacing: "0.2em" }}
-              >
-                Crear cuenta
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center rounded-full border border-foreground px-6 py-4 text-[11px] uppercase transition-all hover:bg-white active:scale-95 text-foreground"
-                style={{ letterSpacing: "0.2em" }}
-              >
-                Ingresar
-              </Link>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {beneficios.map(({ icon, title, desc }) => (
-              <div key={title} className="rounded-[24px] border bg-background px-5 py-5 shadow-[0_8px_24px_rgba(17,17,17,0.03)] border-border">
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border bg-white text-xl border-border text-foreground">
-                  {icon}
-                </span>
-                <div className="mt-4">
-                  <p className="text-xs font-semibold uppercase mb-1 text-foreground" style={{ letterSpacing: "0.1em" }}>
-                    {title}
-                  </p>
-                  <p className="text-sm leading-6 text-muted">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="seleccion" className="px-5 py-16 sm:px-6 sm:py-20 lg:py-24" style={{ background: "#f5f2ee" }}>
+      {/* Sección Selección Destacada */}
+      <section className="px-5 py-16 sm:px-6 sm:py-20 lg:py-24 bg-surface/30 border-t border-border/50">
         <div className="mx-auto max-w-[1240px]">
-          <div className="mb-10 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs uppercase mb-3 text-subtle" style={{ letterSpacing: "0.22em" }}>
-                Selección destacada
+          <div className="mb-10 flex flex-col gap-4 sm:mb-14 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-xl">
+              <p className="text-xs uppercase mb-3 text-subtle" style={{ letterSpacing: "0.25em" }}>
+                Selección especial
               </p>
-              <h2 className="text-3xl font-normal sm:text-4xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
-                Lo más popular
+              <h2 className="text-4xl font-normal sm:text-5xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
+                Prendas destacadas
               </h2>
             </div>
             <Link
               href="/catalogo"
-              className="text-xs uppercase flex items-center gap-2 hover:opacity-50 transition-opacity"
-              style={{ letterSpacing: "0.2em", color: "#1a1a1a" }}
+              className="text-xs uppercase tracking-[0.18em] text-foreground hover:opacity-70 transition-opacity font-medium"
             >
-              Ver todo
-              <span aria-hidden="true">→</span>
+              Ver catálogo completo →
             </Link>
           </div>
 
           {seleccion.length === 0 ? (
             <p className="text-center text-sm" style={{ color: "#6b6058" }}>
-              Aún no hay productos para mostrar en esta sección.
+              No hay productos destacados por el momento.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 lg:gap-6">
               {seleccion.map((item) => {
                 const imagenes = imagenesDeProducto(item);
-                const descuento = normalizarNumero(item.descuento);
-                const tag = descuento > 0 ? null : esNuevo(item.createdAt) ? "Nuevo" : null;
+                const descuento = item.descuento ?? 0;
 
                 return (
-                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block ">
-                    <article className="overflow-hidden rounded-[var(--radius-lg)] border bg-white transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
-                      <div className="relative overflow-hidden bg-surface-soft aspect-[3/4]">
-                        {tag && (
-                          <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white bg-accent" style={{ letterSpacing: "0.12em" }}>
-                            {tag}
-                          </div>
-                        )}
+                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block">
+                    <article className="overflow-hidden rounded-[var(--radius-lg)] border bg-white shadow-[0_10px_30px_rgba(17,17,17,0.03)] transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
+                      <div className="relative mb-3 overflow-hidden bg-surface-soft aspect-[3/4]">
                         {descuento > 0 && (
                           <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white bg-danger" style={{ letterSpacing: "0.12em" }}>
                             -{descuento}%
@@ -401,10 +352,6 @@ export default async function HomePage() {
           )}
         </div>
       </section>
-
-
-
-
     </main>
   );
 }

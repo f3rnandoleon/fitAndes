@@ -13,13 +13,14 @@ import {
   getCatalogProductAvailableStock,
   getCatalogProductPriceRange,
   type CatalogProduct,
+  type CatalogPaginationMeta,
 } from "@/types/catalogo";
 
-type OrdenKey = "ventas" | "fecha" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
+type OrdenKey = "fecha" | "ventas" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
 
 const ORDENES: Array<{ key: OrdenKey; label: string }> = [
-  { key: "ventas", label: "Lo más popular" },
   { key: "fecha", label: "Lo más nuevo" },
+  { key: "ventas", label: "Lo más popular" },
   { key: "descuento", label: "Mayor descuento" },
   { key: "precio-desc", label: "Precio: mayor a menor" },
   { key: "precio-asc", label: "Precio: menor a mayor" },
@@ -53,15 +54,17 @@ function colorStyle(color: string) {
 
 interface CatalogoGridProps {
   productos: CatalogProduct[];
+  pagination?: CatalogPaginationMeta;
   filtroInicial?: {
     busqueda?: string;
     categoria?: string;
     color?: string;
     talla?: string;
+    page?: number;
   };
 }
 
-export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridProps) {
+export default function CatalogoGrid({ productos, pagination, filtroInicial }: CatalogoGridProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
@@ -70,7 +73,7 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
   const [colorFiltro, setColorFiltro] = useState(filtroInicial?.color ?? searchParams?.get("color") ?? "");
   const [categoriaFiltro, setCategoriaFiltro] = useState(filtroInicial?.categoria ?? searchParams?.get("categoria") ?? "");
   const [tallaFiltro, setTallaFiltro] = useState(filtroInicial?.talla ?? searchParams?.get("talla") ?? "");
-  const [orden, setOrden] = useState<OrdenKey>((searchParams?.get("orden") as OrdenKey) ?? "ventas");
+  const [orden, setOrden] = useState<OrdenKey>((searchParams?.get("orden") as OrdenKey) ?? "fecha");
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
 
   const productosConStock = productos.filter(productoTieneStock);
@@ -93,6 +96,19 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
     new Set(productosBaseFiltro.flatMap((producto) => variantesConStock(producto).map((variante) => variante.talla)))
   ).sort((a, b) => a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }));
 
+  // Helper para construir URLs de paginación
+  function buildPaginationUrl(targetPage: number) {
+    const params = new URLSearchParams();
+    if (busqueda.trim()) params.set("q", busqueda.trim());
+    if (categoriaFiltro && categoriaFiltro !== "todas") params.set("categoria", categoriaFiltro);
+    if (colorFiltro) params.set("color", colorFiltro);
+    if (tallaFiltro) params.set("talla", tallaFiltro);
+    if (orden && orden !== "ventas") params.set("orden", orden);
+    if (targetPage > 1) params.set("page", String(targetPage));
+    const qs = params.toString();
+    return qs ? `/catalogo?${qs}` : "/catalogo";
+  }
+
   // Sincronizar filtros en la URL del navegador sin recargar la página
   useEffect(() => {
     const params = new URLSearchParams();
@@ -101,14 +117,15 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
     if (colorFiltro) params.set("color", colorFiltro);
     if (tallaFiltro) params.set("talla", tallaFiltro);
     if (orden && orden !== "ventas") params.set("orden", orden);
+    if (pagination?.page && pagination.page > 1) params.set("page", String(pagination.page));
 
     const qs = params.toString();
     const newUrl = qs ? `/catalogo?${qs}` : "/catalogo";
-    
+
     startTransition(() => {
       window.history.replaceState(null, "", newUrl);
     });
-  }, [busqueda, categoriaFiltro, colorFiltro, tallaFiltro, orden, router]);
+  }, [busqueda, categoriaFiltro, colorFiltro, tallaFiltro, orden, pagination?.page, router]);
 
   const termino = busqueda.trim().toLowerCase();
   const filtrados = productosConStock.filter((producto) => {
@@ -173,11 +190,10 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
           <button
             type="button"
             onClick={() => setCategoriaFiltro("")}
-            className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm ${
-              !categoriaFiltro || categoriaFiltro === "todas"
-                ? "bg-foreground text-background border-foreground font-semibold"
-                : "bg-white text-muted border-border hover:bg-background"
-            }`}
+            className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm ${!categoriaFiltro || categoriaFiltro === "todas"
+              ? "bg-foreground text-background border-foreground font-semibold"
+              : "bg-white text-muted border-border hover:bg-background"
+              }`}
             aria-pressed={!categoriaFiltro || categoriaFiltro === "todas"}
           >
             Todas las prendas
@@ -189,11 +205,10 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
                 key={categoria}
                 type="button"
                 onClick={() => setCategoriaFiltro(categoria)}
-                className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm ${
-                  activa
-                    ? "bg-foreground text-background border-foreground font-semibold"
-                    : "bg-white text-muted border-border hover:bg-background"
-                }`}
+                className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm ${activa
+                  ? "bg-foreground text-background border-foreground font-semibold"
+                  : "bg-white text-muted border-border hover:bg-background"
+                  }`}
                 aria-pressed={activa}
               >
                 {categoria}
@@ -211,7 +226,7 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
             </p>
 
             <p className="mt-3 text-sm leading-6 text-subtle">
-              {productosConStock.length} producto{productosConStock.length !== 1 ? "s" : ""} disponibles listos para reserva.
+              {pagination?.total ? `${pagination.total} prendas en total` : `${productosConStock.length} productos disponibles`}.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-3">
@@ -334,7 +349,8 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
                   Resultado actual
                 </p>
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  {productosVisibles.length} resultado{productosVisibles.length !== 1 ? "s" : ""} para explorar.
+                  {productosVisibles.length} prenda{productosVisibles.length !== 1 ? "s" : ""} en esta página
+                  {pagination?.total ? ` (de ${pagination.total} totales)` : ""}.
                 </p>
               </div>
 
@@ -396,6 +412,48 @@ export default function CatalogoGrid({ productos, filtroInicial }: CatalogoGridP
               ))}
             </div>
           )}
+
+          {/* Barra de paginación del servidor */}
+          {pagination && pagination.totalPages > 1 && (
+            <nav
+              aria-label="Paginación del catálogo"
+              className="mt-12 flex flex-wrap items-center justify-center gap-2 pt-8 border-t border-border"
+            >
+              {pagination.page > 1 && (
+                <Link
+                  href={buildPaginationUrl(pagination.page - 1)}
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-border text-xs uppercase tracking-wider text-foreground hover:bg-surface-soft transition-colors active:scale-95"
+                >
+                  ← Anterior
+                </Link>
+              )}
+
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => {
+                const isCurrent = p === pagination.page;
+                return (
+                  <Link
+                    key={p}
+                    href={buildPaginationUrl(p)}
+                    className={`inline-flex items-center justify-center h-9 w-9 rounded-full text-xs font-medium transition-colors ${isCurrent
+                      ? "bg-foreground text-background font-semibold"
+                      : "border border-border text-foreground hover:bg-surface-soft"
+                      }`}
+                  >
+                    {p}
+                  </Link>
+                );
+              })}
+
+              {pagination.page < pagination.totalPages && (
+                <Link
+                  href={buildPaginationUrl(pagination.page + 1)}
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-border text-xs uppercase tracking-wider text-foreground hover:bg-surface-soft transition-colors active:scale-95"
+                >
+                  Siguiente →
+                </Link>
+              )}
+            </nav>
+          )}
         </section>
       </div>
     </div>
@@ -452,7 +510,7 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
               imagenes={imagenes}
               alt={producto.nombre}
               imgClassName="group-hover:scale-105 transition-transform duration-500"
-              mostrarControles={false}
+              mostrarControles={true}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-subtle/40">

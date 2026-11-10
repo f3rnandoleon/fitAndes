@@ -10,6 +10,7 @@ interface Props {
   shippingCost?: number;
   shippingLabel?: string;
   loading: boolean;
+  disabled?: boolean;
   error?: string;
   onSubmit: () => void;
   authenticated: boolean;
@@ -24,6 +25,7 @@ export function CheckoutSummarySidebar({
   shippingCost = 0,
   shippingLabel = "Gratis",
   loading,
+  disabled = false,
   error,
   onSubmit,
   authenticated,
@@ -60,6 +62,7 @@ export function CheckoutSummarySidebar({
               size="md"
               className="min-w-[170px] shrink-0"
               loading={loading}
+              disabled={disabled || loading}
               onClick={onSubmit}
             >
               {authenticated ? "Confirmar pedido" : "Finalizar compra"}
@@ -103,6 +106,7 @@ export function CheckoutSummarySidebar({
             size="lg"
             className="w-full"
             loading={loading}
+            disabled={disabled || loading}
             onClick={onSubmit}
           >
             {authenticated ? "Confirmar pedido" : "Confirmar como invitado"}

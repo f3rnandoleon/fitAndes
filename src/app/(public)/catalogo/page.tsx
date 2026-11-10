@@ -4,7 +4,9 @@ import CatalogoGrid from "@/components/catalogo/CatalogoGrid";
 import {
   catalogVariantIsAvailable,
   unwrapCatalogProducts,
+  unwrapCatalogPagination,
   type CatalogProduct,
+  type CatalogPaginationMeta,
 } from "@/types/catalogo";
 
 export const metadata = {
@@ -20,6 +22,7 @@ interface PageProps {
     color?: string;
     talla?: string;
     orden?: string;
+    page?: string;
   }>;
 }
 
@@ -29,8 +32,11 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
   const categoriaParam = resolvedParams.categoria || "";
   const colorParam = resolvedParams.color || "";
   const tallaParam = resolvedParams.talla || "";
+  const pageParam = Math.max(1, parseInt(resolvedParams.page || "1", 10) || 1);
+  const limitParam = 24;
 
   let productos: CatalogProduct[] = [];
+  let pagination: CatalogPaginationMeta = { total: 0, page: pageParam, limit: limitParam, totalPages: 1 };
 
   const productosConStock = (items: CatalogProduct[]) =>
     items.filter((producto) => producto.variantes.some(catalogVariantIsAvailable));
@@ -43,6 +49,8 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
     if (colorParam) url.searchParams.set("color", colorParam);
     if (tallaParam) url.searchParams.set("talla", tallaParam);
     url.searchParams.set("soloDisponible", "true");
+    url.searchParams.set("page", String(pageParam));
+    url.searchParams.set("limit", String(limitParam));
 
     const res = await fetch(url.toString(), {
       next: { revalidate: 60 },
@@ -51,6 +59,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
     if (res.ok) {
       const data = await res.json();
       productos = productosConStock(unwrapCatalogProducts(data));
+      pagination = unwrapCatalogPagination(data);
     } else {
       productos = [];
     }
@@ -74,11 +83,13 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
         <Suspense fallback={<CatalogoSkeleton />}>
           <CatalogoGrid
             productos={productos}
+            pagination={pagination}
             filtroInicial={{
               busqueda: queryTerm,
               categoria: categoriaParam,
               color: colorParam,
               talla: tallaParam,
+              page: pageParam,
             }}
           />
         </Suspense>
