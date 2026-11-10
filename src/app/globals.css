@@ -10,11 +10,16 @@
   --border-subtle: #EDE7DF;
   --muted: #5C554E;
   --subtle: #948B80;
-  --accent: #A6763D;
-  --accent-hover: #8F6432;
-  --accent-light: #F7EFE4;
-  --success: #3D6B48;
-  --danger: #9B3D33;
+  /* Paleta Navideña Fit Andes */
+  --accent: #C41E3A; /* Rojo Carmesí Navideño */
+  --accent-hover: #9E152C; /* Berry Profundo */
+  --accent-light: #FDF2F4; /* Rosa Pastel Festivo */
+  --success: #165B33; /* Verde Pino Navideño */
+  --danger: #9B1B30;
+  --gold: #D4AF37; /* Oro Navideño */
+  --gold-light: #FDF9E8;
+  --pine: #165B33;
+  --berry: #C41E3A;
   --radius-sm: 8px;
   --radius-md: 18px;
   --radius-lg: 26px;
@@ -62,8 +67,8 @@ html {
 }
 
 ::selection {
-  background: #141311;
-  color: #FAF8F5;
+  background: #C41E3A;
+  color: #FFFFFF;
 }
 
 /* Accessibility */
@@ -137,6 +142,26 @@ html {
   }
 }
 
+/* Efecto de Nieve Suave Navideña */
+@keyframes snowfall {
+  0% {
+    transform: translateY(-20px) translateX(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(50vh) translateX(12px) rotate(180deg);
+  }
+  100% {
+    transform: translateY(105vh) translateX(-12px) rotate(360deg);
+  }
+}
+
+.snowflake {
+  animation-name: snowfall;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+  will-change: transform;
+}
+
 .animate-slide-in-right {
   animation: slideInRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -147,4 +172,17 @@ html {
 
 .animate-fade-in {
   animation: fadeIn 0.24s ease-out forwards;
+}
+
+/* Decoraciones Navideñas Especiales */
+.christmas-ribbon {
+  background: linear-gradient(135deg, #c41e3a 0%, #8b1525 100%);
+}
+
+.christmas-gold-border {
+  border-color: rgba(212, 175, 55, 0.45);
+}
+
+.christmas-glow {
+  box-shadow: 0 0 24px -2px rgba(196, 30, 58, 0.18);
 }

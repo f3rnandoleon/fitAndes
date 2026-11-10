@@ -143,6 +143,10 @@ export default async function HomePage() {
 
           <div className="relative z-10 mx-auto grid max-w-[1240px] gap-8 px-5 py-14 sm:px-6 sm:py-18 lg:grid-cols-[minmax(0,1.05fr)_360px] lg:items-end lg:py-24">
             <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c41e3a]/10 border border-[#c41e3a]/25 text-[#c41e3a] text-xs font-semibold uppercase tracking-widest mb-4">
+                <span>🎄</span> Colección Especial de Navidad 2026
+              </div>
+
               <h1
                 className="max-w-xl text-[2.9rem] leading-[0.95] sm:text-[4.2rem] lg:text-[5.4rem]"
                 style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}
@@ -161,7 +165,7 @@ export default async function HomePage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/catalogo"
-                  className="inline-flex items-center justify-center gap-3 rounded-full px-6 py-4 text-[11px] uppercase bg-foreground text-background transition-all hover:translate-y-[-2px] active:scale-95"
+                  className="inline-flex items-center justify-center gap-3 rounded-full px-6 py-4 text-[11px] uppercase bg-[#c41e3a] text-white shadow-md hover:bg-[#a0152d] transition-all hover:translate-y-[-2px] active:scale-95"
                   style={{ letterSpacing: "0.18em" }}
                 >
                   Explorar catálogo

@@ -76,8 +76,20 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
           </Link>
           <span>&gt;</span>
           <span className="text-foreground font-medium">
-            Catálogo
+            Catálogo Navideño
           </span>
+        </div>
+
+        <div className="mb-8 flex flex-col gap-2">
+          <div className="inline-flex items-center gap-2 self-start rounded-full bg-[#c41e3a]/10 border border-[#c41e3a]/25 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#c41e3a]">
+            <span>🎄</span> Especial de Regalos Navideños 2026
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif text-foreground font-normal tracking-tight">
+            Colección & Regalos Navideños
+          </h1>
+          <p className="text-xs sm:text-sm text-muted max-w-xl">
+            Prendas confeccionadas con fibras nobles y calidez andina. Reserva tus regalos de Navidad con envíos express a toda Bolivia 🎁.
+          </p>
         </div>
 
         <Suspense fallback={<CatalogoSkeleton />}>

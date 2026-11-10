@@ -3,6 +3,8 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 import ChatWidgetClient from "@/components/chat/ChatWidgetClient";
 import FloatingWhatsApp from "@/components/layout/FloatingWhatsApp";
+import ChristmasTopBanner from "@/components/layout/ChristmasTopBanner";
+import ChristmasSnow from "@/components/layout/ChristmasSnow";
 import { authOptions } from "@/lib/auth-options";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -10,7 +12,9 @@ export default async function PublicLayout({ children }: { children: React.React
   const authenticated = Boolean(session && session.user.role === "CLIENTE");
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col relative">
+      <ChristmasSnow />
+      <ChristmasTopBanner />
       <SiteHeader authenticated={authenticated} fullname={session?.user.fullname} email={session?.user.email} />
       <div className="flex-1">{children}</div>
       <SiteFooter />

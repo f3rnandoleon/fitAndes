@@ -273,18 +273,18 @@ export default function SucursalesMapViewer({ ubicaciones }: Props) {
           )}
 
           {/* Tarjeta de envíos nacionales */}
-          <div className="rounded-[24px] border border-accent/20 bg-accent/5 p-5 text-center space-y-2.5">
-            <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
-              ¿Estás en otro departamento?
+          <div className="rounded-[24px] border border-[#c41e3a]/25 bg-[#c41e3a]/5 p-5 text-center space-y-2.5">
+            <p className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center justify-center gap-1.5">
+              <span>🎁</span> ¿Envías un regalo a otra ciudad?
             </p>
             <p className="text-xs text-muted leading-relaxed">
-              Enviamos a los 9 departamentos de Bolivia mediante transporte terrestre por <strong>Bs. 20</strong>.
+              Despachamos tus regalos navideños a los 9 departamentos de Bolivia mediante transporte terrestre por <strong>Bs. 10</strong>.
             </p>
             <Link
               href="/catalogo"
-              className="inline-block text-[11px] font-semibold text-accent underline underline-offset-4 hover:text-foreground transition-colors"
+              className="inline-block text-[11px] font-semibold text-[#c41e3a] underline underline-offset-4 hover:text-foreground transition-colors"
             >
-              Explorar prendas para envío nacional →
+              Explorar regalos para envío nacional →
             </Link>
           </div>
         </div>

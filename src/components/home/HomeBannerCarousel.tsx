@@ -65,9 +65,8 @@ export default function HomeBannerCarousel({ banners }: Props) {
             <div
               key={banner._id || index}
               aria-hidden={!isActive}
-              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                isActive ? "opacity-100 z-10 pointer-events-auto" : "opacity-0 z-0 pointer-events-none"
-              }`}
+              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${isActive ? "opacity-100 z-10 pointer-events-auto" : "opacity-0 z-0 pointer-events-none"
+                }`}
             >
               {/* Desktop Image */}
               <div className="hidden sm:block absolute inset-0">
@@ -125,7 +124,7 @@ export default function HomeBannerCarousel({ banners }: Props) {
                       style={{ letterSpacing: "0.14em" }}
                     >
                       <FaWhatsapp className="text-base" />
-                      Consultar por WhatsApp
+                      Consultar oferta
                     </a>
                   ) : (
                     <Link
@@ -180,9 +179,8 @@ export default function HomeBannerCarousel({ banners }: Props) {
                 type="button"
                 onClick={() => setCurrentIndex(dotIdx)}
                 aria-label={`Ir al banner ${dotIdx + 1}`}
-                className={`h-2.5 rounded-full transition-all duration-300 ${
-                  dotIdx === currentIndex ? "w-8 bg-white" : "w-2.5 bg-white/40 hover:bg-white/60"
-                }`}
+                className={`h-2.5 rounded-full transition-all duration-300 ${dotIdx === currentIndex ? "w-8 bg-white" : "w-2.5 bg-white/40 hover:bg-white/60"
+                  }`}
               />
             ))}
           </div>

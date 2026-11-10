@@ -34,14 +34,14 @@ export default async function CheckoutConfirmacionPage({ searchParams }: PagePro
         </div>
 
         <div>
-          <span className="text-xs uppercase tracking-[0.25em] text-accent font-semibold">
-            Compra Confirmada
+          <span className="text-xs uppercase tracking-[0.25em] text-[#c41e3a] font-semibold">
+            🎄 Compra Navideña Confirmada
           </span>
           <h1 className="text-3xl sm:text-5xl font-serif text-foreground mt-2 font-normal">
-            ¡Gracias por tu compra!
+            ¡Gracias por elegir Fit Andes esta Navidad! 🎁
           </h1>
           <p className="text-sm sm:text-base text-muted mt-3 max-w-lg mx-auto leading-relaxed">
-            Hemos registrado tu pedido en nuestro sistema central. Tus prendas se encuentran reservadas de forma segura.
+            Hemos registrado tu pedido en nuestro sistema central. Tus prendas para regalo o uso personal se encuentran reservadas de forma segura.
           </p>
         </div>
 

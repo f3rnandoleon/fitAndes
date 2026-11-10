@@ -94,12 +94,12 @@ export default function LegalContentModal({ isOpen, initialSection = "terminos",
         {/* Cabecera del Modal */}
         <div className="flex items-center justify-between border-b border-border/80 px-6 py-5 bg-[#faf8f5]">
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-accent font-semibold text-sm">
-              FA
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#c41e3a]/10 text-[#c41e3a] font-semibold text-base">
+              🎄
             </span>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-subtle font-semibold">
-                Información Legal y Ayuda
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#c41e3a] font-semibold">
+                Información Legal y Ayuda · Especial Navideño
               </p>
               <h2 id="legal-modal-title" className="text-xl sm:text-2xl font-serif text-foreground font-normal">
                 {activeSection === "terminos" && "Términos y Condiciones"}

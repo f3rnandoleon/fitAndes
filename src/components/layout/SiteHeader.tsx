@@ -70,17 +70,28 @@ export default function SiteHeader({ authenticated = false, fullname, firstName:
           <div className="flex justify-center md:justify-self-center">
             <Link
               href="/"
-              className="text-lg uppercase font-bold sm:text-xl md:text-2xl text-foreground"
+              className="relative inline-flex items-center text-lg uppercase font-bold sm:text-xl md:text-2xl text-foreground group"
               style={{ fontFamily: "var(--font-serif, Georgia, serif)", letterSpacing: "0.24em" }}
             >
-              <Image
-                src={logo}
-                alt="FitAndes"
-                width={400}
-                height={150}
-                sizes="100vw"
-                className="pointer-events-none object-cover object-center lg:object-right"
-              />
+              <div className="relative">
+                <span
+                  className="absolute -top-3.5 left-0.5 text-base sm:text-lg transform -rotate-12 select-none pointer-events-none drop-shadow-xs"
+                  aria-hidden="true"
+                >
+                  🎅
+                </span>
+                <Image
+                  src={logo}
+                  alt="FitAndes"
+                  width={400}
+                  height={150}
+                  sizes="100vw"
+                  className="pointer-events-none object-cover object-center lg:object-right"
+                />
+              </div>
+              <span className="hidden xl:inline-flex items-center gap-1 ml-2.5 px-2 py-0.5 rounded-full bg-[#c41e3a] text-white text-[9px] uppercase tracking-widest font-semibold shadow-xs">
+                🎄 Navidad
+              </span>
             </Link>
           </div>
 
@@ -94,7 +105,7 @@ export default function SiteHeader({ authenticated = false, fullname, firstName:
               >
                 <CartIcon />
                 {totalItems > 0 && (
-                  <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full text-[10px] flex items-center justify-center bg-foreground text-background">
+                  <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full text-[10px] flex items-center justify-center bg-[#c41e3a] text-white font-bold shadow-xs">
                     {totalItems}
                   </span>
                 )}

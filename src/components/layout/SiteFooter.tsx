@@ -25,6 +25,15 @@ export default function SiteFooter() {
   return (
     <>
       <footer className="bg-foreground text-background border-t border-border/20">
+        {/* Franja de Felicitación Navideña */}
+        <div className="bg-[#8b1525] text-white py-3.5 px-4 border-b border-[#a82033] text-center text-xs sm:text-sm tracking-wider font-serif shadow-inner">
+          <p className="max-w-[1240px] mx-auto flex items-center justify-center gap-2 flex-wrap">
+            {/*<span>✨ 🎄</span>
+            <strong className="font-medium text-[#ffd700]">¡La familia Fit Andes te desea una Feliz Navidad y un Próspero Año Nuevo!</strong>
+            <span>🎅 ✨</span>*/}
+          </p>
+        </div>
+
         <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-10 px-5 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:py-16">
           {/* Columna 1: Marca */}
           <div>
@@ -32,10 +41,10 @@ export default function SiteFooter() {
               className="text-xl font-bold uppercase mb-4"
               style={{ fontFamily: "var(--font-serif, Georgia, serif)", letterSpacing: "0.25em" }}
             >
-              FitAndes
+              Fit Andes ❄️
             </p>
             <p className="text-sm leading-7 text-background/80">
-              Ropa con fibras nobles y acabados artesanales. Catálogo visual y compra guiada.
+              Prendas con fibras nobles y acabados artesanales. La prenda ideal para vestir el calor de los Andes en estas fiestas navideñas 🎁.
             </p>
           </div>
 
