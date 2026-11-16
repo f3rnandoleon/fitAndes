@@ -323,221 +323,6 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
             ) : null}
           </div>
         </div>
-
-        {/* Barra de navegacion minimalista: Descripcion, Medidas, Devoluciones y Cambios */}
-        <div className="order-2 mt-6">
-          <nav
-            aria-label="Informacion de la prenda"
-            className="flex items-center gap-6 sm:gap-8 border-b border-border overflow-x-auto no-scrollbar"
-          >
-            <button
-              type="button"
-              onClick={() => setTabActiva("descripcion")}
-              className={`pb-3 text-xs sm:text-[13px] uppercase tracking-[0.14em] transition-all whitespace-nowrap cursor-pointer relative ${
-                tabActiva === "descripcion"
-                  ? "font-semibold text-foreground border-b-2 border-foreground -mb-[1px]"
-                  : "font-normal text-subtle hover:text-foreground"
-              }`}
-            >
-              Descripción
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setTabActiva("medidas")}
-              className={`pb-3 text-xs sm:text-[13px] uppercase tracking-[0.14em] transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 relative ${
-                tabActiva === "medidas"
-                  ? "font-semibold text-foreground border-b-2 border-foreground -mb-[1px]"
-                  : "font-normal text-subtle hover:text-foreground"
-              }`}
-            >
-              <span>Medidas</span>
-              {varianteSeleccionada?.talla ? (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-border/40 text-muted font-mono tracking-normal normal-case">
-                  {varianteSeleccionada.talla}
-                </span>
-              ) : null}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setTabActiva("politicas")}
-              className={`pb-3 text-xs sm:text-[13px] uppercase tracking-[0.14em] transition-all whitespace-nowrap cursor-pointer relative ${
-                tabActiva === "politicas"
-                  ? "font-semibold text-foreground border-b-2 border-foreground -mb-[1px]"
-                  : "font-normal text-subtle hover:text-foreground"
-              }`}
-            >
-              Devoluciones y Cambios
-            </button>
-          </nav>
-
-          {/* Contenido de las pestañas */}
-          <div className="pt-4">
-            {/* Pestaña 1: Descripcion */}
-            {tabActiva === "descripcion" && (
-              <div className="animate-in fade-in-50 duration-200">
-                <p className="max-w-2xl text-sm leading-7 sm:text-[15px] text-muted">
-                  {descripcionActual ||
-                    "Prenda confeccionada con fibra térmica y materiales de primera calidad, diseñada para brindar abrigo confortable, suavidad y durabilidad con acabados artesanales andinos."}
-                </p>
-
-                <div className="mt-4 pt-3.5 border-t border-border/50 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <span className="text-subtle text-[10px] uppercase tracking-wider block">Categoría</span>
-                    <span className="font-medium text-foreground">{producto.categoria ?? "Chompas"}</span>
-                  </div>
-                  <div>
-                    <span className="text-subtle text-[10px] uppercase tracking-wider block">Modelo</span>
-                    <span className="font-medium text-foreground">{producto.modelo}</span>
-                  </div>
-                  {producto.sku ? (
-                    <div>
-                      <span className="text-subtle text-[10px] uppercase tracking-wider block">SKU</span>
-                      <span className="font-mono text-muted">{producto.sku}</span>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            )}
-
-            {/* Pestaña 2: Medidas */}
-            {tabActiva === "medidas" && (
-              <div className="animate-in fade-in-50 duration-200 space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 text-foreground font-medium">
-                    <svg className="w-4 h-4 text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6h18M3 12h18M3 18h18" />
-                    </svg>
-                    <span>
-                      Medidas para Talla <strong className="font-bold">{varianteSeleccionada?.talla ?? "estándar"}</strong>
-                      {varianteSeleccionada?.color ? ` (${varianteSeleccionada.color})` : ""}
-                    </span>
-                  </div>
-                  <span className="text-[10px] uppercase tracking-wider text-muted font-mono">en centímetros</span>
-                </div>
-
-                {varianteSeleccionada?.medidas && (
-                  varianteSeleccionada.medidas.anchoPecho ||
-                  varianteSeleccionada.medidas.anchoHombros ||
-                  varianteSeleccionada.medidas.largoTotal ||
-                  varianteSeleccionada.medidas.largoMangaHombro ||
-                  varianteSeleccionada.medidas.largoMangaAxila
-                ) ? (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                      {varianteSeleccionada.medidas.anchoPecho ? (
-                        <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
-                          <p className="text-[10px] text-muted uppercase tracking-wider">Pecho</p>
-                          <p className="text-base font-semibold text-foreground mt-0.5 font-mono">
-                            {varianteSeleccionada.medidas.anchoPecho} cm
-                          </p>
-                          <p className="text-[9px] text-subtle mt-0.5">Axila a axila</p>
-                        </div>
-                      ) : null}
-                      {varianteSeleccionada.medidas.anchoHombros ? (
-                        <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
-                          <p className="text-[10px] text-muted uppercase tracking-wider">Hombros</p>
-                          <p className="text-base font-semibold text-foreground mt-0.5 font-mono">
-                            {varianteSeleccionada.medidas.anchoHombros} cm
-                          </p>
-                          <p className="text-[9px] text-subtle mt-0.5">Costura a costura</p>
-                        </div>
-                      ) : null}
-                      {varianteSeleccionada.medidas.largoTotal ? (
-                        <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
-                          <p className="text-[10px] text-muted uppercase tracking-wider">Largo total</p>
-                          <p className="text-base font-semibold text-foreground mt-0.5 font-mono">
-                            {varianteSeleccionada.medidas.largoTotal} cm
-                          </p>
-                          <p className="text-[9px] text-subtle mt-0.5">Cuello a base</p>
-                        </div>
-                      ) : null}
-                      {varianteSeleccionada.medidas.largoMangaHombro || varianteSeleccionada.medidas.largoMangaAxila ? (
-                        <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
-                          <p className="text-[10px] text-muted uppercase tracking-wider">Manga</p>
-                          <p className="text-base font-semibold text-foreground mt-0.5 font-mono">
-                            {varianteSeleccionada.medidas.largoMangaHombro ?? varianteSeleccionada.medidas.largoMangaAxila} cm
-                          </p>
-                          <p className="text-[9px] text-subtle mt-0.5">Largo manga</p>
-                        </div>
-                      ) : null}
-                    </div>
-                    <p className="text-[11px] text-subtle leading-relaxed italic">
-                      * Medidas tomadas sobre la prenda en superficie plana. Margen artesanal de ±1.5 cm.
-                    </p>
-                  </>
-                ) : (
-                  <div className="rounded-lg border border-dashed border-border p-4 text-center bg-background/40">
-                    <p className="text-xs text-muted leading-relaxed">
-                      Esta prenda cuenta con corte regular estándar. Si deseas medidas específicas o asesoría con tu talla ideal, contáctanos antes de tu compra.
-                    </p>
-                    <a
-                      href={whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 mt-2.5 text-xs font-medium text-[#168f68] hover:underline"
-                    >
-                      <FaWhatsapp className="w-3.5 h-3.5" />
-                      Consultar medidas por WhatsApp
-                    </a>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Pestaña 3: Politicas de Devolucion y Cambios */}
-            {tabActiva === "politicas" && (
-              <div className="animate-in fade-in-50 duration-200 space-y-3">
-                <div className="grid gap-2.5 sm:grid-cols-3 text-left">
-                  <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
-                    <div className="flex items-center gap-1.5 mb-1 text-foreground font-medium text-xs">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                      <span>7 días para cambios</span>
-                    </div>
-                    <p className="text-[11px] text-muted leading-relaxed">
-                      Aceptamos cambios de talla o modelo dentro de los primeros 7 días posteriores a la recepción de tu prenda.
-                    </p>
-                  </div>
-
-                  <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
-                    <div className="flex items-center gap-1.5 mb-1 text-foreground font-medium text-xs">
-                      <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                      <span>Prenda intacta</span>
-                    </div>
-                    <p className="text-[11px] text-muted leading-relaxed">
-                      La prenda debe estar sin uso, sin lavar y con todas sus etiquetas originales intactas.
-                    </p>
-                  </div>
-
-                  <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
-                    <div className="flex items-center gap-1.5 mb-1 text-foreground font-medium text-xs">
-                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                      <span>La Paz y Envíos</span>
-                    </div>
-                    <p className="text-[11px] text-muted leading-relaxed">
-                      Cambios en nuestros puntos de encuentro en La Paz o coordinación de retorno por encomienda nacional.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50 text-xs">
-                  <span className="text-[11px] text-subtle">
-                    Para coordinar un cambio, contáctanos con tu número de pedido.
-                  </span>
-                  <Link
-                    href="/politicas"
-                    className="text-[11px] font-medium text-[#d04d37] hover:underline flex items-center gap-1 shrink-0"
-                  >
-                    <span>Ver políticas completas</span>
-                    <span>→</span>
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
         <div className="order-3 mt-6">
           <div className="rounded-[var(--radius-md)] border border-border px-4 py-5 sm:px-5 bg-background">
             <div className="flex items-center justify-between gap-4">
@@ -589,9 +374,8 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
                     <span>{tallaDisponible}</span>
                     {tieneDiferencia ? (
                       <span
-                        className={`text-[10px] font-mono tracking-tight ${
-                          activa ? "text-white/80" : "text-[#8f8478]"
-                        }`}
+                        className={`text-[10px] font-mono tracking-tight ${activa ? "text-white/80" : "text-[#8f8478]"
+                          }`}
                       >
                         {formatPrice(precioTalla)}
                       </span>
@@ -686,6 +470,223 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
             </button>
           </div>
 
+
+          {/* Barra de navegacion minimalista: Descripcion, Medidas, Devoluciones y Cambios */}
+          <div className="order-2 mt-6">
+            <h2 className="mt-3 text-[1.5rem] leading-[1.02] sm:text-[2.7rem] text-foreground mb-4" style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}>
+              Detalles del producto
+            </h2>
+            <nav
+              aria-label="Informacion de la prenda"
+              className="flex items-center gap-6 sm:gap-8 border-b border-border overflow-x-auto no-scrollbar"
+            >
+              <button
+                type="button"
+                onClick={() => setTabActiva("descripcion")}
+                className={`pb-3 text-xs sm:text-[13px] uppercase tracking-[0.14em] transition-all whitespace-nowrap cursor-pointer relative ${tabActiva === "descripcion"
+                  ? "font-semibold text-foreground border-b-2 border-foreground -mb-[1px]"
+                  : "font-normal text-subtle hover:text-foreground"
+                  }`}
+              >
+                Descripción
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTabActiva("medidas")}
+                className={`pb-3 text-xs sm:text-[13px] uppercase tracking-[0.14em] transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 relative ${tabActiva === "medidas"
+                  ? "font-semibold text-foreground border-b-2 border-foreground -mb-[1px]"
+                  : "font-normal text-subtle hover:text-foreground"
+                  }`}
+              >
+                <span>Medidas</span>
+                {varianteSeleccionada?.talla ? (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-border/40 text-muted font-mono tracking-normal normal-case">
+                    {varianteSeleccionada.talla}
+                  </span>
+                ) : null}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTabActiva("politicas")}
+                className={`pb-3 text-xs sm:text-[13px] uppercase tracking-[0.14em] transition-all whitespace-nowrap cursor-pointer relative ${tabActiva === "politicas"
+                  ? "font-semibold text-foreground border-b-2 border-foreground -mb-[1px]"
+                  : "font-normal text-subtle hover:text-foreground"
+                  }`}
+              >
+                Devoluciones y Cambios
+              </button>
+            </nav>
+
+            {/* Contenido de las pestañas */}
+            <div className="pt-4">
+              {/* Pestaña 1: Descripcion */}
+              {tabActiva === "descripcion" && (
+                <div className="animate-in fade-in-50 duration-200">
+                  <p className="max-w-2xl text-sm leading-7 sm:text-[15px] text-muted">
+                    {descripcionActual ||
+                      "Prenda confeccionada con fibra térmica y materiales de primera calidad, diseñada para brindar abrigo confortable, suavidad y durabilidad con acabados artesanales andinos."}
+                  </p>
+
+                  <div className="mt-4 pt-3.5 border-t border-border/50 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <span className="text-subtle text-[10px] uppercase tracking-wider block">Categoría</span>
+                      <span className="font-medium text-foreground">{producto.categoria ?? "Chompas"}</span>
+                    </div>
+                    <div>
+                      <span className="text-subtle text-[10px] uppercase tracking-wider block">Modelo</span>
+                      <span className="font-medium text-foreground">{producto.modelo}</span>
+                    </div>
+                    {producto.sku ? (
+                      <div>
+                        <span className="text-subtle text-[10px] uppercase tracking-wider block">SKU</span>
+                        <span className="font-mono text-muted">{producto.sku}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+
+              {/* Pestaña 2: Medidas */}
+              {tabActiva === "medidas" && (
+                <div className="animate-in fade-in-50 duration-200 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5 text-foreground font-medium">
+                      <svg className="w-4 h-4 text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6h18M3 12h18M3 18h18" />
+                      </svg>
+                      <span>
+                        Medidas para Talla <strong className="font-bold">{varianteSeleccionada?.talla ?? "estándar"}</strong>
+                        {varianteSeleccionada?.color ? ` (${varianteSeleccionada.color})` : ""}
+                      </span>
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wider text-muted font-mono">en centímetros</span>
+                  </div>
+
+                  {varianteSeleccionada?.medidas && (
+                    varianteSeleccionada.medidas.anchoPecho ||
+                    varianteSeleccionada.medidas.anchoHombros ||
+                    varianteSeleccionada.medidas.largoTotal ||
+                    varianteSeleccionada.medidas.largoMangaHombro ||
+                    varianteSeleccionada.medidas.largoMangaAxila
+                  ) ? (
+                    <>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                        {varianteSeleccionada.medidas.anchoPecho ? (
+                          <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
+                            <p className="text-[10px] text-muted uppercase tracking-wider">Pecho</p>
+                            <p className="text-base font-semibold text-foreground mt-0.5 font-mono">
+                              {varianteSeleccionada.medidas.anchoPecho} cm
+                            </p>
+                            <p className="text-[9px] text-subtle mt-0.5">Axila a axila</p>
+                          </div>
+                        ) : null}
+                        {varianteSeleccionada.medidas.anchoHombros ? (
+                          <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
+                            <p className="text-[10px] text-muted uppercase tracking-wider">Hombros</p>
+                            <p className="text-base font-semibold text-foreground mt-0.5 font-mono">
+                              {varianteSeleccionada.medidas.anchoHombros} cm
+                            </p>
+                            <p className="text-[9px] text-subtle mt-0.5">Costura a costura</p>
+                          </div>
+                        ) : null}
+                        {varianteSeleccionada.medidas.largoTotal ? (
+                          <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
+                            <p className="text-[10px] text-muted uppercase tracking-wider">Largo total</p>
+                            <p className="text-base font-semibold text-foreground mt-0.5 font-mono">
+                              {varianteSeleccionada.medidas.largoTotal} cm
+                            </p>
+                            <p className="text-[9px] text-subtle mt-0.5">Cuello a base</p>
+                          </div>
+                        ) : null}
+                        {varianteSeleccionada.medidas.largoMangaHombro || varianteSeleccionada.medidas.largoMangaAxila ? (
+                          <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
+                            <p className="text-[10px] text-muted uppercase tracking-wider">Manga</p>
+                            <p className="text-base font-semibold text-foreground mt-0.5 font-mono">
+                              {varianteSeleccionada.medidas.largoMangaHombro ?? varianteSeleccionada.medidas.largoMangaAxila} cm
+                            </p>
+                            <p className="text-[9px] text-subtle mt-0.5">Largo manga</p>
+                          </div>
+                        ) : null}
+                      </div>
+                      <p className="text-[11px] text-subtle leading-relaxed italic">
+                        * Medidas tomadas sobre la prenda en superficie plana. Margen artesanal de ±1.5 cm.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-border p-4 text-center bg-background/40">
+                      <p className="text-xs text-muted leading-relaxed">
+                        Esta prenda cuenta con corte regular estándar. Si deseas medidas específicas o asesoría con tu talla ideal, contáctanos antes de tu compra.
+                      </p>
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 mt-2.5 text-xs font-medium text-[#168f68] hover:underline"
+                      >
+                        <FaWhatsapp className="w-3.5 h-3.5" />
+                        Consultar medidas por WhatsApp
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Pestaña 3: Politicas de Devolucion y Cambios */}
+              {tabActiva === "politicas" && (
+                <div className="animate-in fade-in-50 duration-200 space-y-3">
+                  <div className="grid gap-2.5 sm:grid-cols-3 text-left">
+                    <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
+                      <div className="flex items-center gap-1.5 mb-1 text-foreground font-medium text-xs">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span>7 días para cambios</span>
+                      </div>
+                      <p className="text-[11px] text-muted leading-relaxed">
+                        Aceptamos cambios de talla o modelo dentro de los primeros 7 días posteriores a la recepción de tu prenda.
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
+                      <div className="flex items-center gap-1.5 mb-1 text-foreground font-medium text-xs">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                        <span>Prenda intacta</span>
+                      </div>
+                      <p className="text-[11px] text-muted leading-relaxed">
+                        La prenda debe estar sin uso, sin lavar y con todas sus etiquetas originales intactas.
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-lg border border-border/80 bg-background/50 shadow-2xs">
+                      <div className="flex items-center gap-1.5 mb-1 text-foreground font-medium text-xs">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                        <span>La Paz y Envíos</span>
+                      </div>
+                      <p className="text-[11px] text-muted leading-relaxed">
+                        Cambios en nuestros puntos de encuentro en La Paz o coordinación de retorno por encomienda nacional.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50 text-xs">
+                    <span className="text-[11px] text-subtle">
+                      Para coordinar un cambio, contáctanos con tu número de pedido.
+                    </span>
+                    <Link
+                      href="/politicas"
+                      className="text-[11px] font-medium text-[#d04d37] hover:underline flex items-center gap-1 shrink-0"
+                    >
+                      <span>Ver políticas completas</span>
+                      <span>→</span>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+
+
           <div className="mt-6 rounded-[var(--radius-md)] border border-emerald-500/20 bg-gradient-to-br from-[#25d366] to-[#168f68] px-4 py-5 text-white shadow-sm sm:px-5">
             <div className="mb-2 flex items-center gap-2">
               <FaWhatsapp className="h-6 w-6 shrink-0" aria-hidden="true" />
@@ -700,12 +701,12 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
                   {producto.nombre}
                   <strong> -</strong> {producto.modelo}
                 </p>
-                
+
                 <p>
                   {colorWhatsapp}
                   <strong> -</strong> {tallaWhatsapp}
                 </p>
-                
+
               </div>
 
               <a
@@ -719,7 +720,7 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
               </a>
             </div>
           </div>
-            
+
 
           {mensaje ? (
             <p className="mt-4 rounded-[var(--radius-md)] border border-success/20 px-4 py-3 text-sm bg-success/10 text-success">
