@@ -779,7 +779,7 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
             )}
           </div>
           <p className={`mt-2 text-[11px] ${stock > 0 ? "text-subtle" : "text-danger"}`}>
-            {stock > 0 ? `${stock} disponibles` : "Sin stock"}
+            Colores disponibles
           </p>
 
           <div className="mt-4 flex items-center justify-between gap-3">
