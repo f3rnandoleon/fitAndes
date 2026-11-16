@@ -779,9 +779,9 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
             )}
           </div>
           <p className={`mt-2 text-[11px] ${stock > 0 ? "text-subtle" : "text-danger"}`}>
-            Colores disponibles
+            Ver colores y tallas disponibles
           </p>
-
+          {/*}
           <div className="mt-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-1.5">
               {colores.slice(0, 4).map((color) => (
@@ -802,7 +802,7 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
             <span className="text-[10px] uppercase tracking-[0.12em] text-subtle">
               {tallas.length} talla{tallas.length !== 1 ? "s" : ""}
             </span>
-          </div>
+          </div>*/}
         </div>
       </article>
     </Link>
