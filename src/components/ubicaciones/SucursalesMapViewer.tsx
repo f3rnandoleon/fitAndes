@@ -103,8 +103,8 @@ export default function SucursalesMapViewer({ ubicaciones }: Props) {
               type="button"
               onClick={() => setSelectedId(tienda.id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs uppercase tracking-wider font-semibold transition-all cursor-pointer ${isSelected
-                  ? "bg-foreground text-background shadow-md scale-[1.02]"
-                  : "bg-white text-muted border border-border hover:text-foreground hover:bg-surface-soft"
+                ? "bg-foreground text-background shadow-md scale-[1.02]"
+                : "bg-white text-muted border border-border hover:text-foreground hover:bg-surface-soft"
                 }`}
             >
               <FaStore className={isSelected ? "text-accent" : "text-subtle"} />
@@ -119,8 +119,8 @@ export default function SucursalesMapViewer({ ubicaciones }: Props) {
           type="button"
           onClick={() => setSelectedId("all")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs uppercase tracking-wider font-semibold transition-all cursor-pointer ${selectedId === "all"
-              ? "bg-foreground text-background shadow-md scale-[1.02]"
-              : "bg-white text-muted border border-border hover:text-foreground hover:bg-surface-soft"
+            ? "bg-foreground text-background shadow-md scale-[1.02]"
+            : "bg-white text-muted border border-border hover:text-foreground hover:bg-surface-soft"
             }`}
         >
           <FaMapMarkerAlt className={selectedId === "all" ? "text-accent" : "text-subtle"} />
@@ -272,21 +272,7 @@ export default function SucursalesMapViewer({ ubicaciones }: Props) {
             </div>
           )}
 
-          {/* Tarjeta de envíos nacionales */}
-          <div className="rounded-[24px] border border-[#c41e3a]/25 bg-[#c41e3a]/5 p-5 text-center space-y-2.5">
-            <p className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center justify-center gap-1.5">
-              <span>🎁</span> ¿Envías un regalo a otra ciudad?
-            </p>
-            <p className="text-xs text-muted leading-relaxed">
-              Despachamos tus regalos navideños a los 9 departamentos de Bolivia mediante transporte terrestre por <strong>Bs. 10</strong>.
-            </p>
-            <Link
-              href="/catalogo"
-              className="inline-block text-[11px] font-semibold text-[#c41e3a] underline underline-offset-4 hover:text-foreground transition-colors"
-            >
-              Explorar regalos para envío nacional →
-            </Link>
-          </div>
+
         </div>
       </div>
     </div>
