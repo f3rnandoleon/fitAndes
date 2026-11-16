@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties } from "react";
+import { FaWhatsapp } from "react-icons/fa";
 import ChatInput from "@/components/chat/ChatInput";
 import ChatMessage from "@/components/chat/ChatMessage";
+import { getWhatsAppLink } from "@/lib/constants";
 import type { ChatAction, ProductCardData, TranscriptMessage } from "@/lib/chat/types";
 
 type WindowMode = "compact" | "wide" | "full";
@@ -31,7 +33,7 @@ function shellClass(mode: WindowMode): string {
   if (mode === "wide") {
     return "inset-x-3 bottom-4 top-20 rounded-[28px] sm:inset-x-auto sm:bottom-6 sm:right-6 sm:top-auto sm:h-[min(86vh,820px)] sm:w-[min(760px,calc(100vw-2rem))] sm:rounded-[32px]";
   }
-  return "inset-x-3 bottom-24 top-24 rounded-[28px] sm:inset-x-auto sm:bottom-24 sm:right-4 sm:top-auto sm:h-[min(78vh,680px)] sm:w-[min(420px,calc(100vw-2rem))] sm:rounded-[32px]";
+  return "inset-x-3 bottom-24 top-20 rounded-[28px] sm:inset-x-auto sm:bottom-24 sm:right-6 sm:top-auto sm:h-[min(78vh,680px)] sm:w-[min(420px,calc(100vw-2rem))] sm:rounded-[32px]";
 }
 
 function shellStyle(): CSSProperties {
@@ -88,6 +90,17 @@ export default function ChatWindow({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <a
+              href={getWhatsAppLink("Hola FitAndes, necesito asesoría con una prenda o pedido.")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#25D366] px-3 text-xs font-semibold text-white shadow-xs transition-transform hover:scale-105 active:scale-95 sm:h-10"
+              aria-label="Hablar por WhatsApp con un asesor"
+              title="Hablar por WhatsApp"
+            >
+              <FaWhatsapp className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">WhatsApp</span>
+            </a>
             <button
               type="button"
               onClick={onCycleSize}

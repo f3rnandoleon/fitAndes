@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { sanitizeCallbackUrl } from "@/lib/text";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import logo from "../../../../public/fitAndes.png";
 
@@ -18,6 +19,7 @@ export default function RegistroPage() {
     password: "",
     confirmPassword: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -93,20 +95,13 @@ export default function RegistroPage() {
       >
         <Link
           href="/"
-          className="text-2xl uppercase font-bold z-10"
-          style={{
-            fontFamily: "var(--font-serif, Georgia, serif)",
-            letterSpacing: "0.25em",
-            color: "#1a1a1a",
-          }}
+          className="inline-flex w-fit items-center z-10"
         >
           <Image
             src={logo}
-            alt="Nueva Colección"
-            width={400}
-            height={150}
-            sizes="100vw"
-            className="pointer-events-none object-cover object-center lg:object-right"
+            alt="FitAndes"
+            priority
+            className="h-12 w-auto object-contain pointer-events-none"
           />
         </Link>
 
@@ -153,20 +148,13 @@ export default function RegistroPage() {
         <div className="w-full max-w-sm">
           <Link
             href="/"
-            className="inline-flex lg:hidden text-xl uppercase font-bold mb-4"
-            style={{
-              fontFamily: "var(--font-serif, Georgia, serif)",
-              letterSpacing: "0.2em",
-              color: "var(--foreground)",
-            }}
+            className="inline-flex lg:hidden items-center mb-6"
           >
             <Image
               src={logo}
-              alt="Nueva Colección"
-              width={400}
-              height={150}
-              sizes="100vw"
-              className="pointer-events-none object-cover object-center lg:object-right"
+              alt="Logo FitAndes"
+              priority
+              className="h-10 w-auto object-contain pointer-events-none"
             />
           </Link>
 
@@ -220,36 +208,44 @@ export default function RegistroPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="password" className="text-xs uppercase" style={{ letterSpacing: "0.16em", color: "var(--subtle)" }}>
+                <label htmlFor="password" className="text-xs uppercase tracking-[0.16em] text-subtle">
                   Contraseña
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="********"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  required
-                  autoComplete="new-password"
-                  className="border border-border rounded-[var(--radius-md)] px-4 py-3 text-sm placeholder:text-subtle/50 focus:outline-none focus:ring-1 focus:ring-foreground/10"
-                  style={{ background: "var(--background)" }}
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    required
+                    autoComplete="new-password"
+                    className="w-full border border-border rounded-[var(--radius-md)] bg-background px-4 py-3 pr-10 text-sm placeholder:text-subtle/50 focus:outline-none focus:border-foreground transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-subtle hover:text-foreground transition-colors"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showPassword ? <FiEyeOff className="h-4 w-4" /> : <FiEye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="confirmPassword" className="text-xs uppercase" style={{ letterSpacing: "0.16em", color: "var(--subtle)" }}>
+                <label htmlFor="confirmPassword" className="text-xs uppercase tracking-[0.16em] text-subtle">
                   Confirmar
                 </label>
                 <input
                   id="confirmPassword"
-                  type="password"
-                  placeholder="********"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
                   value={form.confirmPassword}
                   onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                   required
                   autoComplete="new-password"
-                  className="border border-border rounded-[var(--radius-md)] px-4 py-3 text-sm placeholder:text-subtle/50 focus:outline-none focus:ring-1 focus:ring-foreground/10"
-                  style={{ background: "var(--background)" }}
+                  className="w-full border border-border rounded-[var(--radius-md)] bg-background px-4 py-3 text-sm placeholder:text-subtle/50 focus:outline-none focus:border-foreground transition-colors"
                 />
               </div>
             </div>

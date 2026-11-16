@@ -243,6 +243,8 @@ export default function ChatWidget() {
     }
   }
 
+  const isProductDetail = Boolean(pathname?.startsWith("/catalogo/") && pathname !== "/catalogo");
+
   if (
     pathname === "/login" ||
     pathname === "/registro" ||
@@ -270,8 +272,12 @@ export default function ChatWidget() {
       />
 
       {hintVisible && !open ? (
-        <div className="fixed bottom-44 right-4 z-50 hidden max-w-[260px] rounded-[22px] border border-border bg-white px-4 py-3 text-sm leading-relaxed shadow-[0_20px_45px_rgba(17,17,17,0.12)] text-muted sm:block">
-          Consulta productos, tallas, similares o tus pedidos de forma cómoda.
+        <div
+          className={`fixed right-4 z-40 hidden max-w-[260px] rounded-[22px] border border-border bg-white px-4 py-3 text-sm leading-relaxed shadow-[0_20px_45px_rgba(17,17,17,0.12)] text-muted sm:block sm:right-6 ${
+            isProductDetail ? "bottom-44 lg:bottom-24" : "bottom-24"
+          }`}
+        >
+          ¿Dudas con tallas, prendas o tu pedido? Chatea aquí o contáctanos por WhatsApp.
           <span className="absolute -bottom-2 right-6 h-4 w-4 rotate-45 border-r border-b border-border bg-white" />
         </div>
       ) : null}
@@ -279,10 +285,15 @@ export default function ChatWidget() {
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-foreground text-background shadow-[0_20px_45px_rgba(17,17,17,0.25)] transition-transform hover:-translate-y-1 sm:bottom-24 sm:h-16 sm:w-16"
-        aria-label="Abrir asistente de FitAndes"
+        className={`fixed right-4 z-40 flex h-14 items-center gap-2.5 rounded-full bg-foreground px-4 text-background shadow-[0_20px_45px_rgba(17,17,17,0.25)] transition-transform hover:-translate-y-1 active:scale-95 sm:right-6 sm:h-14 ${
+          isProductDetail ? "bottom-24 lg:bottom-6" : "bottom-5 sm:bottom-6"
+        }`}
+        aria-label="Abrir asistente de FitAndes y WhatsApp"
       >
         <MessageIcon />
+        <span className="hidden sm:inline text-xs font-medium uppercase tracking-[0.14em]">
+          Ayuda
+        </span>
         {unread > 0 ? (
           <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white">
             {unread}

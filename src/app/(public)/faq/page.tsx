@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE_NAME, SITE_URL, WHATSAPP_DISPLAY, getWhatsAppLink } from "@/lib/constants";
+import FaqAccordion from "@/components/faq/FaqAccordion";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { DEFAULT_NATIONAL_SHIPPING_FEE, SITE_NAME, SITE_URL, WHATSAPP_DISPLAY, getWhatsAppLink } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Preguntas Frecuentes | FitAndes",
@@ -22,8 +24,7 @@ const FAQS = [
   },
   {
     pregunta: "¿A qué ciudades realizan envíos y cuál es el costo?",
-    respuesta:
-      "Realizamos envíos a toda Bolivia (Santa Cruz, Cochabamba, Oruro, Potosí, Chuquisaca, Tarija, Beni y Pando) a través de empresas de transporte terrestre y encomienda express. La tarifa plana de despacho es de Bs. 20. Para La Paz, puedes recoger gratis en nuestras tiendas físicas.",
+    respuesta: `Realizamos envíos a toda Bolivia (Santa Cruz, Cochabamba, Oruro, Potosí, Chuquisaca, Tarija, Beni y Pando) a través de empresas de transporte terrestre y encomienda express. La tarifa plana de despacho es de Bs. ${DEFAULT_NATIONAL_SHIPPING_FEE}. Para La Paz, puedes recoger gratis en nuestras tiendas físicas.`,
   },
   {
     pregunta: "¿Cuánto tiempo demora en llegar mi pedido?",
@@ -33,9 +34,8 @@ const FAQS = [
   {
     pregunta: "¿Qué métodos de pago están disponibles?",
     respuesta:
-      "Aceptamos pagos mediante código QR Simple (Banco Unión, BCP, BNB, Mercantil, Fassil/BancoSol, etc.), transferencias directas y pago en efectivo al retirar tu prenda en nuestras tiendas físicas autorizadas.",
+      "Aceptamos pagos mediante código QR Simple (BancoSol, Banco Unión, BCP, BNB, Mercantil Santa Cruz, etc.), transferencias directas y pago en efectivo al retirar tu prenda en nuestras tiendas físicas autorizadas.",
   },
-
   {
     pregunta: "¿Qué pasa si la talla que elegí no me queda?",
     respuesta:
@@ -44,7 +44,7 @@ const FAQS = [
   {
     pregunta: "¿Tienen tiendas físicas para probarse las prendas?",
     respuesta:
-      "Sí, contamos con sucursales activas en La Paz (Tienda Prado en la Av. 16 de Julio y Tienda Tiwanacu). Puedes visitarnos para ver la textura, colores y probarte las tallas antes de comprar.",
+      "Sí, contamos con sucursales activas en La Paz y El Alto (Tienda Prado en la Av. 16 de Julio y Tienda Tiwanacu). Puedes visitarnos para ver la textura, colores y probarte las tallas antes de comprar.",
   },
 ];
 
@@ -52,37 +52,29 @@ export default function FaqPage() {
   return (
     <main className="min-h-screen bg-background text-foreground pb-20">
       {/* Hero Header */}
-      <section className="py-14 sm:py-20 border-b border-border/40 bg-surface/30">
-        <div className="max-w-3xl mx-auto px-5 text-center space-y-4">
-          <span className="text-xs uppercase tracking-[0.25em] text-accent font-semibold">
-            Centro de Ayuda
-          </span>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif text-foreground font-normal tracking-tight">
-            Preguntas Frecuentes
-          </h1>
-          <p className="text-sm sm:text-base text-muted max-w-xl mx-auto leading-relaxed">
-            Resolvemos tus dudas sobre compras, envíos nacionales a toda Bolivia, formas de pago y tallas.
-          </p>
+      <section className="py-10 sm:py-16 border-b border-border/40 bg-surface/30">
+        <div className="max-w-3xl mx-auto px-5 space-y-5">
+          <Breadcrumb items={[{ label: "Inicio", href: "/" }, { label: "Preguntas Frecuentes" }]} />
+          <div className="text-center space-y-3.5 pt-2">
+            <span className="text-xs uppercase tracking-[0.25em] text-accent font-semibold">
+              Centro de Ayuda
+            </span>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif text-foreground font-normal tracking-tight">
+              Preguntas Frecuentes
+            </h1>
+            <p className="text-sm sm:text-base text-muted max-w-xl mx-auto leading-relaxed">
+              Resolvemos tus dudas sobre compras, envíos nacionales a toda Bolivia, formas de pago y tallas.
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* FAQ Accordion / List */}
-      <section className="max-w-3xl mx-auto px-5 py-12 sm:py-16 space-y-6">
-        <div className="divide-y divide-border/60">
-          {FAQS.map((faq, index) => (
-            <div key={index} className="py-6 space-y-2.5">
-              <h2 className="text-base sm:text-lg font-medium text-foreground">
-                {faq.pregunta}
-              </h2>
-              <p className="text-sm sm:text-base text-muted leading-relaxed">
-                {faq.respuesta}
-              </p>
-            </div>
-          ))}
-        </div>
+      {/* FAQ Accordion */}
+      <section className="max-w-3xl mx-auto px-5 py-12 sm:py-16 space-y-10">
+        <FaqAccordion items={FAQS} />
 
         {/* WhatsApp Assistance Box */}
-        <div className="mt-12 p-8 border border-accent/20 bg-accent/5 rounded-2xl text-center space-y-4">
+        <div className="p-8 border border-border bg-white rounded-[var(--radius-lg)] text-center space-y-4 shadow-xs">
           <h3 className="text-xl sm:text-2xl font-serif text-foreground">
             ¿Tienes alguna consulta especial?
           </h3>
@@ -95,13 +87,13 @@ export default function FaqPage() {
               href={getWhatsAppLink("Hola, tengo una duda antes de realizar mi compra.")}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-6 py-3 bg-foreground text-background text-xs uppercase tracking-widest font-semibold hover:bg-foreground/90 transition-all rounded-sm shadow-sm"
+              className="inline-flex items-center justify-center rounded-full px-6 py-3 bg-foreground text-background text-[11px] uppercase tracking-[0.16em] font-semibold hover:opacity-90 transition-all shadow-sm"
             >
               Hablar con un asesor
             </a>
             <Link
               href="/ubicaciones"
-              className="px-6 py-3 border border-border bg-background text-foreground text-xs uppercase tracking-widest font-semibold hover:bg-surface transition-all rounded-sm"
+              className="inline-flex items-center justify-center rounded-full px-6 py-3 border border-border bg-background text-foreground text-[11px] uppercase tracking-[0.16em] font-semibold hover:bg-surface transition-all"
             >
               Ver Sucursales Físicas
             </Link>
@@ -111,4 +103,3 @@ export default function FaqPage() {
     </main>
   );
 }
-

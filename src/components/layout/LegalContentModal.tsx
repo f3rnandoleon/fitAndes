@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FaTimes, FaWhatsapp, FaFileContract, FaUserShield, FaCookieBite, FaQuestionCircle, FaChevronDown } from "react-icons/fa";
-import { getWhatsAppLink, WHATSAPP_DISPLAY } from "@/lib/constants";
+import { DEFAULT_NATIONAL_SHIPPING_FEE, getWhatsAppLink, SEASONAL_THEME_ENABLED, WHATSAPP_DISPLAY } from "@/lib/constants";
 
 export type LegalModalSection = "terminos" | "privacidad" | "cookies" | "faq";
 
@@ -24,7 +24,7 @@ const FAQS_DATA: FaqItem[] = [
   },
   {
     q: "¿A qué ciudades realizan envíos y cuál es el costo?",
-    a: "Realizamos envíos a toda Bolivia (Santa Cruz, Cochabamba, Oruro, Potosí, Chuquisaca, Tarija, Beni y Pando) a través de empresas de encomienda terrestre y flotas autorizadas. La tarifa plana de despacho nacional es de Bs. 10. En la ciudad de La Paz, el retiro en nuestros puntos de encuentro y tiendas es completamente gratuito.",
+    a: `Realizamos envíos a toda Bolivia (Santa Cruz, Cochabamba, Oruro, Potosí, Chuquisaca, Tarija, Beni y Pando) a través de empresas de encomienda terrestre y flotas autorizadas. La tarifa plana de despacho nacional es de Bs. ${DEFAULT_NATIONAL_SHIPPING_FEE}. En la ciudad de La Paz, el retiro en nuestros puntos de encuentro y tiendas es completamente gratuito.`,
   },
   {
     q: "¿Cuánto tiempo demora en llegar mi encomienda?",
@@ -92,14 +92,14 @@ export default function LegalContentModal({ isOpen, initialSection = "terminos",
         onClick={(e) => e.stopPropagation()}
       >
         {/* Cabecera del Modal */}
-        <div className="flex items-center justify-between border-b border-border/80 px-6 py-5 bg-[#faf8f5]">
+        <div className="flex items-center justify-between border-b border-border/80 px-6 py-5 bg-background">
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#c41e3a]/10 text-[#c41e3a] font-semibold text-base">
-              🎄
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-accent font-semibold text-base">
+              {SEASONAL_THEME_ENABLED ? "🎄" : "§"}
             </span>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-[#c41e3a] font-semibold">
-                Información Legal y Ayuda · Especial Navideño
+              <p className="text-[10px] uppercase tracking-[0.2em] text-accent font-semibold">
+                Información Legal y Ayuda{SEASONAL_THEME_ENABLED ? " · Especial Navideño" : " · FitAndes"}
               </p>
               <h2 id="legal-modal-title" className="text-xl sm:text-2xl font-serif text-foreground font-normal">
                 {activeSection === "terminos" && "Términos y Condiciones"}
@@ -200,7 +200,7 @@ export default function LegalContentModal({ isOpen, initialSection = "terminos",
                     <strong>Retiro en Punto de Encuentro (La Paz):</strong> Servicio gratuito en estaciones y plazas acordadas en el horario seleccionado.
                   </li>
                   <li>
-                    <strong>Envío Nacional por Encomienda:</strong> Despacho a los 9 departamentos de Bolivia mediante transporte terrestre / flota con tarifa plana de <strong>Bs. 10</strong>. El comprador recoge en la terminal o sucursal de encomienda portando su C.I.
+                    <strong>Envío Nacional por Encomienda:</strong> Despacho a los 9 departamentos de Bolivia mediante transporte terrestre / flota con tarifa plana de <strong>Bs. {DEFAULT_NATIONAL_SHIPPING_FEE}</strong>. El comprador recoge en la terminal o sucursal de encomienda portando su C.I.
                   </li>
                 </ul>
               </div>

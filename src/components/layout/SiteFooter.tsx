@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { FaWhatsapp, FaTiktok, FaFacebook } from "react-icons/fa";
-import { getWhatsAppLink, SOCIAL_LINKS, WHATSAPP_DISPLAY } from "@/lib/constants";
+import { getWhatsAppLink, SEASONAL_THEME_ENABLED, SOCIAL_LINKS, WHATSAPP_DISPLAY } from "@/lib/constants";
 import LegalContentModal, { LegalModalSection } from "@/components/layout/LegalContentModal";
 
 export default function SiteFooter() {
@@ -25,26 +25,24 @@ export default function SiteFooter() {
   return (
     <>
       <footer className="bg-foreground text-background border-t border-border/20">
-        {/* Franja de Felicitación Navideña */}
-        <div className="bg-[#8b1525] text-white py-3.5 px-4 border-b border-[#a82033] text-center text-xs sm:text-sm tracking-wider font-serif shadow-inner">
-          <p className="max-w-[1240px] mx-auto flex items-center justify-center gap-2 flex-wrap">
-            {/*<span>✨ 🎄</span>
-            <strong className="font-medium text-[#ffd700]">¡La familia Fit Andes te desea una Feliz Navidad y un Próspero Año Nuevo!</strong>
-            <span>🎅 ✨</span>*/}
-          </p>
-        </div>
+        {SEASONAL_THEME_ENABLED && (
+          <div className="bg-[#8b1525] text-white py-3.5 px-4 border-b border-[#a82033] text-center text-xs sm:text-sm tracking-wider font-serif shadow-inner">
+            <p className="max-w-[1240px] mx-auto flex items-center justify-center gap-2 flex-wrap">
+              <span>✨</span>
+              <strong className="font-medium text-[#ffd700]">¡La familia Fit Andes te desea felices fiestas!</strong>
+              <span>✨</span>
+            </p>
+          </div>
+        )}
 
         <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-10 px-5 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:py-16">
           {/* Columna 1: Marca */}
           <div>
-            <p
-              className="text-xl font-bold uppercase mb-4"
-              style={{ fontFamily: "var(--font-serif, Georgia, serif)", letterSpacing: "0.25em" }}
-            >
-              Fit Andes ❄️
+            <p className="font-serif text-xl font-bold uppercase tracking-[0.25em] mb-4">
+              Fit Andes{SEASONAL_THEME_ENABLED ? " ❄️" : ""}
             </p>
             <p className="text-sm leading-7 text-background/80">
-              Prendas con fibras nobles y acabados artesanales. La prenda ideal para vestir el calor de los Andes en estas fiestas navideñas 🎁.
+              Prendas con fibras nobles y acabados artesanales. Calidad y calidez andina pensada para acompañarte cada día.
             </p>
           </div>
 
@@ -59,6 +57,8 @@ export default function SiteFooter() {
                 { label: "Nueva colección", href: "/#nuevo" },
                 { label: "Nuestras sucursales", href: "/ubicaciones" },
                 { label: "Sobre nosotros", href: "/nosotros" },
+                { label: "Preguntas frecuentes", href: "/faq" },
+                { label: "Políticas y términos", href: "/politicas" },
               ].map((item) => (
                 <Link key={item.label} href={item.href} className="text-sm hover:opacity-50 transition-opacity text-background">
                   {item.label}

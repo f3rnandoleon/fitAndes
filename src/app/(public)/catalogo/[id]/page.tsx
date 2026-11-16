@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductoDetalleCliente from "@/components/catalogo/ProductoDetalleCliente";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
 import { formatPrice } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants";
@@ -136,30 +137,21 @@ export default async function ProductoDetallePage({
     },
   };
 
+  const breadcrumbItems = [
+    { label: "Inicio", href: "/" },
+    { label: "Catálogo", href: "/catalogo" },
+    ...(producto.categoria
+      ? [{ label: producto.categoria, href: `/catalogo?categoria=${encodeURIComponent(producto.categoria)}` }]
+      : []),
+    { label: producto.nombre },
+  ];
+
   return (
-    <main className="min-h-screen bg-background text-foreground pb-16">
+    <main className="min-h-screen bg-background text-foreground pb-28 lg:pb-16">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-5 sm:py-8 lg:py-10">
-        <nav aria-label="Miga de pan" className="mb-6 flex flex-wrap items-center gap-2 text-[10px] uppercase sm:mb-8 text-subtle tracking-[0.16em]">
-          <Link href="/" className="transition-opacity hover:opacity-60">
-            Inicio
-          </Link>
-          <span>&gt;</span>
-          <Link href="/catalogo" className="transition-opacity hover:opacity-60">
-            Catálogo
-          </Link>
-          <span>&gt;</span>
-          {producto.categoria ? (
-            <>
-              <Link href={`/catalogo?categoria=${encodeURIComponent(producto.categoria)}`} className="transition-opacity hover:opacity-60">
-                {producto.categoria}
-              </Link>
-              <span>&gt;</span>
-            </>
-          ) : null}
-          <span className="text-foreground font-medium truncate max-w-[14rem] sm:max-w-none">{producto.nombre}</span>
-        </nav>
+        <Breadcrumb items={breadcrumbItems} className="mb-6 sm:mb-8" />
 
         <ProductoDetalleCliente
           producto={producto}

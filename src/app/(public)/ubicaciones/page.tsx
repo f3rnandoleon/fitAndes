@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE_NAME, SITE_URL } from "@/lib/constants";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { DEFAULT_NATIONAL_SHIPPING_FEE, SITE_NAME, SITE_URL } from "@/lib/constants";
 import SucursalesMapViewer, { UbicacionItem } from "@/components/ubicaciones/SucursalesMapViewer";
 
 export const metadata: Metadata = {
@@ -87,17 +88,20 @@ export default async function UbicacionesPage() {
   return (
     <main className="min-h-screen bg-background text-foreground pb-20">
       {/* Hero Header */}
-      <section className="py-12 sm:py-16 border-b border-border/40 bg-surface/30">
-        <div className="max-w-4xl mx-auto px-5 text-center space-y-3.5">
-          <span className="text-xs uppercase tracking-[0.25em] text-accent font-semibold">
-            Puntos de Venta & Retiro
-          </span>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif text-foreground font-normal tracking-tight">
-            Nuestras Sucursales Físicas
-          </h1>
-          <p className="text-sm sm:text-base text-muted max-w-2xl mx-auto leading-relaxed">
-            Explora la ubicación exacta en el mapa de Google Maps para visitarnos, probarte nuestras prendas artesanales o retirar tus pedidos web de forma gratuita.
-          </p>
+      <section className="py-10 sm:py-16 border-b border-border/40 bg-surface/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-5">
+          <Breadcrumb items={[{ label: "Inicio", href: "/" }, { label: "Sucursales" }]} />
+          <div className="max-w-4xl mx-auto text-center space-y-3.5 pt-2">
+            <span className="text-xs uppercase tracking-[0.25em] text-accent font-semibold">
+              Puntos de Venta & Retiro
+            </span>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif text-foreground font-normal tracking-tight">
+              Nuestras Sucursales Físicas
+            </h1>
+            <p className="text-sm sm:text-base text-muted max-w-2xl mx-auto leading-relaxed">
+              Explora la ubicación exacta en el mapa de Google Maps para visitarnos, probarte nuestras prendas artesanales o retirar tus pedidos web de forma gratuita.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -111,7 +115,7 @@ export default async function UbicacionesPage() {
             ¿No estás cerca de nuestras tiendas en La Paz o El Alto?
           </h3>
           <p className="text-sm text-muted max-w-2xl mx-auto leading-relaxed">
-            Despachamos diariamente a los 9 departamentos de Bolivia (Santa Cruz, Cochabamba, Oruro, Sucre, Tarija, Potosí, Trinidad y Cobija) por transporte terrestre seguro con tarifa plana de solo <strong>Bs. 20</strong>.
+            Despachamos diariamente a los 9 departamentos de Bolivia (Santa Cruz, Cochabamba, Oruro, Sucre, Tarija, Potosí, Trinidad y Cobija) por transporte terrestre seguro con tarifa plana de solo <strong>Bs. {DEFAULT_NATIONAL_SHIPPING_FEE}</strong>.
           </p>
           <div className="pt-2 flex flex-wrap justify-center gap-3">
             <Link

@@ -26,6 +26,7 @@ import { CheckoutAuthStatus } from "@/components/checkout/CheckoutAuthStatus";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { DEFAULT_NATIONAL_SHIPPING_FEE } from "@/lib/constants";
 import { sanitizeCallbackUrl } from "@/lib/text";
 
 function buildDefaultAddress(context: CheckoutCustomerContext | null) {
@@ -89,7 +90,7 @@ export default function CheckoutPageClient() {
   const shippingBranches = getShippingBranches(department, shippingCompany, deliveryConfig);
 
   // Cálculo de tarifa de flete nacional
-  const nationalFlatFee = deliveryConfig.shippingPolicy?.nationalFlatFee ?? 10;
+  const nationalFlatFee = deliveryConfig.shippingPolicy?.nationalFlatFee ?? DEFAULT_NATIONAL_SHIPPING_FEE;
   const shippingCost = deliveryMethod === "SHIPPING_NATIONAL" ? nationalFlatFee : 0;
   const shippingLabel =
     deliveryMethod === "PICKUP_POINT"
@@ -499,6 +500,36 @@ export default function CheckoutPageClient() {
               onLogin={goToLogin}
             />
           </div>
+
+          {/* Stepper visual de progreso */}
+          <ol aria-label="Pasos del proceso de compra" className="mt-6 pt-5 border-t border-border/70 grid grid-cols-3 gap-2 sm:gap-4">
+            {[
+              { step: "01", label: "Prendas reservadas", done: true },
+              { step: "02", label: "Datos y entrega", active: true },
+              { step: "03", label: deliveryMethod === "WHATSAPP" ? "Confirmación" : "Pago y envío", active: false },
+            ].map((item) => (
+              <li key={item.step} className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <span
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold tracking-wider ${
+                    item.done
+                      ? "bg-success text-white"
+                      : item.active
+                      ? "bg-foreground text-background"
+                      : "border border-border bg-surface text-subtle"
+                  }`}
+                >
+                  {item.done ? "✓" : item.step}
+                </span>
+                <span
+                  className={`text-[10px] sm:text-xs uppercase tracking-[0.12em] truncate ${
+                    item.done || item.active ? "text-foreground font-medium" : "text-subtle"
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </li>
+            ))}
+          </ol>
         </header>
 
         {systemWarning && (

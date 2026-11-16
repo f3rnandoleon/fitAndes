@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaWhatsapp } from "react-icons/fa";
+import { FiMaximize2, FiX } from "react-icons/fi";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
+import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/format";
 import { getWhatsAppLink } from "@/lib/constants";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
@@ -48,6 +50,8 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
   const [indiceImagenActual, setIndiceImagenActual] = useState(0);
   const [cantidad, setCantidad] = useState(1);
   const [urlActual, setUrlActual] = useState("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const tabsRef = useRef<HTMLDivElement | null>(null);
 
   const tallasDisponibles = Array.from(
     new Set(variantesDisponibles.map((v) => v.talla))
@@ -117,6 +121,32 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
       return () => clearTimeout(timer);
     }
   }, [mensaje]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const total = imagenesActivas.length;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setLightboxOpen(false);
+      } else if (total > 1 && event.key === "ArrowLeft") {
+        setIndiceImagenActual((actual) => (actual - 1 + total) % total);
+      } else if (total > 1 && event.key === "ArrowRight") {
+        setIndiceImagenActual((actual) => (actual + 1) % total);
+      }
+    }
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [lightboxOpen, imagenesActivas.length]);
+
+  function openSizeGuide() {
+    setTabActiva("medidas");
+    tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   function seleccionarColor(color: string, colorSecundario?: string | null) {
     const siguiente =
@@ -212,17 +242,28 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
           ) : null}
 
           <div className={`order-1 overflow-hidden rounded-[var(--radius-lg)] bg-background ${imagenesActivas.length <= 1 ? "lg:col-span-2" : "lg:order-2"}`}>
-            <div className="relative aspect-[4/5] w-full">
+            <div className="relative aspect-[4/5] w-full group">
               {imagenPrincipal ? (
                 <div className="relative h-full w-full">
-                  <Image
-                    src={imagenPrincipal}
-                    alt={producto.nombre}
-                    fill
-                    priority
-                    sizes="(max-width: 1024px) 100vw, 520px"
-                    className="object-contain object-center"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setLightboxOpen(true)}
+                    aria-label="Ampliar imagen del producto"
+                    className="relative block h-full w-full cursor-zoom-in focus:outline-none"
+                  >
+                    <Image
+                      src={imagenPrincipal}
+                      alt={producto.nombre}
+                      fill
+                      priority
+                      sizes="(max-width: 1024px) 100vw, 520px"
+                      className="object-contain object-center"
+                    />
+                    <span className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-border bg-white/90 px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-foreground shadow-xs backdrop-blur-xs opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <FiMaximize2 className="h-3 w-3" aria-hidden="true" />
+                      Ampliar
+                    </span>
+                  </button>
 
                   {imagenesActivas.length > 1 ? (
                     <>
@@ -275,35 +316,32 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
         </div>
       </section>
 
-      <section className="flex flex-col rounded-[var(--radius-lg)] border bg-white px-5 py-6 sm:px-6 lg:px-7 lg:py-7 border-border shadow-sm">
-        <div className="order-1">
+      <section className="flex flex-col gap-6 rounded-[var(--radius-lg)] border bg-white px-5 py-6 sm:px-6 lg:px-7 lg:py-7 border-border shadow-sm">
+        <div>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
                 {(producto.categoria ?? "Catalogo").toUpperCase()} {producto.nombre ? `· ${producto.nombre.toUpperCase()}` : ""}
               </p>
-              <h1 className="mt-3 text-[2.1rem] leading-[1.02] sm:text-[2.7rem] text-foreground" style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}>
+              <h1 className="mt-3 font-serif text-[2.1rem] font-normal leading-[1.02] sm:text-[2.7rem] text-foreground">
                 {producto.modelo}
               </h1>
             </div>
 
             <span
-              className="inline-flex w-fit rounded-full border px-4 py-2 text-[10px] uppercase"
+              className="inline-flex w-fit rounded-full border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
               style={{
-                letterSpacing: "0.18em",
-                color: stockActual > 0 ? "#4f7a57" : "#a54a3f",
-                borderColor: stockActual > 0 ? "rgba(79,122,87,0.18)" : "rgba(165,74,63,0.18)",
-                background: stockActual > 0 ? "rgba(79,122,87,0.08)" : "rgba(165,74,63,0.08)",
+                color: stockActual > 0 ? "var(--success)" : "var(--danger)",
+                borderColor: stockActual > 0 ? "rgba(22,91,51,0.22)" : "rgba(155,27,48,0.22)",
+                background: stockActual > 0 ? "rgba(22,91,51,0.08)" : "rgba(155,27,48,0.08)",
               }}
             >
               {stockActual > 0 ? `${stockActual} unidades disponibles` : "Sin stock"}
             </span>
           </div>
 
-
-
           <div className="mt-6 flex flex-wrap items-end gap-3">
-            <p className="text-[1.9rem] leading-none sm:text-[2.2rem] text-foreground" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
+            <p className="font-serif text-[1.9rem] leading-none sm:text-[2.2rem] text-foreground">
               {formatPrice(precioActual)}
             </p>
             {precioAnterior ? (
@@ -317,13 +355,15 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
               </span>
             ) : null}
             {tienePrecioDiferenciado && varianteSeleccionada?.talla ? (
-              <span className="inline-flex rounded-full bg-[#f4ede3] border border-[#e2d8cc] px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-[#8f8478] font-medium">
+              <span className="inline-flex rounded-full bg-surface border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-muted font-medium">
                 Precio para talla {varianteSeleccionada.talla}
               </span>
             ) : null}
           </div>
         </div>
-        <div className="order-3 mt-6">
+
+        {/* Selectores de Talla y Color */}
+        <div className="space-y-4">
           <div className="rounded-[var(--radius-md)] border border-border px-4 py-5 sm:px-5 bg-background">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
@@ -339,7 +379,7 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
 
               <button
                 type="button"
-                onClick={() => setTabActiva("medidas")}
+                onClick={openSizeGuide}
                 className="text-[10px] uppercase tracking-[0.16em] text-muted hover:text-foreground underline underline-offset-2 transition-colors cursor-pointer"
               >
                 Guía de medidas
@@ -364,18 +404,18 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
                     key={tallaDisponible}
                     type="button"
                     onClick={() => seleccionarTalla(tallaDisponible)}
-                    className="min-w-12 rounded-full border px-4 py-2.5 text-sm transition-all active:scale-95 inline-flex items-center justify-center gap-1.5"
-                    style={{
-                      borderColor: activa ? "#111111" : "#e2d8cc",
-                      background: activa ? "#111111" : "#ffffff",
-                      color: activa ? "#ffffff" : "#4f463d",
-                    }}
+                    className={`min-w-12 rounded-full border px-4 py-2.5 text-sm transition-all active:scale-95 inline-flex items-center justify-center gap-1.5 cursor-pointer ${
+                      activa
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-white text-foreground hover:border-foreground/50"
+                    }`}
                   >
                     <span>{tallaDisponible}</span>
                     {tieneDiferencia ? (
                       <span
-                        className={`text-[10px] font-mono tracking-tight ${activa ? "text-white/80" : "text-[#8f8478]"
-                          }`}
+                        className={`text-[10px] font-mono tracking-tight ${
+                          activa ? "text-background/80" : "text-subtle"
+                        }`}
                       >
                         {formatPrice(precioTalla)}
                       </span>
@@ -386,17 +426,17 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
             </div>
           </div>
 
-          <div className="mt-5 rounded-[var(--radius-md)] border border-border px-4 py-5 sm:px-5 bg-background">
+          <div className="rounded-[var(--radius-md)] border border-border px-4 py-5 sm:px-5 bg-background">
             <div className="flex items-center justify-between gap-4">
               <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
                 Color actual
               </p>
-              <span className="text-xs text-foreground">
+              <span className="text-xs text-foreground font-medium">
                 {colorSeleccionado || "-"}{colorSecundarioSeleccionado ? ` / ${colorSecundarioSeleccionado}` : ""}
               </span>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-2.5">
               {coloresDisponibles.map(({ color, colorSecundario }) => {
                 const activo = color === colorSeleccionado && colorSecundario === colorSecundarioSeleccionado;
                 const colorBase = getProductColorValue(color);
@@ -408,24 +448,21 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
                     key={`${color}-${colorSecundario || ""}`}
                     type="button"
                     onClick={() => seleccionarColor(color, colorSecundario)}
-                    className="flex items-center gap-2 rounded-full border border-border transition-all hover:bg-white active:scale-95"
-                    style={{
-                      borderColor: activo ? "var(--foreground)" : "var(--border)",
-                      background: activo ? "var(--background)" : "transparent",
-                    }}
+                    className={`flex items-center gap-2 rounded-full border pl-1.5 pr-3.5 py-1.5 transition-all hover:bg-white active:scale-95 cursor-pointer ${
+                      activo ? "border-foreground bg-white shadow-2xs" : "border-border bg-transparent"
+                    }`}
                     aria-label={`Seleccionar color ${color}${colorSecundario ? ` y ${colorSecundario}` : ""}`}
                     aria-pressed={activo}
                     title={`${color}${colorSecundario ? ` / ${colorSecundario}` : ""}`}
                   >
                     <span
-                      className="block h-7 w-7 rounded-full border"
+                      className="block h-6 w-6 rounded-full border shrink-0"
                       style={{
                         background: colorSec ? `linear-gradient(135deg, ${colorBase} 50%, ${colorSec} 50%)` : colorBase,
                         borderColor: activo ? "var(--foreground)" : coloresClaros ? "var(--subtle)" : "var(--border)",
-                        boxShadow: activo ? "0 0 0 2px rgba(0,0,0,0.08)" : "none",
                       }}
                     />
-                    <span className="text-[11px] uppercase tracking-[0.12em] text-muted">
+                    <span className="text-[11px] uppercase tracking-[0.12em] text-foreground">
                       {colorSecundario ? `${color} / ${colorSecundario}` : color}
                     </span>
                   </button>
@@ -435,47 +472,54 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
           </div>
         </div>
 
-        <div className="order-4">
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <div className="inline-flex items-center justify-center rounded-full border border-border">
-              <button
-                type="button"
-                onClick={() => setCantidad((actual) => Math.max(1, actual - 1))}
-                className="h-12 w-12 text-lg active:scale-90 transition-transform"
-                aria-label="Reducir cantidad"
-              >
-                -
-              </button>
-              <span className="flex h-12 min-w-12 items-center justify-center text-sm text-foreground font-medium">
-                {cantidad}
-              </span>
-              <button
-                type="button"
-                onClick={() => setCantidad((actual) => Math.min(stockActual || 1, actual + 1))}
-                className="h-12 w-12 text-lg active:scale-90 transition-transform"
-                aria-label="Aumentar cantidad"
-                disabled={stockActual <= 0}
-              >
-                +
-              </button>
-            </div>
-
+        {/* Selector de Cantidad y CTA Principal */}
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="inline-flex items-center justify-center rounded-full border border-border bg-background">
             <button
               type="button"
-              onClick={reservarSeleccion}
-              disabled={!varianteSeleccionada || stockActual <= 0}
-              className="inline-flex flex-1 items-center justify-center rounded-full px-6 py-4 text-[11px] uppercase bg-foreground text-background transition-all disabled:cursor-not-allowed disabled:opacity-45 hover:opacity-90 active:scale-[0.98]"
+              onClick={() => setCantidad((actual) => Math.max(1, actual - 1))}
+              className="h-12 w-12 text-lg active:scale-90 transition-transform cursor-pointer"
+              aria-label="Reducir cantidad"
             >
-              Añadir al carrito
+              -
+            </button>
+            <span className="flex h-12 min-w-12 items-center justify-center text-sm text-foreground font-medium">
+              {cantidad}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCantidad((actual) => Math.min(stockActual || 1, actual + 1))}
+              className="h-12 w-12 text-lg active:scale-90 transition-transform cursor-pointer"
+              aria-label="Aumentar cantidad"
+              disabled={stockActual <= 0}
+            >
+              +
             </button>
           </div>
 
+          <Button
+            type="button"
+            variant="primary"
+            size="lg"
+            onClick={reservarSeleccion}
+            disabled={!varianteSeleccionada || stockActual <= 0}
+            className="flex-1 cursor-pointer"
+          >
+            Añadir al carrito
+          </Button>
+        </div>
 
-          {/* Barra de navegacion minimalista: Descripcion, Medidas, Devoluciones y Cambios */}
-          <div className="order-2 mt-6">
-            <h2 className="mt-3 text-[1.5rem] leading-[1.02] sm:text-[2.7rem] text-foreground mb-4" style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}>
-              Detalles del producto
-            </h2>
+        {mensaje ? (
+          <p className="rounded-[var(--radius-md)] border border-success/20 px-4 py-3 text-sm bg-success/10 text-success">
+            {mensaje}
+          </p>
+        ) : null}
+
+        {/* Barra de navegacion minimalista: Descripcion, Medidas, Devoluciones y Cambios */}
+        <div ref={tabsRef} id="product-details-tabs" className="pt-2 scroll-mt-24">
+          <h2 className="font-serif text-xl sm:text-2xl font-normal text-foreground mb-4">
+            Detalles del producto
+          </h2>
             <nav
               aria-label="Informacion de la prenda"
               className="flex items-center gap-6 sm:gap-8 border-b border-border overflow-x-auto no-scrollbar"
@@ -687,50 +731,110 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
 
 
 
-          <div className="mt-6 rounded-[var(--radius-md)] border border-emerald-500/20 bg-gradient-to-br from-[#25d366] to-[#168f68] px-4 py-5 text-white shadow-sm sm:px-5">
-            <div className="mb-2 flex items-center gap-2">
-              <FaWhatsapp className="h-6 w-6 shrink-0" aria-hidden="true" />
-              <h5 className="text-lg font-semibold">¿Necesitas ayuda inmediata?</h5>
-            </div>
-
-            <p className="text-sm font-medium sm:text-base">Reserva este producto directamente por WhatsApp:</p>
-
-            <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="grid gap-2 text-sm">
-                <p>
-                  {producto.nombre}
-                  <strong> -</strong> {producto.modelo}
-                </p>
-
-                <p>
-                  {colorWhatsapp}
-                  <strong> -</strong> {tallaWhatsapp}
-                </p>
-
+          {/* Bloque secundario de consulta por WhatsApp */}
+          <div className="rounded-[var(--radius-md)] border border-emerald-600/20 bg-emerald-50/70 px-4 py-4 sm:px-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#25d366] text-white shadow-2xs">
+                  <FaWhatsapp className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">¿Dudas sobre talla o stock?</p>
+                  <p className="text-xs text-muted mt-0.5">
+                    {producto.nombre} · {colorWhatsapp} · {tallaWhatsapp}
+                  </p>
+                </div>
               </div>
 
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-bold text-foreground transition hover:bg-white/90 active:scale-[0.98]"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-emerald-700/25 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] font-semibold text-emerald-800 transition hover:bg-emerald-600 hover:text-white active:scale-[0.98]"
               >
-                <FaWhatsapp className="h-4 w-4" aria-hidden="true" />
-                Contactar
+                <FaWhatsapp className="h-3.5 w-3.5" aria-hidden="true" />
+                Consultar
               </a>
             </div>
           </div>
-
-
-          {mensaje ? (
-            <p className="mt-4 rounded-[var(--radius-md)] border border-success/20 px-4 py-3 text-sm bg-success/10 text-success">
-              {mensaje}
-            </p>
-          ) : null}
-
-
-        </div>
       </section>
+
+      {/* Barra fija inferior en móvil para facilitar la compra */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md px-4 pt-3 pb-2 mobile-safe-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
+        <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-subtle truncate">
+              {colorWhatsapp} · Talla {tallaWhatsapp}
+            </p>
+            <p className="font-serif text-lg font-semibold text-foreground leading-tight">
+              {formatPrice(precioActual)}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            size="md"
+            onClick={reservarSeleccion}
+            disabled={!varianteSeleccionada || stockActual <= 0}
+            className="shrink-0"
+          >
+            Añadir al carrito
+          </Button>
+        </div>
+      </div>
+
+      {/* Modal Lightbox de zoom de imagen */}
+      {lightboxOpen && imagenPrincipal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Vista ampliada de ${producto.nombre}`}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-xs"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            aria-label="Cerrar vista ampliada"
+            className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors cursor-pointer"
+          >
+            <FiX className="h-5 w-5" />
+          </button>
+
+          <div
+            className="relative h-[80vh] w-full max-w-4xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={imagenPrincipal}
+              alt={`${producto.nombre} ampliada`}
+              fill
+              sizes="100vw"
+              className="object-contain"
+            />
+            {imagenesActivas.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Imagen anterior"
+                  onClick={() => moverImagen(-1)}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md cursor-pointer"
+                >
+                  {"\u2039"}
+                </button>
+                <button
+                  type="button"
+                  aria-label="Imagen siguiente"
+                  onClick={() => moverImagen(1)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md cursor-pointer"
+                >
+                  {"\u203A"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal de Ã©xito al agregar producto */}
       {mostrarExito && (

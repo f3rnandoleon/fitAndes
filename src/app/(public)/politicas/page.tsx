@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { Metadata } from "next";
 import PoliticasView, { PoliticasData } from "@/components/politicas/PoliticasView";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { getWhatsAppLink, WHATSAPP_DISPLAY } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -55,13 +55,10 @@ export default async function PoliticasPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase mb-8 text-subtle tracking-[0.16em]">
-          <Link href="/" className="hover:opacity-60 transition-opacity">
-            Inicio
-          </Link>
-          <span>&gt;</span>
-          <span className="text-foreground font-medium">Políticas y Términos</span>
-        </div>
+        <Breadcrumb
+          items={[{ label: "Inicio", href: "/" }, { label: "Políticas y Términos" }]}
+          className="mb-8"
+        />
 
         <header className="mb-10 max-w-2xl">
           <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-3">

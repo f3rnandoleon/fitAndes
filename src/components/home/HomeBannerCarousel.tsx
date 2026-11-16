@@ -15,6 +15,7 @@ export default function HomeBannerCarousel({ banners }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartX = useRef<number | null>(null);
 
   const total = banners.length;
 
@@ -45,15 +46,40 @@ export default function HomeBannerCarousel({ banners }: Props) {
     setCurrentIndex((prev) => (prev + 1) % total);
   }
 
+  function handleTouchStart(event: React.TouchEvent<HTMLElement>) {
+    setIsPaused(true);
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  }
+
+  function handleTouchEnd(event: React.TouchEvent<HTMLElement>) {
+    setIsPaused(false);
+    if (touchStartX.current === null || isSingle) return;
+    const endX = event.changedTouches[0]?.clientX ?? touchStartX.current;
+    const delta = touchStartX.current - endX;
+    touchStartX.current = null;
+    if (Math.abs(delta) > 45) {
+      if (delta > 0) nextSlide();
+      else prevSlide();
+    }
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLElement>) {
+    if (isSingle) return;
+    if (event.key === "ArrowLeft") prevSlide();
+    else if (event.key === "ArrowRight") nextSlide();
+  }
+
   return (
     <section
       id="inicio"
       aria-label="Campañas destacadas"
-      className="relative w-full overflow-hidden bg-[#201d1a]"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className="relative w-full overflow-hidden bg-[#201d1a] focus:outline-none"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={() => setIsPaused(true)}
-      onTouchEnd={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="relative w-full h-[480px] sm:h-[560px] lg:h-[640px]">
         {banners.map((banner, index) => {

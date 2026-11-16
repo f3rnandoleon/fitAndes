@@ -19,13 +19,13 @@ export default function NotFound() {
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             href="/catalogo"
-            className="w-full sm:w-auto px-6 py-3 bg-foreground text-background text-xs uppercase tracking-widest font-medium hover:bg-foreground/90 transition-all rounded-sm shadow-sm"
+            className="w-full sm:w-auto inline-flex items-center justify-center rounded-full px-6 py-3 bg-foreground text-background text-[11px] uppercase tracking-[0.16em] font-medium hover:opacity-90 transition-all shadow-sm"
           >
             Explorar Catálogo
           </Link>
           <Link
             href="/"
-            className="w-full sm:w-auto px-6 py-3 border border-border text-foreground text-xs uppercase tracking-widest font-medium hover:bg-surface transition-all rounded-sm"
+            className="w-full sm:w-auto inline-flex items-center justify-center rounded-full px-6 py-3 border border-border bg-white text-foreground text-[11px] uppercase tracking-[0.16em] font-medium hover:bg-surface transition-all"
           >
             Ir al Inicio
           </Link>

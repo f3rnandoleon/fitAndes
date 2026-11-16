@@ -8,6 +8,9 @@ export const WHATSAPP_DISPLAY = "+591 67113105";
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://fit-andes.vercel.app";
 export const SITE_NAME = "FitAndes";
 
+export const SEASONAL_THEME_ENABLED = process.env.NEXT_PUBLIC_SEASONAL_THEME === "false";
+export const DEFAULT_NATIONAL_SHIPPING_FEE = Number(process.env.NEXT_PUBLIC_NATIONAL_SHIPPING_FEE) || 10;
+
 export const SOCIAL_LINKS = {
   tiktok: "https://www.tiktok.com/@fitandes",
   facebook: "https://www.facebook.com/share/1CnRxfHb2e/",

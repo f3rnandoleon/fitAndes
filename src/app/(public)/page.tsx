@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import { FiMapPin, FiRefreshCw, FiShield, FiTruck } from "react-icons/fi";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import HomeBannerCarousel from "@/components/home/HomeBannerCarousel";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
+import { DEFAULT_NATIONAL_SHIPPING_FEE, SEASONAL_THEME_ENABLED } from "@/lib/constants";
 import { formatPrice } from "@/lib/format";
 import {
   getCatalogProductAvailableStock,
@@ -118,6 +120,14 @@ export default async function HomePage() {
 
   const seleccion = (seleccionBase.length > 0 ? seleccionBase : productos.filter((p) => !recienLlegadosIds.has(p._id))).slice(0, 4);
 
+  const categoriasDisponibles = Array.from(
+    new Set(
+      productosDisponibles
+        .map((p) => p.categoria?.trim())
+        .filter((cat): cat is string => Boolean(cat)),
+    ),
+  ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+
   return (
     <main className="min-h-screen bg-background text-foreground font-sans">
       {/* Carrusel de Banners Dinámicos del Sistema Central o Fallback Hero */}
@@ -143,14 +153,11 @@ export default async function HomePage() {
 
           <div className="relative z-10 mx-auto grid max-w-[1240px] gap-8 px-5 py-14 sm:px-6 sm:py-18 lg:grid-cols-[minmax(0,1.05fr)_360px] lg:items-end lg:py-24">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c41e3a]/10 border border-[#c41e3a]/25 text-[#c41e3a] text-xs font-semibold uppercase tracking-widest mb-4">
-                <span>🎄</span> Colección Especial de Navidad 2026
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent/10 border border-accent/25 text-accent text-xs font-semibold uppercase tracking-widest mb-4">
+                {SEASONAL_THEME_ENABLED ? "🎄 Colección Especial de Navidad" : "Nueva Colección FitAndes"}
               </div>
 
-              <h1
-                className="max-w-xl text-[2.9rem] leading-[0.95] sm:text-[4.2rem] lg:text-[5.4rem]"
-                style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontWeight: 400 }}
-              >
+              <h1 className="max-w-xl font-serif text-[2.9rem] font-normal leading-[0.95] sm:text-[4.2rem] lg:text-[5.4rem]">
                 Tradición
                 <br />
                 y estilo para
@@ -165,16 +172,14 @@ export default async function HomePage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/catalogo"
-                  className="inline-flex items-center justify-center gap-3 rounded-full px-6 py-4 text-[11px] uppercase bg-[#c41e3a] text-white shadow-md hover:bg-[#a0152d] transition-all hover:translate-y-[-2px] active:scale-95"
-                  style={{ letterSpacing: "0.18em" }}
+                  className="inline-flex items-center justify-center gap-3 rounded-full px-6 py-4 text-[11px] uppercase tracking-[0.18em] bg-accent text-white shadow-md hover:bg-accent-hover transition-all hover:translate-y-[-2px] active:scale-95"
                 >
                   Explorar catálogo
                   <span aria-hidden="true">→</span>
                 </Link>
                 <Link
                   href="/#nuevo"
-                  className="inline-flex items-center justify-center gap-3 rounded-full border border-border px-6 py-4 text-[11px] uppercase transition-all hover:bg-white active:scale-95 bg-white/45 text-foreground"
-                  style={{ letterSpacing: "0.18em" }}
+                  className="inline-flex items-center justify-center gap-3 rounded-full border border-border px-6 py-4 text-[11px] uppercase tracking-[0.18em] transition-all hover:bg-white active:scale-95 bg-white/60 text-foreground"
                 >
                   Ver novedades
                 </Link>
@@ -184,22 +189,99 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* Franja de Propuesta de Valor y Confianza */}
+      <section aria-label="Beneficios de compra" className="border-b border-border bg-white/80">
+        <div className="mx-auto grid max-w-[1240px] grid-cols-2 gap-4 px-5 py-6 sm:px-6 lg:grid-cols-4 lg:gap-6">
+          {[
+            {
+              icon: FiTruck,
+              title: "Envíos a toda Bolivia",
+              desc: `Tarifa plana nacional desde Bs. ${DEFAULT_NATIONAL_SHIPPING_FEE}`,
+            },
+            {
+              icon: FiMapPin,
+              title: "Retiro gratis en tienda",
+              desc: "Puntos en La Paz y El Alto",
+            },
+            {
+              icon: FiShield,
+              title: "Pago QR o efectivo",
+              desc: "Reserva de stock inmediata",
+            },
+            {
+              icon: FiRefreshCw,
+              title: "Cambios hasta 7 días",
+              desc: "Cambio fácil de talla o modelo",
+            },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.title} className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-foreground">
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-foreground">
+                    {item.title}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted leading-snug">{item.desc}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Accesos rápidos por categoría */}
+      {categoriasDisponibles.length > 0 && (
+        <section aria-label="Explorar por categoría" className="border-b border-border/60 bg-background">
+          <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-4 px-5 py-5 sm:px-6">
+            <span className="hidden sm:inline-block shrink-0 text-[10px] uppercase tracking-[0.2em] text-subtle">
+              Categorías
+            </span>
+            <div className="flex flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
+              <Link
+                href="/catalogo"
+                className="whitespace-nowrap rounded-full border border-foreground bg-foreground px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-background transition-opacity hover:opacity-90"
+              >
+                Todo el catálogo
+              </Link>
+              {categoriasDisponibles.map((categoria) => (
+                <Link
+                  key={categoria}
+                  href={`/catalogo?categoria=${encodeURIComponent(categoria)}`}
+                  className="whitespace-nowrap rounded-full border border-border bg-white px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-foreground hover:text-foreground"
+                >
+                  {categoria}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Sección Recién Llegados */}
-      <section id="nuevo" className="px-5 py-16 sm:px-6 sm:py-20 lg:py-24" style={{ background: "#f5f2ee" }}>
+      <section id="nuevo" className="px-5 py-16 sm:px-6 sm:py-20 lg:py-24 bg-surface/50">
         <div className="mx-auto max-w-[1240px]">
           <div className="mb-10 flex flex-col gap-4 sm:mb-14 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-xl">
-              <p className="text-xs uppercase mb-3 text-subtle" style={{ letterSpacing: "0.25em" }}>
+              <p className="text-xs uppercase mb-3 tracking-[0.25em] text-subtle">
                 Lo más nuevo
               </p>
-              <h2 className="text-4xl font-normal sm:text-5xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
+              <h2 className="font-serif text-4xl font-normal sm:text-5xl">
                 Recién llegados
               </h2>
             </div>
+            <Link
+              href="/catalogo"
+              className="text-xs uppercase tracking-[0.18em] text-foreground hover:opacity-70 transition-opacity font-medium"
+            >
+              Ver novedades →
+            </Link>
           </div>
 
           {recienLlegados.length === 0 ? (
-            <p className="text-center text-sm" style={{ color: "#6b6058" }}>
+            <p className="text-center text-sm text-muted">
               No hay productos disponibles por el momento.
             </p>
           ) : (
@@ -207,16 +289,14 @@ export default async function HomePage() {
               {recienLlegados.map((item) => {
                 const imagenes = imagenesDeProducto(item);
                 const badge = esNuevo(item.createdAt) ? "Nuevo" : "Disponible";
+                const descuento = item.descuento ?? 0;
 
                 return (
                   <Link key={item._id} href={`/catalogo/${item._id}`} className="group block">
                     <article className="overflow-hidden rounded-[var(--radius-lg)] border bg-white shadow-[0_14px_40px_rgba(17,17,17,0.04)] transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
                       <div className="relative mb-4 overflow-hidden bg-surface-soft aspect-[3/4]">
-                        <div
-                          className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white bg-accent"
-                          style={{ letterSpacing: "0.12em" }}
-                        >
-                          {badge}
+                        <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-white bg-accent">
+                          {descuento > 0 ? `-${descuento}%` : badge}
                         </div>
 
                         {imagenes.length > 0 ? (
@@ -224,7 +304,8 @@ export default async function HomePage() {
                             imagenes={imagenes}
                             alt={item.nombre}
                             imgClassName="group-hover:scale-105 transition-transform duration-500"
-                            duracionMs={2600}
+                            mostrarControles={true}
+                            autoPlay={true}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
@@ -240,22 +321,30 @@ export default async function HomePage() {
                         )}
 
                         <div className="absolute inset-x-3 bottom-3 flex justify-center opacity-0 transition-opacity duration-300 md:group-hover:opacity-100">
-                          <span className="rounded-full bg-foreground px-4 py-2 text-[10px] uppercase text-white" style={{ letterSpacing: "0.2em" }}>
+                          <span className="rounded-full bg-foreground px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-white">
                             Ver producto
                           </span>
                         </div>
                       </div>
                       <div className="px-4 pb-5 sm:px-5">
                         <h3 className="text-sm font-normal sm:text-base text-foreground">{item.nombre}</h3>
-                        <p className="mt-1 text-[11px] uppercase text-subtle" style={{ letterSpacing: "0.12em" }}>{item.modelo}</p>
+                        <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-subtle">{item.modelo}</p>
                         {(() => {
                           const priceRange = getCatalogProductPriceRange(item as unknown as CatalogProduct);
+                          const originalMin = descuento > 0 ? priceRange.min / (1 - descuento / 100) : null;
                           return (
-                            <p className="mt-3 text-sm sm:text-base text-foreground">
-                              {priceRange.hasRange
-                                ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
-                                : formatPrice(priceRange.min)}
-                            </p>
+                            <div className="mt-3 flex flex-wrap items-baseline gap-2">
+                              <p className="text-sm sm:text-base font-medium text-foreground">
+                                {priceRange.hasRange
+                                  ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
+                                  : formatPrice(priceRange.min)}
+                              </p>
+                              {originalMin && !priceRange.hasRange ? (
+                                <span className="text-xs line-through text-subtle">
+                                  {formatPrice(originalMin)}
+                                </span>
+                              ) : null}
+                            </div>
                           );
                         })()}
                       </div>
@@ -273,10 +362,10 @@ export default async function HomePage() {
         <div className="mx-auto max-w-[1240px]">
           <div className="mb-10 flex flex-col gap-4 sm:mb-14 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-xl">
-              <p className="text-xs uppercase mb-3 text-subtle" style={{ letterSpacing: "0.25em" }}>
+              <p className="text-xs uppercase mb-3 tracking-[0.25em] text-subtle">
                 Selección especial
               </p>
-              <h2 className="text-4xl font-normal sm:text-5xl" style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}>
+              <h2 className="font-serif text-4xl font-normal sm:text-5xl">
                 Prendas destacadas
               </h2>
             </div>
@@ -289,7 +378,7 @@ export default async function HomePage() {
           </div>
 
           {seleccion.length === 0 ? (
-            <p className="text-center text-sm" style={{ color: "#6b6058" }}>
+            <p className="text-center text-sm text-muted">
               No hay productos destacados por el momento.
             </p>
           ) : (
@@ -303,7 +392,7 @@ export default async function HomePage() {
                     <article className="overflow-hidden rounded-[var(--radius-lg)] border bg-white shadow-[0_10px_30px_rgba(17,17,17,0.03)] transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
                       <div className="relative mb-3 overflow-hidden bg-surface-soft aspect-[3/4]">
                         {descuento > 0 && (
-                          <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase text-white bg-danger" style={{ letterSpacing: "0.12em" }}>
+                          <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-white bg-danger">
                             -{descuento}%
                           </div>
                         )}
@@ -313,7 +402,8 @@ export default async function HomePage() {
                             imagenes={imagenes}
                             alt={item.nombre}
                             imgClassName="group-hover:scale-105 transition-transform duration-500"
-                            duracionMs={2600}
+                            mostrarControles={true}
+                            autoPlay={true}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
@@ -329,7 +419,7 @@ export default async function HomePage() {
                         )}
 
                         <div className="absolute inset-x-3 bottom-3 flex justify-center opacity-0 transition-opacity duration-300 md:group-hover:opacity-100">
-                          <span className="rounded-full bg-foreground px-4 py-2 text-[10px] uppercase text-white" style={{ letterSpacing: "0.15em" }}>
+                          <span className="rounded-full bg-foreground px-4 py-2 text-[10px] uppercase tracking-[0.15em] text-white">
                             Ver
                           </span>
                         </div>
@@ -339,12 +429,20 @@ export default async function HomePage() {
                         <p className="text-sm font-normal leading-6 text-muted/80">{item.modelo}</p>
                         {(() => {
                           const priceRange = getCatalogProductPriceRange(item as unknown as CatalogProduct);
+                          const originalMin = descuento > 0 ? priceRange.min / (1 - descuento / 100) : null;
                           return (
-                            <p className="mt-1 text-sm text-foreground">
-                              {priceRange.hasRange
-                                ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
-                                : formatPrice(priceRange.min)}
-                            </p>
+                            <div className="mt-1 flex flex-wrap items-baseline gap-2">
+                              <p className="text-sm font-medium text-foreground">
+                                {priceRange.hasRange
+                                  ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
+                                  : formatPrice(priceRange.min)}
+                              </p>
+                              {originalMin && !priceRange.hasRange ? (
+                                <span className="text-xs line-through text-subtle">
+                                  {formatPrice(originalMin)}
+                                </span>
+                              ) : null}
+                            </div>
                           );
                         })()}
                       </div>
@@ -354,6 +452,37 @@ export default async function HomePage() {
               })}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Bloque Sucursales & Marca */}
+      <section className="border-t border-border bg-white px-5 py-14 sm:px-6 sm:py-20">
+        <div className="mx-auto grid max-w-[1240px] gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center rounded-[var(--radius-lg)] border border-border bg-surface/50 p-6 sm:p-10">
+          <div className="space-y-3">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-accent font-semibold">
+              Tiendas físicas & Atención directa
+            </p>
+            <h2 className="font-serif text-3xl sm:text-4xl font-normal text-foreground">
+              Visítanos en La Paz y El Alto
+            </h2>
+            <p className="max-w-xl text-sm sm:text-base leading-relaxed text-muted">
+              Prueba nuestras chompas y poleras en persona o retira tus reservas web sin costo adicional en nuestras sucursales de Prado y Tiwanacu.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3 lg:justify-end">
+            <Link
+              href="/ubicaciones"
+              className="inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[11px] uppercase tracking-[0.16em] text-background font-medium transition-opacity hover:opacity-90"
+            >
+              Ver mapa de sucursales
+            </Link>
+            <Link
+              href="/nosotros"
+              className="inline-flex items-center justify-center rounded-full border border-border bg-white px-6 py-3.5 text-[11px] uppercase tracking-[0.16em] text-foreground font-medium transition-colors hover:bg-surface"
+            >
+              Conoce nuestra historia
+            </Link>
+          </div>
         </div>
       </section>
     </main>

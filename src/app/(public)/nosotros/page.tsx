@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SITE_NAME, SITE_URL, getWhatsAppLink } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -18,18 +19,21 @@ export default function NosotrosPage() {
   return (
     <main className="min-h-screen bg-background text-foreground pb-20">
       {/* Hero Section */}
-      <section className="relative py-16 sm:py-24 border-b border-border/40 bg-surface/30">
-        <div className="max-w-4xl mx-auto px-5 text-center space-y-4">
-          <span className="text-xs uppercase tracking-[0.25em] text-accent font-semibold">
-            Nuestra Historia & Raíces
-          </span>
-          <h1 className="text-4xl sm:text-5xl font-serif text-foreground font-normal tracking-tight">
-            Moda con Identidad Andina
-          </h1>
-          <p className="text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-            Nacidos en el corazón de los Andes, combinamos la calidez y maestría del tejido andino con
-            siluetas contemporáneas pensadas para tu día a día.
-          </p>
+      <section className="relative py-10 sm:py-18 border-b border-border/40 bg-surface/30">
+        <div className="max-w-4xl mx-auto px-5 space-y-6">
+          <Breadcrumb items={[{ label: "Inicio", href: "/" }, { label: "Sobre Nosotros" }]} />
+          <div className="text-center space-y-4">
+            <span className="text-xs uppercase tracking-[0.25em] text-accent font-semibold">
+              Nuestra Historia & Raíces
+            </span>
+            <h1 className="text-4xl sm:text-5xl font-serif text-foreground font-normal tracking-tight">
+              Moda con Identidad Andina
+            </h1>
+            <p className="text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
+              Nacidos en el corazón de los Andes, combinamos la calidez y maestría del tejido andino con
+              siluetas contemporáneas pensadas para tu día a día.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -81,7 +85,7 @@ export default function NosotrosPage() {
           <div className="pt-2 flex flex-wrap justify-center gap-4">
             <Link
               href="/catalogo"
-              className="px-6 py-3 bg-foreground text-background text-xs uppercase tracking-widest font-semibold hover:bg-foreground/90 transition-all rounded-sm shadow-sm"
+              className="inline-flex items-center justify-center rounded-full px-6 py-3 bg-foreground text-background text-[11px] uppercase tracking-[0.16em] font-semibold hover:opacity-90 transition-all shadow-sm"
             >
               Ver Catálogo Completo
             </Link>
@@ -89,7 +93,7 @@ export default function NosotrosPage() {
               href={getWhatsAppLink("Hola, me gustaría saber más sobre la marca FitAndes.")}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-6 py-3 border border-border bg-background text-foreground text-xs uppercase tracking-widest font-semibold hover:bg-surface transition-all rounded-sm"
+              className="inline-flex items-center justify-center rounded-full px-6 py-3 border border-border bg-background text-foreground text-[11px] uppercase tracking-[0.16em] font-semibold hover:bg-surface transition-all"
             >
               Contactar por WhatsApp
             </a>

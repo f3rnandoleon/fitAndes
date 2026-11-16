@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FiSliders } from "react-icons/fi";
+import { FiSearch, FiSliders, FiX } from "react-icons/fi";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor, sortProductColors } from "@/lib/product-colors";
@@ -60,6 +60,7 @@ interface CatalogoGridProps {
     categoria?: string;
     color?: string;
     talla?: string;
+    orden?: string;
     page?: number;
   };
 }
@@ -67,65 +68,153 @@ interface CatalogoGridProps {
 export default function CatalogoGrid({ productos, pagination, filtroInicial }: CatalogoGridProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   const [busqueda, setBusqueda] = useState(filtroInicial?.busqueda ?? searchParams?.get("q") ?? "");
   const [colorFiltro, setColorFiltro] = useState(filtroInicial?.color ?? searchParams?.get("color") ?? "");
   const [categoriaFiltro, setCategoriaFiltro] = useState(filtroInicial?.categoria ?? searchParams?.get("categoria") ?? "");
   const [tallaFiltro, setTallaFiltro] = useState(filtroInicial?.talla ?? searchParams?.get("talla") ?? "");
-  const [orden, setOrden] = useState<OrdenKey>((searchParams?.get("orden") as OrdenKey) ?? "fecha");
+  const [orden, setOrden] = useState<OrdenKey>(
+    ((filtroInicial?.orden || searchParams?.get("orden")) as OrdenKey) || "fecha",
+  );
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastParamsStringRef = useRef<string>(searchParams?.toString() ?? "");
+
+  // Sincronizar estado solo cuando la URL cambia externamente (atrás/adelante o breadcrumb)
+  useEffect(() => {
+    const currentStr = searchParams?.toString() ?? "";
+    if (currentStr === lastParamsStringRef.current) return;
+    lastParamsStringRef.current = currentStr;
+
+    const qParam = searchParams?.get("q") ?? searchParams?.get("busqueda") ?? "";
+    const catParam = searchParams?.get("categoria") ?? "";
+    const colParam = searchParams?.get("color") ?? "";
+    const talParam = searchParams?.get("talla") ?? "";
+    const ordParam = (searchParams?.get("orden") as OrdenKey) || "fecha";
+
+    if (!searchDebounceRef.current) {
+      setBusqueda(qParam);
+    }
+    setCategoriaFiltro(catParam);
+    setColorFiltro(colParam);
+    setTallaFiltro(talParam);
+    setOrden(ordParam);
+  }, [searchParams]);
+
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, []);
+
+  // Bloquear scroll del body cuando el drawer móvil está abierto
+  useEffect(() => {
+    if (!filtrosAbiertos) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [filtrosAbiertos]);
 
   const productosConStock = productos.filter(productoTieneStock);
 
-  // Categorías disponibles
   const categorias = Array.from(
-    new Set(productosConStock.map((producto) => producto.categoria).filter((value): value is string => Boolean(value)))
+    new Set(productosConStock.map((producto) => producto.categoria).filter((value): value is string => Boolean(value))),
   ).sort();
 
-  // Filtrado de productos para extraer colores y tallas contextuales
-  const productosBaseFiltro = categoriaFiltro && categoriaFiltro !== "todas"
-    ? productosConStock.filter((p) => p.categoria?.toLowerCase() === categoriaFiltro.toLowerCase())
-    : productosConStock;
+  const productosBaseFiltro =
+    categoriaFiltro && categoriaFiltro !== "todas"
+      ? productosConStock.filter((p) => p.categoria?.toLowerCase() === categoriaFiltro.toLowerCase())
+      : productosConStock;
 
   const colores = sortProductColors(
-    Array.from(new Set(productosBaseFiltro.flatMap((producto) => variantesConStock(producto).map((variante) => variante.color))))
+    Array.from(new Set(productosBaseFiltro.flatMap((producto) => variantesConStock(producto).map((variante) => variante.color)))),
   );
 
   const tallas = Array.from(
-    new Set(productosBaseFiltro.flatMap((producto) => variantesConStock(producto).map((variante) => variante.talla)))
+    new Set(productosBaseFiltro.flatMap((producto) => variantesConStock(producto).map((variante) => variante.talla))),
   ).sort((a, b) => a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }));
 
-  // Helper para construir URLs de paginación
-  function buildPaginationUrl(targetPage: number) {
-    const params = new URLSearchParams();
-    if (busqueda.trim()) params.set("q", busqueda.trim());
-    if (categoriaFiltro && categoriaFiltro !== "todas") params.set("categoria", categoriaFiltro);
-    if (colorFiltro) params.set("color", colorFiltro);
-    if (tallaFiltro) params.set("talla", tallaFiltro);
-    if (orden && orden !== "ventas") params.set("orden", orden);
-    if (targetPage > 1) params.set("page", String(targetPage));
-    const qs = params.toString();
-    return qs ? `/catalogo?${qs}` : "/catalogo";
+  const buildUrl = useCallback(
+    (overrides?: {
+      q?: string;
+      categoria?: string;
+      color?: string;
+      talla?: string;
+      orden?: OrdenKey;
+      page?: number;
+    }) => {
+      const qVal = overrides?.q !== undefined ? overrides.q : busqueda;
+      const catVal = overrides?.categoria !== undefined ? overrides.categoria : categoriaFiltro;
+      const colVal = overrides?.color !== undefined ? overrides.color : colorFiltro;
+      const talVal = overrides?.talla !== undefined ? overrides.talla : tallaFiltro;
+      const ordVal = overrides?.orden !== undefined ? overrides.orden : orden;
+      const pageVal = overrides?.page !== undefined ? overrides.page : pagination?.page ?? 1;
+
+      const params = new URLSearchParams();
+      if (qVal.trim()) params.set("q", qVal.trim());
+      if (catVal && catVal !== "todas") params.set("categoria", catVal);
+      if (colVal) params.set("color", colVal);
+      if (talVal) params.set("talla", talVal);
+      if (ordVal && ordVal !== "fecha") params.set("orden", ordVal);
+      if (pageVal > 1) params.set("page", String(pageVal));
+      const qs = params.toString();
+      return qs ? `/catalogo?${qs}` : "/catalogo";
+    },
+    [busqueda, categoriaFiltro, colorFiltro, tallaFiltro, orden, pagination?.page],
+  );
+
+  function syncUrl(overrides: Parameters<typeof buildUrl>[0]) {
+    const targetUrl = buildUrl({ ...overrides, page: overrides?.page ?? 1 });
+    lastParamsStringRef.current = targetUrl.includes("?") ? targetUrl.split("?")[1] : "";
+    startTransition(() => {
+      router.replace(targetUrl, { scroll: false });
+    });
   }
 
-  // Sincronizar filtros en la URL del navegador sin recargar la página
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (busqueda.trim()) params.set("q", busqueda.trim());
-    if (categoriaFiltro && categoriaFiltro !== "todas") params.set("categoria", categoriaFiltro);
-    if (colorFiltro) params.set("color", colorFiltro);
-    if (tallaFiltro) params.set("talla", tallaFiltro);
-    if (orden && orden !== "ventas") params.set("orden", orden);
-    if (pagination?.page && pagination.page > 1) params.set("page", String(pagination.page));
+  function handleSearchChange(nextValue: string) {
+    setBusqueda(nextValue);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      searchDebounceRef.current = null;
+      syncUrl({ q: nextValue, page: 1 });
+    }, 350);
+  }
 
-    const qs = params.toString();
-    const newUrl = qs ? `/catalogo?${qs}` : "/catalogo";
+  function handleCategoriaChange(nextCategoria: string) {
+    setCategoriaFiltro(nextCategoria);
+    syncUrl({ categoria: nextCategoria, page: 1 });
+  }
 
-    startTransition(() => {
-      window.history.replaceState(null, "", newUrl);
-    });
-  }, [busqueda, categoriaFiltro, colorFiltro, tallaFiltro, orden, pagination?.page, router]);
+  function handleColorChange(nextColor: string) {
+    const resolved = colorFiltro === nextColor ? "" : nextColor;
+    setColorFiltro(resolved);
+    syncUrl({ color: resolved, page: 1 });
+  }
+
+  function handleTallaChange(nextTalla: string) {
+    const resolved = tallaFiltro === nextTalla ? "" : nextTalla;
+    setTallaFiltro(resolved);
+    syncUrl({ talla: resolved, page: 1 });
+  }
+
+  function handleOrdenChange(nextOrden: OrdenKey) {
+    setOrden(nextOrden);
+    const targetUrl = buildUrl({ orden: nextOrden, page: pagination?.page ?? 1 });
+    window.history.replaceState(null, "", targetUrl);
+  }
+
+  function limpiarFiltros() {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    setBusqueda("");
+    setColorFiltro("");
+    setTallaFiltro("");
+    setCategoriaFiltro("");
+    syncUrl({ q: "", color: "", talla: "", categoria: "", page: 1 });
+  }
 
   const termino = busqueda.trim().toLowerCase();
   const filtrados = productosConStock.filter((producto) => {
@@ -173,26 +262,144 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
     }
   });
 
-  const filtrosActivos = [termino, colorFiltro, tallaFiltro, categoriaFiltro && categoriaFiltro !== "todas" ? categoriaFiltro : ""].filter(Boolean).length;
+  const filtrosActivos = [
+    termino,
+    colorFiltro,
+    tallaFiltro,
+    categoriaFiltro && categoriaFiltro !== "todas" ? categoriaFiltro : "",
+  ].filter(Boolean).length;
 
-  function limpiarFiltros() {
-    setBusqueda("");
-    setColorFiltro("");
-    setTallaFiltro("");
-    setCategoriaFiltro("");
-  }
+  const filterFormContent = (
+    <div className="space-y-6">
+      <div>
+        <label htmlFor="catalog-search" className="block text-[10px] uppercase mb-3 tracking-[0.18em] text-subtle">
+          Buscar en catálogo
+        </label>
+        <div className="relative">
+          <FiSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-subtle" />
+          <input
+            id="catalog-search"
+            type="text"
+            value={busqueda}
+            onChange={(event) => handleSearchChange(event.target.value)}
+            placeholder="Nombre, modelo o categoría"
+            className="w-full rounded-[var(--radius-md)] border border-border pl-10 pr-9 py-3 text-sm focus:outline-none bg-background text-foreground placeholder:text-subtle/50 transition-colors focus:border-foreground"
+          />
+          {busqueda && (
+            <button
+              type="button"
+              onClick={() => {
+                setBusqueda("");
+                syncUrl({ q: "", page: 1 });
+              }}
+              aria-label="Limpiar búsqueda"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-subtle hover:text-foreground"
+            >
+              <FiX className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {colores.length > 0 && (
+        <div>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-subtle">Color</p>
+            {colorFiltro ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setColorFiltro("");
+                  syncUrl({ color: "", page: 1 });
+                }}
+                className="text-[10px] uppercase tracking-[0.14em] text-subtle hover:underline"
+              >
+                Limpiar
+              </button>
+            ) : null}
+          </div>
+          <div className="grid grid-cols-5 gap-3">
+            {colores.map((color) => {
+              const activo = colorFiltro === color;
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  title={color}
+                  aria-label={`Filtrar por color ${color}`}
+                  onClick={() => handleColorChange(color)}
+                  className="h-10 w-10 rounded-full border transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                  style={{
+                    ...colorStyle(color),
+                    borderColor: activo
+                      ? "var(--foreground)"
+                      : isLightProductColor(color)
+                        ? "var(--subtle)"
+                        : "var(--border)",
+                    boxShadow: activo ? "0 0 0 3px rgba(0,0,0,0.15)" : "none",
+                  }}
+                  aria-pressed={activo}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {tallas.length > 0 && (
+        <div>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-subtle">Talla</p>
+            {tallaFiltro ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setTallaFiltro("");
+                  syncUrl({ talla: "", page: 1 });
+                }}
+                className="text-[10px] uppercase tracking-[0.14em] text-subtle hover:underline"
+              >
+                Limpiar
+              </button>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {tallas.map((talla) => {
+              const activa = tallaFiltro === talla;
+              return (
+                <button
+                  key={talla}
+                  type="button"
+                  onClick={() => handleTallaChange(talla)}
+                  className="min-w-11 rounded-full border px-4 py-2.5 text-[11px] uppercase transition-all active:scale-95 tracking-[0.12em] cursor-pointer"
+                  style={{
+                    borderColor: activa ? "var(--foreground)" : "var(--border)",
+                    background: activa ? "var(--foreground)" : "var(--background)",
+                    color: activa ? "var(--background)" : "var(--muted)",
+                  }}
+                  aria-pressed={activa}
+                >
+                  {talla}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div className="flex flex-col gap-6 lg:gap-10">
-      {/* Pestañas de categorías con opción 'Todas' para no forzar ninguna */}
+    <div className="flex flex-col gap-6 lg:gap-8">
+      {/* Pestañas de categorías */}
       {categorias.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide" role="tablist" aria-label="Categorías de prendas">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar" role="tablist" aria-label="Categorías de prendas">
           <button
             type="button"
-            onClick={() => setCategoriaFiltro("")}
-            className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm ${!categoriaFiltro || categoriaFiltro === "todas"
+            onClick={() => handleCategoriaChange("")}
+            className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm cursor-pointer ${!categoriaFiltro || categoriaFiltro === "todas"
               ? "bg-foreground text-background border-foreground font-semibold"
-              : "bg-white text-muted border-border hover:bg-background"
+              : "bg-white text-muted border-border hover:bg-surface"
               }`}
             aria-pressed={!categoriaFiltro || categoriaFiltro === "todas"}
           >
@@ -204,10 +411,10 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
               <button
                 key={categoria}
                 type="button"
-                onClick={() => setCategoriaFiltro(categoria)}
-                className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm ${activa
+                onClick={() => handleCategoriaChange(categoria)}
+                className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm cursor-pointer ${activa
                   ? "bg-foreground text-background border-foreground font-semibold"
-                  : "bg-white text-muted border-border hover:bg-background"
+                  : "bg-white text-muted border-border hover:bg-surface"
                   }`}
                 aria-pressed={activa}
               >
@@ -219,164 +426,68 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <div className="hidden lg:block rounded-[var(--radius-lg)] border border-border bg-white px-5 py-5 sm:px-6 shadow-sm">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-subtle">
-              Vista catálogo
-            </p>
-
-            <p className="mt-3 text-sm leading-6 text-subtle">
+        {/* Sidebar Desktop */}
+        <aside className="hidden lg:block space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-[var(--radius-lg)] border border-border bg-white px-6 py-5 shadow-sm">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-subtle">Vista catálogo</p>
+            <p className="mt-3 text-sm leading-6 text-muted">
               {pagination?.total ? `${pagination.total} prendas en total` : `${productosConStock.length} productos disponibles`}.
             </p>
-
-            <div className="mt-5 flex flex-wrap gap-3">
+            {filtrosActivos > 0 && (
               <button
                 type="button"
-                onClick={() => setFiltrosAbiertos((actual) => !actual)}
-                className="inline-flex items-center rounded-full border border-border px-4 py-3 text-[11px] uppercase lg:hidden active:scale-95 bg-background text-foreground tracking-[0.16em]"
+                onClick={limpiarFiltros}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-muted hover:text-foreground hover:border-foreground transition-colors cursor-pointer"
               >
-                {filtrosAbiertos ? "Ocultar filtros" : `Ver filtros${filtrosActivos ? ` (${filtrosActivos})` : ""}`}
+                <FiX className="h-3.5 w-3.5" />
+                Limpiar filtros ({filtrosActivos})
               </button>
-              {filtrosActivos > 0 ? (
-                <button
-                  type="button"
-                  onClick={limpiarFiltros}
-                  className="inline-flex items-center rounded-full border border-border px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-subtle hover:text-foreground hover:border-foreground transition-colors"
-                >
-                  Limpiar filtros ({filtrosActivos})
-                </button>
-              ) : null}
-            </div>
+            )}
           </div>
 
-          <div className={`${filtrosAbiertos ? "block" : "hidden"} rounded-[var(--radius-lg)] border border-border bg-white px-5 py-5 sm:px-6 lg:block shadow-sm`}>
-            <div>
-              <p className="text-[10px] uppercase mb-3 tracking-[0.18em] text-subtle">
-                Buscar en catálogo
-              </p>
-              <input
-                type="text"
-                value={busqueda}
-                onChange={(event) => setBusqueda(event.target.value)}
-                placeholder="Nombre, modelo o categoría"
-                className="w-full rounded-[var(--radius-md)] border border-border px-4 py-3 text-sm focus:outline-none bg-background text-foreground placeholder:text-subtle/50 transition-colors focus:border-foreground"
-              />
-            </div>
-
-            <div className="mt-6">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-subtle">
-                  Color
-                </p>
-                {colorFiltro ? (
-                  <button
-                    type="button"
-                    onClick={() => setColorFiltro("")}
-                    className="text-[10px] uppercase tracking-[0.14em] text-subtle hover:underline"
-                  >
-                    Limpiar
-                  </button>
-                ) : null}
-              </div>
-              <div className="grid grid-cols-5 gap-3">
-                {colores.map((color) => {
-                  const activo = colorFiltro === color;
-                  return (
-                    <button
-                      key={color}
-                      type="button"
-                      title={color}
-                      aria-label={`Filtrar por color ${color}`}
-                      onClick={() => setColorFiltro((actual) => (actual === color ? "" : color))}
-                      className="h-10 w-10 rounded-full border transition-all hover:scale-110 active:scale-95"
-                      style={{
-                        ...colorStyle(color),
-                        borderColor: activo ? "var(--foreground)" : isLightProductColor(color) ? "var(--subtle)" : "var(--border)",
-                        boxShadow: activo ? "0 0 0 3px rgba(0,0,0,0.15)" : "none",
-                      }}
-                      aria-pressed={activo}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-subtle">
-                  Talla
-                </p>
-                {tallaFiltro ? (
-                  <button
-                    type="button"
-                    onClick={() => setTallaFiltro("")}
-                    className="text-[10px] uppercase tracking-[0.14em] text-subtle hover:underline"
-                  >
-                    Limpiar
-                  </button>
-                ) : null}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {tallas.map((talla) => {
-                  const activa = tallaFiltro === talla;
-                  return (
-                    <button
-                      key={talla}
-                      type="button"
-                      onClick={() => setTallaFiltro((actual) => (actual === talla ? "" : talla))}
-                      className="min-w-11 rounded-full border px-4 py-2.5 text-[11px] uppercase transition-all active:scale-95 tracking-[0.12em]"
-                      style={{
-                        borderColor: activa ? "var(--foreground)" : "var(--border)",
-                        background: activa ? "var(--foreground)" : "var(--background)",
-                        color: activa ? "var(--background)" : "var(--muted)",
-                      }}
-                      aria-pressed={activa}
-                    >
-                      {talla}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+          <div className="rounded-[var(--radius-lg)] border border-border bg-white px-6 py-6 shadow-sm">
+            {filterFormContent}
           </div>
         </aside>
 
         <section>
-          <div className="mb-6 flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border bg-white px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6 shadow-sm">
-            <div className="flex items-center justify-between w-full sm:w-auto">
+          {/* Barra de resultados + orden + botón filtros móvil */}
+          <div className="mb-5 flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border bg-white px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6 shadow-sm">
+            <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-subtle">
-                  Resultado actual
-                </p>
-                <p className="mt-2 text-sm leading-6 text-muted">
-                  {productosVisibles.length} prenda{productosVisibles.length !== 1 ? "s" : ""} en esta página
+                <p className="text-[10px] uppercase tracking-[0.18em] text-subtle">Resultado actual</p>
+                <p className="mt-1.5 text-sm leading-6 text-muted">
+                  {productosVisibles.length} prenda{productosVisibles.length !== 1 ? "s" : ""} visible{productosVisibles.length !== 1 ? "s" : ""}
                   {pagination?.total ? ` (de ${pagination.total} totales)` : ""}.
+                  {isPending ? " Actualizando..." : ""}
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={() => setFiltrosAbiertos((actual) => !actual)}
-                className="lg:hidden flex items-center justify-center w-10 h-10 rounded-full border border-border bg-background text-foreground active:scale-90 transition-transform shadow-sm relative"
-                aria-label={filtrosAbiertos ? "Cerrar filtros" : "Ver filtros"}
+                onClick={() => setFiltrosAbiertos(true)}
+                className="lg:hidden inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-foreground active:scale-95 transition-transform shadow-xs relative shrink-0"
+                aria-label="Abrir filtros"
               >
                 <FiSliders className="w-4 h-4" />
+                <span>Filtros</span>
                 {filtrosActivos > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[9px] text-background font-bold">
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] text-white font-bold">
                     {filtrosActivos}
                   </span>
                 )}
               </button>
             </div>
 
-            <div className="w-full sm:w-[280px]">
-              <label className="mb-2 block text-[10px] uppercase tracking-[0.18em] text-subtle">
+            <div className="w-full sm:w-[260px]">
+              <label htmlFor="catalog-sort" className="mb-1.5 block text-[10px] uppercase tracking-[0.18em] text-subtle">
                 Ordenar por
               </label>
               <select
+                id="catalog-sort"
                 value={orden}
-                onChange={(event) => setOrden(event.target.value as OrdenKey)}
-                className="w-full rounded-[var(--radius-md)] border border-border px-4 py-3 text-sm focus:outline-none bg-background text-foreground transition-colors focus:border-foreground"
+                onChange={(event) => handleOrdenChange(event.target.value as OrdenKey)}
+                className="w-full rounded-[var(--radius-md)] border border-border px-4 py-2.5 text-sm focus:outline-none bg-background text-foreground transition-colors focus:border-foreground"
               >
                 {ORDENES.map((opcion) => (
                   <option key={opcion.key} value={opcion.key}>
@@ -387,26 +498,70 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
             </div>
           </div>
 
+          {/* Chips de filtros activos removibles */}
+          {filtrosActivos > 0 && (
+            <div className="mb-6 flex flex-wrap items-center gap-2">
+              {termino && (
+                <FilterChip
+                  label={`Búsqueda: "${busqueda.trim()}"`}
+                  onRemove={() => {
+                    setBusqueda("");
+                    syncUrl({ q: "", page: 1 });
+                  }}
+                />
+              )}
+              {categoriaFiltro && categoriaFiltro !== "todas" && (
+                <FilterChip
+                  label={`Categoría: ${categoriaFiltro}`}
+                  onRemove={() => handleCategoriaChange("")}
+                />
+              )}
+              {colorFiltro && (
+                <FilterChip
+                  label={`Color: ${colorFiltro}`}
+                  onRemove={() => {
+                    setColorFiltro("");
+                    syncUrl({ color: "", page: 1 });
+                  }}
+                />
+              )}
+              {tallaFiltro && (
+                <FilterChip
+                  label={`Talla: ${tallaFiltro}`}
+                  onRemove={() => {
+                    setTallaFiltro("");
+                    syncUrl({ talla: "", page: 1 });
+                  }}
+                />
+              )}
+              <button
+                type="button"
+                onClick={limpiarFiltros}
+                className="text-[11px] uppercase tracking-[0.12em] text-subtle hover:text-foreground underline underline-offset-4 px-2 py-1 cursor-pointer"
+              >
+                Limpiar todo
+              </button>
+            </div>
+          )}
+
           {productosVisibles.length === 0 ? (
             <div className="rounded-[var(--radius-lg)] border border-border bg-white px-6 py-16 text-center shadow-sm">
-              <p className="text-xl uppercase tracking-[0.18em] text-foreground" style={{ fontFamily: "Georgia, serif" }}>
-                Sin resultados
-              </p>
-              <p className="text-sm mt-3 text-subtle">
-                No encontramos prendas con los filtros actuales. Prueba limpiando los filtros para ver todo el catálogo.
+              <p className="font-serif text-2xl text-foreground">Sin resultados</p>
+              <p className="text-sm mt-3 text-muted max-w-md mx-auto">
+                No encontramos prendas con los filtros actuales. Prueba limpiando los filtros para explorar todo el catálogo.
               </p>
               {filtrosActivos > 0 && (
                 <button
                   type="button"
                   onClick={limpiarFiltros}
-                  className="mt-5 inline-flex items-center rounded-full border border-foreground bg-foreground text-background px-6 py-3 text-[11px] uppercase tracking-[0.16em] active:scale-95 transition-transform"
+                  className="mt-5 inline-flex items-center rounded-full border border-foreground bg-foreground text-background px-6 py-3 text-[11px] uppercase tracking-[0.16em] active:scale-95 transition-transform cursor-pointer"
                 >
                   Ver todo el catálogo
                 </button>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 xl:grid-cols-3">
+            <div className={`grid grid-cols-2 gap-4 sm:gap-6 xl:grid-cols-3 transition-opacity ${isPending ? "opacity-60" : "opacity-100"}`}>
               {productosVisibles.map((producto) => (
                 <ProductoCard key={producto._id} producto={producto} colorFiltro={colorFiltro} tallaFiltro={tallaFiltro} />
               ))}
@@ -421,7 +576,7 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
             >
               {pagination.page > 1 && (
                 <Link
-                  href={buildPaginationUrl(pagination.page - 1)}
+                  href={buildUrl({ page: pagination.page - 1 })}
                   className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-border text-xs uppercase tracking-wider text-foreground hover:bg-surface-soft transition-colors active:scale-95"
                 >
                   ← Anterior
@@ -433,7 +588,8 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
                 return (
                   <Link
                     key={p}
-                    href={buildPaginationUrl(p)}
+                    href={buildUrl({ page: p })}
+                    aria-current={isCurrent ? "page" : undefined}
                     className={`inline-flex items-center justify-center h-9 w-9 rounded-full text-xs font-medium transition-colors ${isCurrent
                       ? "bg-foreground text-background font-semibold"
                       : "border border-border text-foreground hover:bg-surface-soft"
@@ -446,7 +602,7 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
 
               {pagination.page < pagination.totalPages && (
                 <Link
-                  href={buildPaginationUrl(pagination.page + 1)}
+                  href={buildUrl({ page: pagination.page + 1 })}
                   className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-border text-xs uppercase tracking-wider text-foreground hover:bg-surface-soft transition-colors active:scale-95"
                 >
                   Siguiente →
@@ -456,7 +612,75 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
           )}
         </section>
       </div>
+
+      {/* Drawer / Bottom Sheet de filtros en móvil */}
+      {filtrosAbiertos && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Filtros del catálogo"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs lg:hidden"
+          onClick={() => setFiltrosAbiertos(false)}
+        >
+          <div
+            className="w-full max-h-[85vh] sm:max-w-md flex flex-col rounded-t-[28px] sm:rounded-[28px] bg-white border border-border shadow-2xl overflow-hidden animate-slide-in-right"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border px-5 py-4 bg-background">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-subtle">Refinar búsqueda</p>
+                <h2 className="font-serif text-lg text-foreground">Filtros</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFiltrosAbiertos(false)}
+                aria-label="Cerrar filtros"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-foreground hover:bg-surface"
+              >
+                <FiX className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-5">{filterFormContent}</div>
+
+            <div className="flex items-center gap-3 border-t border-border px-5 py-4 bg-background mobile-safe-bottom">
+              {filtrosActivos > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    limpiarFiltros();
+                    setFiltrosAbiertos(false);
+                  }}
+                  className="rounded-full border border-border bg-white px-5 py-3 text-[11px] uppercase tracking-[0.14em] text-muted"
+                >
+                  Limpiar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setFiltrosAbiertos(false)}
+                className="flex-1 rounded-full bg-foreground px-6 py-3 text-[11px] uppercase tracking-[0.16em] text-background font-medium"
+              >
+                Ver {productosVisibles.length} prenda{productosVisibles.length !== 1 ? "s" : ""}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onRemove}
+      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-3.5 py-1.5 text-[11px] text-foreground hover:border-foreground transition-colors cursor-pointer"
+    >
+      <span>{label}</span>
+      <FiX className="h-3 w-3 text-subtle" aria-hidden="true" />
+    </button>
   );
 }
 
@@ -466,7 +690,7 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
   let imagenes = imagenesDeProducto(producto);
   if (colorFiltro || tallaFiltro) {
     const varianteElegida = variantesDisponibles.find(
-      (v) => (!colorFiltro || v.color === colorFiltro) && (!tallaFiltro || v.talla === tallaFiltro)
+      (v) => (!colorFiltro || v.color === colorFiltro) && (!tallaFiltro || v.talla === tallaFiltro),
     );
     if (varianteElegida) {
       const imagenesVariante = imagenesDeVariante(varianteElegida);
@@ -487,13 +711,15 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
   const stock = totalStock(producto);
   const colores = sortProductColors(Array.from(new Set(variantesDisponibles.map((variante) => variante.color))));
   const tallas = Array.from(new Set(variantesDisponibles.map((variante) => variante.talla))).sort((a, b) =>
-    a.localeCompare(b, "es", { numeric: true, sensitivity: "base" })
+    a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }),
   );
+  const priceRange = getCatalogProductPriceRange(producto);
+  const originalMin = descuento > 0 ? priceRange.min / (1 - descuento / 100) : null;
 
   return (
     <Link href={href} className="group block">
       <article className="h-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-white transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] hover:shadow-[0_18px_40px_rgba(17,17,17,0.06)]">
-        <div className="relative aspect-[3/4] overflow-hidden bg-background">
+        <div className="relative aspect-[3/4] overflow-hidden bg-surface-soft">
           {descuento > 0 && (
             <span className="absolute left-3 top-3 z-10 rounded-full bg-danger px-3 py-1 text-[10px] uppercase text-white tracking-[0.12em]">
               -{descuento}%
@@ -511,6 +737,7 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
               alt={producto.nombre}
               imgClassName="group-hover:scale-105 transition-transform duration-500"
               mostrarControles={true}
+              autoPlay={true}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-subtle/40">
@@ -524,6 +751,12 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
               </svg>
             </div>
           )}
+
+          <div className="absolute inset-x-3 bottom-3 flex justify-center opacity-0 transition-opacity duration-300 md:group-hover:opacity-100 pointer-events-none">
+            <span className="rounded-full bg-foreground/90 backdrop-blur-xs px-4 py-1.5 text-[10px] uppercase tracking-[0.18em] text-white">
+              Ver prenda
+            </span>
+          </div>
         </div>
 
         <div className="p-4 sm:p-5">
@@ -533,16 +766,18 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
           <h3 className="mt-2 min-h-[42px] text-sm leading-6 sm:min-h-[50px] sm:text-[0.98rem] text-foreground font-medium">
             {producto.modelo}
           </h3>
-          {(() => {
-            const priceRange = getCatalogProductPriceRange(producto);
-            return (
-              <p className="mt-3 text-lg font-semibold sm:text-xl text-foreground font-serif">
-                {priceRange.hasRange
-                  ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
-                  : formatPrice(priceRange.min)}
-              </p>
-            );
-          })()}
+          <div className="mt-3 flex flex-wrap items-baseline gap-2">
+            <p className="text-lg font-semibold sm:text-xl text-foreground font-serif">
+              {priceRange.hasRange
+                ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
+                : formatPrice(priceRange.min)}
+            </p>
+            {originalMin && !priceRange.hasRange && (
+              <span className="text-xs line-through text-subtle">
+                {formatPrice(originalMin)}
+              </span>
+            )}
+          </div>
           <p className={`mt-2 text-[11px] ${stock > 0 ? "text-subtle" : "text-danger"}`}>
             {stock > 0 ? `${stock} disponibles` : "Sin stock"}
           </p>

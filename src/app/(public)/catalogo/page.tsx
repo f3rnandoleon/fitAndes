@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import CatalogoGrid from "@/components/catalogo/CatalogoGrid";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import {
   catalogVariantIsAvailable,
   unwrapCatalogProducts,
@@ -32,6 +32,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
   const categoriaParam = resolvedParams.categoria || "";
   const colorParam = resolvedParams.color || "";
   const tallaParam = resolvedParams.talla || "";
+  const ordenParam = resolvedParams.orden || "";
   const pageParam = Math.max(1, parseInt(resolvedParams.page || "1", 10) || 1);
   const limitParam = 24;
 
@@ -70,15 +71,18 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-5 sm:py-8 lg:py-10">
-        <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase mb-6 sm:mb-8 text-subtle tracking-[0.16em]">
-          <Link href="/" className="transition-opacity hover:opacity-60">
-            Inicio
-          </Link>
-          <span>&gt;</span>
-          <span className="text-foreground font-medium">
-            Catálogo
-          </span>
-        </div>
+        <Breadcrumb
+          items={
+            categoriaParam && categoriaParam !== "todas"
+              ? [
+                  { label: "Inicio", href: "/" },
+                  { label: "Catálogo", href: "/catalogo" },
+                  { label: categoriaParam },
+                ]
+              : [{ label: "Inicio", href: "/" }, { label: "Catálogo" }]
+          }
+          className="mb-6 sm:mb-8"
+        />
 
         <Suspense fallback={<CatalogoSkeleton />}>
           <CatalogoGrid
@@ -89,6 +93,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
               categoria: categoriaParam,
               color: colorParam,
               talla: tallaParam,
+              orden: ordenParam,
               page: pageParam,
             }}
           />

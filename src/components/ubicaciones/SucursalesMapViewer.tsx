@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FaMapMarkerAlt,
   FaStore,
@@ -12,6 +11,7 @@ import {
   FaCheckCircle,
   FaExternalLinkAlt,
 } from "react-icons/fa";
+import { FiCheck, FiCopy } from "react-icons/fi";
 import { getWhatsAppLink } from "@/lib/constants";
 
 export interface UbicacionMapa {
@@ -79,6 +79,45 @@ function buildDirectMapsUrl(tienda: UbicacionItem): string {
   )}`;
 }
 
+const WEEKDAY_INDEX: Record<string, number> = {
+  dom: 0,
+  lun: 1,
+  mar: 2,
+  mie: 3,
+  mié: 3,
+  jue: 4,
+  vie: 5,
+  sab: 6,
+  sáb: 6,
+};
+
+function getStoreOpenStatus(horariosTexto?: string): { isOpen: boolean; label: string } | null {
+  if (!horariosTexto) return null;
+  const match = horariosTexto
+    .toLowerCase()
+    .match(/(dom|lun|mar|mi[eé]|jue|vie|s[aá]b)\s*(?:a|-)\s*(dom|lun|mar|mi[eé]|jue|vie|s[aá]b)\s+(\d{1,2}):(\d{2})\s*(?:a|-)\s*(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+
+  const startDay = WEEKDAY_INDEX[match[1]];
+  const endDay = WEEKDAY_INDEX[match[2]];
+  if (startDay === undefined || endDay === undefined) return null;
+
+  const openMinutes = Number(match[3]) * 60 + Number(match[4]);
+  const closeMinutes = Number(match[5]) * 60 + Number(match[6]);
+
+  const nowLaPaz = new Date(new Date().toLocaleString("en-US", { timeZone: "America/La_Paz" }));
+  const currentDay = nowLaPaz.getDay();
+  const currentMinutes = nowLaPaz.getHours() * 60 + nowLaPaz.getMinutes();
+
+  const dayMatches =
+    startDay <= endDay
+      ? currentDay >= startDay && currentDay <= endDay
+      : currentDay >= startDay || currentDay <= endDay;
+
+  const isOpen = dayMatches && currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+  return { isOpen, label: isOpen ? "Abierto ahora" : "Cerrado ahora" };
+}
+
 export default function SucursalesMapViewer({ ubicaciones }: Props) {
   const tiendas = ubicaciones.filter(
     (u) => u.permiteRetiroCliente || u.tipo === "TIENDA_FISICA"
@@ -87,9 +126,24 @@ export default function SucursalesMapViewer({ ubicaciones }: Props) {
   const [selectedId, setSelectedId] = useState<string>(
     tiendas[0]?.id ?? "all"
   );
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const selectedTienda = tiendas.find((t) => t.id === selectedId) ?? null;
   const embedUrl = buildEmbedUrl(selectedTienda);
+  const openStatus = mounted ? getStoreOpenStatus(selectedTienda?.ubicacionMapa?.horariosTexto) : null;
+
+  function handleCopy(field: string, value: string) {
+    if (typeof navigator === "undefined" || !navigator.clipboard) return;
+    void navigator.clipboard.writeText(value).then(() => {
+      setCopiedField(field);
+      window.setTimeout(() => setCopiedField((prev) => (prev === field ? null : prev)), 2000);
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -128,10 +182,10 @@ export default function SucursalesMapViewer({ ubicaciones }: Props) {
         </button>
       </div>
 
-      {/* Contenedor Principal: Mapa y Tarjeta de Información */}
+      {/* Contenedor Principal: Mapa y Tarjeta de Información (en móvil tarjeta arriba, mapa abajo) */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] gap-6 items-stretch">
         {/* Mapa de Google Maps Indexado / Embebido */}
-        <div className="relative rounded-[28px] overflow-hidden border border-border bg-[#ece8e1] shadow-lg min-h-[460px] sm:min-h-[540px] lg:min-h-[580px] flex flex-col">
+        <div className="order-2 lg:order-1 relative rounded-[28px] overflow-hidden border border-border bg-[#ece8e1] shadow-lg min-h-[340px] sm:min-h-[460px] lg:min-h-[580px] flex flex-col">
           <iframe
             key={embedUrl}
             src={embedUrl}
@@ -142,7 +196,7 @@ export default function SucursalesMapViewer({ ubicaciones }: Props) {
             allowFullScreen
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            className="flex-1 w-full h-full min-h-[460px]"
+            className="flex-1 w-full h-full min-h-[340px] sm:min-h-[460px]"
           />
 
           {/* Botón flotante para abrir en la app de Google Maps */}
@@ -162,17 +216,35 @@ export default function SucursalesMapViewer({ ubicaciones }: Props) {
         </div>
 
         {/* Panel lateral con datos de la sucursal seleccionada */}
-        <div className="flex flex-col justify-between gap-6">
+        <div className="order-1 lg:order-2 flex flex-col justify-between gap-6">
           {selectedTienda ? (
             <div className="rounded-[28px] border border-border bg-white p-6 sm:p-7 shadow-sm space-y-6 flex-1 flex flex-col justify-between">
               <div className="space-y-5">
                 {/* Cabecera de la sucursal */}
-                <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-4">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 pb-4">
                   <div>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-soft text-[10px] font-semibold uppercase tracking-wider rounded-full text-foreground/80 mb-2">
-                      <FaStore className="text-accent text-xs" />
-                      {selectedTienda.ciudad}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-soft text-[10px] font-semibold uppercase tracking-wider rounded-full text-foreground/80">
+                        <FaStore className="text-accent text-xs" />
+                        {selectedTienda.ciudad}
+                      </span>
+                      {openStatus && (
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-full ${
+                            openStatus.isOpen
+                              ? "bg-success/10 text-success"
+                              : "bg-surface text-muted"
+                          }`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              openStatus.isOpen ? "bg-success" : "bg-subtle"
+                            }`}
+                          />
+                          {openStatus.label}
+                        </span>
+                      )}
+                    </div>
                     <h2 className="text-2xl sm:text-3xl font-serif text-foreground font-normal">
                       {selectedTienda.nombre}
                     </h2>
@@ -188,17 +260,37 @@ export default function SucursalesMapViewer({ ubicaciones }: Props) {
 
                 {/* Detalles de ubicación y horarios */}
                 <div className="space-y-3.5 text-xs sm:text-sm text-muted">
-                  <div className="flex items-start gap-3">
-                    <FaMapMarkerAlt className="text-accent mt-1 shrink-0 text-base" />
-                    <div>
-                      <p className="font-medium text-foreground">Dirección:</p>
-                      <p className="text-muted leading-relaxed">{selectedTienda.direccion}</p>
-                      {selectedTienda.ubicacionMapa?.referencia && (
-                        <p className="text-xs text-subtle mt-1 font-normal italic">
-                          Ref: {selectedTienda.ubicacionMapa.referencia}
-                        </p>
-                      )}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <FaMapMarkerAlt className="text-accent mt-1 shrink-0 text-base" />
+                      <div>
+                        <p className="font-medium text-foreground">Dirección:</p>
+                        <p className="text-muted leading-relaxed">{selectedTienda.direccion}</p>
+                        {selectedTienda.ubicacionMapa?.referencia && (
+                          <p className="text-xs text-subtle mt-1 font-normal italic">
+                            Ref: {selectedTienda.ubicacionMapa.referencia}
+                          </p>
+                        )}
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy("direccion", selectedTienda.direccion)}
+                      aria-label="Copiar dirección"
+                      className="shrink-0 inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[10px] uppercase tracking-wider text-muted hover:text-foreground cursor-pointer"
+                    >
+                      {copiedField === "direccion" ? (
+                        <>
+                          <FiCheck className="h-3 w-3 text-success" />
+                          <span>Copiado</span>
+                        </>
+                      ) : (
+                        <>
+                          <FiCopy className="h-3 w-3" />
+                          <span>Copiar</span>
+                        </>
+                      )}
+                    </button>
                   </div>
 
                   {selectedTienda.ubicacionMapa?.horariosTexto && (
@@ -212,12 +304,32 @@ export default function SucursalesMapViewer({ ubicaciones }: Props) {
                   )}
 
                   {selectedTienda.telefono && selectedTienda.telefono !== "S/N" && (
-                    <div className="flex items-start gap-3">
-                      <FaPhoneAlt className="text-accent mt-1 shrink-0 text-sm" />
-                      <div>
-                        <p className="font-medium text-foreground">Teléfono / Contacto:</p>
-                        <p className="text-muted">+591 {selectedTienda.telefono}</p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <FaPhoneAlt className="text-accent mt-1 shrink-0 text-sm" />
+                        <div>
+                          <p className="font-medium text-foreground">Teléfono / Contacto:</p>
+                          <p className="text-muted">+591 {selectedTienda.telefono}</p>
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy("telefono", selectedTienda.telefono)}
+                        aria-label="Copiar teléfono"
+                        className="shrink-0 inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[10px] uppercase tracking-wider text-muted hover:text-foreground cursor-pointer"
+                      >
+                        {copiedField === "telefono" ? (
+                          <>
+                            <FiCheck className="h-3 w-3 text-success" />
+                            <span>Copiado</span>
+                          </>
+                        ) : (
+                          <>
+                            <FiCopy className="h-3 w-3" />
+                            <span>Copiar</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   )}
                 </div>
