@@ -35,7 +35,7 @@ export const checkoutDeliverySchema = z.object({
 });
 
 export const clienteInvitadoSchema = z.object({
-  nombreCompleto: z.string().trim().min(2, "Ingresa tu nombre completo."),
+  nombreCompleto: z.string().trim().min(3, "Ingresa tu nombre completo (mínimo 3 caracteres)."),
   telefono: z.string().trim().min(7, "Ingresa un número de celular válido."),
   email: z.string().trim().email("Correo electrónico inválido.").optional().or(z.literal("")),
   ci: z.string().trim().optional(),
