@@ -163,7 +163,25 @@ export async function POST(request: NextRequest) {
     }
 
     const { orderId, orderNumber } = extractOrderInfo(data);
-    const total = payload.items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
+    const pedidoRecord = parseJsonRecord(data?.pedido) ?? parseJsonRecord(data?.order);
+    const backendTotal =
+      typeof pedidoRecord?.total === "number" && Number.isFinite(pedidoRecord.total)
+        ? pedidoRecord.total
+        : typeof data?.total === "number" && Number.isFinite(data.total)
+          ? data.total
+          : null;
+    const backendDescuento =
+      typeof pedidoRecord?.descuento === "number" && Number.isFinite(pedidoRecord.descuento)
+        ? pedidoRecord.descuento
+        : typeof data?.descuento === "number" && Number.isFinite(data.descuento)
+          ? data.descuento
+          : null;
+    const appliedCupon =
+      (typeof pedidoRecord?.cuponCodigo === "string" && pedidoRecord.cuponCodigo.trim()) ||
+      (typeof payload.cuponCodigo === "string" && payload.cuponCodigo.trim().toUpperCase()) ||
+      null;
+    const fallbackTotal = payload.items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
+    const total = backendTotal ?? fallbackTotal;
     const customerDisplayName = isGuest
       ? payload.clienteInvitado?.nombreCompleto || payload.delivery.recipientName || "Cliente"
       : auth?.fullname ?? "Cliente FitAndes";
@@ -179,6 +197,8 @@ export async function POST(request: NextRequest) {
             items: payload.items,
             delivery: payload.delivery,
             total,
+            descuento: backendDescuento,
+            cuponCodigo: appliedCupon,
             orderNumber: orderNumber ?? undefined,
           })
         : null;
@@ -211,6 +231,9 @@ export async function POST(request: NextRequest) {
       paymentId,
       receiptRequired: payload.paymentMethod === "QR",
       whatsappUrl,
+      total,
+      descuento: backendDescuento,
+      cuponCodigo: appliedCupon,
       warning,
       message:
         payload.paymentMethod === "QR"

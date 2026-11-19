@@ -6,6 +6,7 @@ import { CENTRAL_API_URL, parseJsonRecord, type CentralApiRole } from "@/lib/cen
 import { fetchCentralJson } from "@/lib/central-client";
 import { getRequestId } from "@/lib/request-context";
 import { logger } from "@/lib/logger";
+import { normalizePricingSummary } from "@/types/promociones";
 
 async function getCartAuth(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -72,6 +73,10 @@ export async function GET(request: NextRequest) {
       const talla = String(variante.talla || "");
       const cantidad = typeof raw.cantidad === "number" ? raw.cantidad : 1;
       const precio = typeof raw.precioUnitario === "number" ? raw.precioUnitario : 0;
+      const precioLista =
+        typeof raw.precioLista === "number" && Number.isFinite(raw.precioLista) && raw.precioLista > precio
+          ? raw.precioLista
+          : null;
       const cartItemId = raw._id ? String(raw._id) : undefined;
 
       return {
@@ -87,15 +92,24 @@ export async function GET(request: NextRequest) {
         talla,
         cantidad,
         precio,
+        precioLista,
         stockDisponible: 99,
       };
     });
+
+    const cuponCodigo =
+      typeof data?.cuponCodigo === "string" && data.cuponCodigo.trim()
+        ? data.cuponCodigo.trim().toUpperCase()
+        : null;
+    const resumenPrecios = normalizePricingSummary(data?.resumenPrecios ?? null);
 
     return NextResponse.json({
       _id: data?._id,
       items: mappedItems,
       totalItems: mappedItems.reduce((acc, i) => acc + i.cantidad, 0),
       subtotal: typeof data?.subtotal === "number" ? data.subtotal : 0,
+      cuponCodigo,
+      resumenPrecios,
     });
   } catch (error) {
     logger.error("GET /api/cart failed", { error, requestId });

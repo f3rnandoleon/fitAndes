@@ -21,7 +21,10 @@ export interface CatalogVariant {
   imagenes?: Array<string | null | undefined> | null;
   codigoBarra?: string | null;
   qrCode?: string | null;
+  precioLista?: number | null;
   precioVenta?: number | null;
+  tieneRebaja?: boolean | null;
+  porcentajeDescuento?: number | null;
   precioCosto?: number | null;
   medidas?: CatalogVariantMedidas | null;
 }
@@ -31,7 +34,12 @@ export interface CatalogProduct {
   nombre: string;
   modelo: string;
   categoria?: string | null;
+  precioLista?: number | null;
   precioVenta: number;
+  tieneRebaja?: boolean | null;
+  porcentajeDescuentoMaximo?: number | null;
+  precioMinimoLista?: number | null;
+  precioMaximoLista?: number | null;
   precioMinimo?: number | null;
   precioMaximo?: number | null;
   tieneRangoPrecios?: boolean | null;
@@ -100,6 +108,62 @@ export function getCatalogVariantPrice(product: CatalogProduct, variant?: Catalo
   return typeof product.precioVenta === "number" && Number.isFinite(product.precioVenta) ? product.precioVenta : 0;
 }
 
+export function getCatalogVariantListPrice(product: CatalogProduct, variant?: CatalogVariant | null): number | null {
+  const effectivePrice = getCatalogVariantPrice(product, variant);
+
+  if (variant && typeof variant.precioLista === "number" && Number.isFinite(variant.precioLista) && variant.precioLista > effectivePrice) {
+    return variant.precioLista;
+  }
+
+  if (typeof product.precioLista === "number" && Number.isFinite(product.precioLista) && product.precioLista > effectivePrice) {
+    return product.precioLista;
+  }
+
+  // Fallback legado si el backend no expone precioLista pero sí descuento %
+  if (
+    variant?.precioLista == null &&
+    product.precioLista == null &&
+    typeof product.descuento === "number" &&
+    Number.isFinite(product.descuento) &&
+    product.descuento > 0 &&
+    product.descuento < 100 &&
+    effectivePrice > 0
+  ) {
+    return Number((effectivePrice / (1 - product.descuento / 100)).toFixed(2));
+  }
+
+  return null;
+}
+
+export function getCatalogVariantDiscountPercent(product: CatalogProduct, variant?: CatalogVariant | null): number {
+  if (variant && typeof variant.porcentajeDescuento === "number" && Number.isFinite(variant.porcentajeDescuento) && variant.porcentajeDescuento > 0) {
+    return Math.round(variant.porcentajeDescuento);
+  }
+
+  const effectivePrice = getCatalogVariantPrice(product, variant);
+  const listPrice = getCatalogVariantListPrice(product, variant);
+  if (listPrice && listPrice > effectivePrice && listPrice > 0) {
+    return Math.round(((listPrice - effectivePrice) / listPrice) * 100);
+  }
+
+  if (typeof product.porcentajeDescuentoMaximo === "number" && Number.isFinite(product.porcentajeDescuentoMaximo) && product.porcentajeDescuentoMaximo > 0) {
+    return Math.round(product.porcentajeDescuentoMaximo);
+  }
+
+  if (typeof product.descuento === "number" && Number.isFinite(product.descuento) && product.descuento > 0) {
+    return Math.round(product.descuento);
+  }
+
+  return 0;
+}
+
+export function catalogVariantHasSale(product: CatalogProduct, variant?: CatalogVariant | null): boolean {
+  if (variant?.tieneRebaja === true) return true;
+  const listPrice = getCatalogVariantListPrice(product, variant);
+  const effectivePrice = getCatalogVariantPrice(product, variant);
+  return Boolean(listPrice && listPrice > effectivePrice);
+}
+
 export function getCatalogProductPriceRange(product: CatalogProduct): {
   min: number;
   max: number;
@@ -132,6 +196,93 @@ export function getCatalogProductPriceRange(product: CatalogProduct): {
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   return { min, max, hasRange: min !== max };
+}
+
+export function getCatalogProductListPriceRange(product: CatalogProduct): {
+  min: number;
+  max: number;
+  hasRange: boolean;
+} | null {
+  const effectiveRange = getCatalogProductPriceRange(product);
+
+  if (
+    typeof product.precioMinimoLista === "number" &&
+    typeof product.precioMaximoLista === "number" &&
+    Number.isFinite(product.precioMinimoLista) &&
+    Number.isFinite(product.precioMaximoLista) &&
+    (product.precioMinimoLista > effectiveRange.min || product.precioMaximoLista > effectiveRange.max)
+  ) {
+    return {
+      min: product.precioMinimoLista,
+      max: product.precioMaximoLista,
+      hasRange: product.precioMinimoLista !== product.precioMaximoLista,
+    };
+  }
+
+  const availableVariants = product.variantes?.length ? product.variantes.filter(catalogVariantIsAvailable) : [];
+  const variantsToInspect = availableVariants.length > 0 ? availableVariants : (product.variantes || []);
+  const variantListPrices = variantsToInspect
+    .map((v) => getCatalogVariantListPrice(product, v))
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value) && value > 0);
+
+  if (variantListPrices.length > 0) {
+    const min = Math.min(...variantListPrices);
+    const max = Math.max(...variantListPrices);
+    if (min > effectiveRange.min || max > effectiveRange.max) {
+      return { min, max, hasRange: min !== max };
+    }
+  }
+
+  if (
+    typeof product.precioLista === "number" &&
+    Number.isFinite(product.precioLista) &&
+    product.precioLista > effectiveRange.min
+  ) {
+    return { min: product.precioLista, max: product.precioLista, hasRange: false };
+  }
+
+  return null;
+}
+
+export function getCatalogProductDiscountPercent(product: CatalogProduct): number {
+  if (
+    typeof product.porcentajeDescuentoMaximo === "number" &&
+    Number.isFinite(product.porcentajeDescuentoMaximo) &&
+    product.porcentajeDescuentoMaximo > 0
+  ) {
+    return Math.round(product.porcentajeDescuentoMaximo);
+  }
+
+  const availableVariants = product.variantes?.length ? product.variantes.filter(catalogVariantIsAvailable) : [];
+  const variantsToInspect = availableVariants.length > 0 ? availableVariants : (product.variantes || []);
+  let maxPct = 0;
+
+  for (const variant of variantsToInspect) {
+    const pct = getCatalogVariantDiscountPercent(product, variant);
+    if (pct > maxPct) maxPct = pct;
+  }
+
+  if (maxPct > 0) return maxPct;
+
+  const listRange = getCatalogProductListPriceRange(product);
+  const priceRange = getCatalogProductPriceRange(product);
+  if (listRange && listRange.min > priceRange.min && listRange.min > 0) {
+    return Math.round(((listRange.min - priceRange.min) / listRange.min) * 100);
+  }
+
+  if (typeof product.descuento === "number" && Number.isFinite(product.descuento) && product.descuento > 0) {
+    return Math.round(product.descuento);
+  }
+
+  return 0;
+}
+
+export function catalogProductHasSale(product: CatalogProduct): boolean {
+  if (product.tieneRebaja === true) return true;
+  if (getCatalogProductDiscountPercent(product) > 0) return true;
+  const listRange = getCatalogProductListPriceRange(product);
+  const priceRange = getCatalogProductPriceRange(product);
+  return Boolean(listRange && (listRange.min > priceRange.min || listRange.max > priceRange.max));
 }
 
 export function unwrapCatalogProducts(data: unknown): CatalogProduct[] {

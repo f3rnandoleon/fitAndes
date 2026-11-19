@@ -26,6 +26,8 @@ export function buildWhatsappUrl({
   items,
   delivery,
   total,
+  descuento,
+  cuponCodigo,
   orderNumber,
 }: {
   customerName?: string;
@@ -33,6 +35,8 @@ export function buildWhatsappUrl({
   items: CheckoutItemInput[];
   delivery: CheckoutDeliveryInput;
   total: number;
+  descuento?: number | null;
+  cuponCodigo?: string | null;
   orderNumber?: string;
 }): string {
   const lines: string[] = [
@@ -73,6 +77,13 @@ export function buildWhatsappUrl({
       `   Subtotal: ${formatPrice(item.cantidad * item.precio)}`
     );
   });
+
+  if (cuponCodigo) {
+    lines.push("", `Cupón aplicado: ${cuponCodigo}`);
+  }
+  if (typeof descuento === "number" && descuento > 0) {
+    lines.push(`Descuento: -${formatPrice(descuento)}`);
+  }
 
   lines.push("", `Total: ${formatPrice(total)}`);
 

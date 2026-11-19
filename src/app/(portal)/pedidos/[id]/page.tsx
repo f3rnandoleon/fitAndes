@@ -179,9 +179,26 @@ export default async function PedidoDetallePage({
           <span>Subtotal</span>
           <span>Bs. {subtotal.toFixed(2)}</span>
         </div>
+        {pedido.cuponCodigo && (
+          <div className="flex justify-between text-sm" style={{ color: "var(--success)" }}>
+            <span>Cupón aplicado</span>
+            <span className="font-mono font-semibold uppercase">{pedido.cuponCodigo}</span>
+          </div>
+        )}
+        {Array.isArray(pedido.promocionesAplicadas) && pedido.promocionesAplicadas.length > 0 ? (
+          pedido.promocionesAplicadas.map((promo, index) => {
+            const promoAmount = promo.descuento ?? promo.montoDescuento ?? 0;
+            return (
+              <div key={promo.promocionId ?? index} className="flex justify-between text-sm" style={{ color: "var(--success)" }}>
+                <span>{promo.nombre || promo.codigo || promo.cuponCodigo || "Promoción aplicada"}</span>
+                <span>{promoAmount > 0 ? `- Bs. ${promoAmount.toFixed(2)}` : "Aplicada"}</span>
+              </div>
+            );
+          })
+        ) : null}
         {descuento > 0 && (
           <div className="flex justify-between text-sm" style={{ color: "var(--success)" }}>
-            <span>Descuento</span>
+            <span>Descuento total</span>
             <span>- Bs. {descuento.toFixed(2)}</span>
           </div>
         )}

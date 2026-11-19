@@ -1,14 +1,25 @@
 "use client";
 
+import { useState, type FormEvent } from "react";
+import { FiCheckCircle, FiTag, FiX } from "react-icons/fi";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import type { PricingSummary } from "@/types/promociones";
 
 interface Props {
   totalAmount: number;
   totalItems: number;
   shippingCost?: number;
   shippingLabel?: string;
+  pricingSummary?: PricingSummary | null;
+  pricingLoading?: boolean;
+  appliedCoupon?: string | null;
+  couponLoading?: boolean;
+  couponError?: string | null;
+  couponSuccess?: string | null;
+  onApplyCoupon?: (code: string) => Promise<void> | void;
+  onRemoveCoupon?: () => Promise<void> | void;
   loading: boolean;
   disabled?: boolean;
   error?: string;
@@ -16,27 +27,244 @@ interface Props {
   authenticated: boolean;
 }
 
+export function resolveFinalCheckoutTotal(
+  totalAmount: number,
+  shippingCost: number,
+  pricingSummary?: PricingSummary | null,
+): number {
+  if (!pricingSummary) {
+    return totalAmount + shippingCost;
+  }
+
+  const netShipping = Math.max(0, shippingCost - (pricingSummary.descuentoEnvio ?? 0));
+  const expectedWithoutShipping = Math.max(0, pricingSummary.subtotalPostCatalogo - pricingSummary.descuentoPromociones);
+
+  // Si el servidor ya incorporó el flete neto en totalFinal, lo respetamos tal cual;
+  // si totalFinal equivale exactamente al neto de prendas sin envío y hay flete pendiente, lo sumamos.
+  if (
+    netShipping > 0 &&
+    Math.abs(pricingSummary.totalFinal - expectedWithoutShipping) < 0.01 &&
+    Math.abs(pricingSummary.totalFinal - (expectedWithoutShipping + netShipping)) >= 0.01
+  ) {
+    return Number((pricingSummary.totalFinal + netShipping).toFixed(2));
+  }
+
+  return pricingSummary.totalFinal;
+}
+
 /**
- * Componente lateral/inferior de resumen de compra con soporte para invitados y costo de envío.
+ * Componente lateral/inferior de resumen de compra con soporte para cupones,
+ * promociones automáticas, rebajas de catálogo y costo de envío.
  */
 export function CheckoutSummarySidebar({
   totalAmount,
   totalItems,
   shippingCost = 0,
   shippingLabel = "Gratis",
+  pricingSummary = null,
+  pricingLoading = false,
+  appliedCoupon = null,
+  couponLoading = false,
+  couponError = null,
+  couponSuccess = null,
+  onApplyCoupon,
+  onRemoveCoupon,
   loading,
   disabled = false,
   error,
   onSubmit,
   authenticated,
 }: Props) {
-  const finalTotal = totalAmount + shippingCost;
+  const [couponInput, setCouponInput] = useState("");
+
+  const finalTotal = resolveFinalCheckoutTotal(totalAmount, shippingCost, pricingSummary);
+  const descuentoCatalogo = pricingSummary?.descuentoCatalogo ?? 0;
+  const descuentoPromociones = pricingSummary?.descuentoPromociones ?? 0;
+  const descuentoEnvio = pricingSummary?.descuentoEnvio ?? 0;
+  const totalSavings = descuentoCatalogo + descuentoPromociones + descuentoEnvio;
+  const subtotalBase = pricingSummary
+    ? descuentoCatalogo > 0
+      ? pricingSummary.subtotalLista
+      : pricingSummary.subtotalPostCatalogo
+    : totalAmount;
+  const promocionesAplicadas = pricingSummary?.promocionesAplicadas ?? [];
+  const netShipping = Math.max(0, shippingCost - descuentoEnvio);
+
+  async function handleCouponSubmit(event: FormEvent) {
+    event.preventDefault();
+    const trimmed = couponInput.trim().toUpperCase();
+    if (!trimmed || !onApplyCoupon) return;
+    await onApplyCoupon(trimmed);
+    setCouponInput("");
+  }
+
+  const couponSection = onApplyCoupon ? (
+    <div className="pt-4 border-t border-border/70 space-y-2.5">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-subtle flex items-center gap-1.5">
+        <FiTag className="h-3 w-3" aria-hidden="true" />
+        Código de cupón
+      </p>
+
+      {appliedCoupon ? (
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-success/30 bg-success/10 px-3.5 py-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <FiCheckCircle className="h-4 w-4 text-success shrink-0" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-success truncate">
+                {appliedCoupon}
+              </p>
+              <p className="text-[10px] text-success/80">Cupón aplicado</p>
+            </div>
+          </div>
+          {onRemoveCoupon && (
+            <button
+              type="button"
+              onClick={() => void onRemoveCoupon()}
+              disabled={couponLoading}
+              aria-label="Quitar cupón"
+              className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-white px-2.5 py-1 text-[10px] uppercase tracking-wider text-foreground hover:bg-surface transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <FiX className="h-3 w-3" />
+              Quitar
+            </button>
+          )}
+        </div>
+      ) : (
+        <form onSubmit={handleCouponSubmit} className="flex items-center gap-2">
+          <input
+            type="text"
+            value={couponInput}
+            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+            placeholder="Ej. INVIERNO15"
+            maxLength={40}
+            disabled={couponLoading || disabled}
+            aria-label="Código de cupón"
+            className="min-w-0 flex-1 rounded-full border border-border bg-background px-4 py-2.5 text-xs uppercase tracking-wider text-foreground placeholder:normal-case placeholder:tracking-normal placeholder:text-subtle/60 focus:border-foreground focus:outline-none"
+          />
+          <Button
+            type="submit"
+            variant="secondary"
+            size="sm"
+            loading={couponLoading}
+            disabled={!couponInput.trim() || couponLoading || disabled}
+            className="shrink-0"
+          >
+            Aplicar
+          </Button>
+        </form>
+      )}
+
+      {couponError && (
+        <p role="alert" className="text-[11px] text-danger leading-snug">
+          {couponError}
+        </p>
+      )}
+      {!couponError && couponSuccess && appliedCoupon && (
+        <p className="text-[11px] text-success leading-snug">{couponSuccess}</p>
+      )}
+    </div>
+  ) : null;
+
+  const breakdownContent = (
+    <div className="space-y-2.5">
+      <div className="flex justify-between text-[11px] uppercase tracking-wider text-muted">
+        <span>
+          {descuentoCatalogo > 0 ? `Precio de lista (${totalItems})` : `Prendas (${totalItems})`}
+        </span>
+        <span>{formatPrice(subtotalBase)}</span>
+      </div>
+
+      {descuentoCatalogo > 0 && (
+        <div className="flex justify-between text-[11px] uppercase tracking-wider text-success">
+          <span>Rebajas de catálogo</span>
+          <span className="font-medium">- {formatPrice(descuentoCatalogo)}</span>
+        </div>
+      )}
+
+      {promocionesAplicadas.length > 0 ? (
+        promocionesAplicadas.map((promo, idx) => (
+          <div
+            key={promo.promocionId ?? `${promo.nombre}-${idx}`}
+            className="flex items-start justify-between gap-3 text-[11px] text-success"
+          >
+            <span className="min-w-0 leading-snug">
+              <span className="uppercase tracking-wider font-medium">{promo.nombre}</span>
+              {promo.codigo ? (
+                <span className="ml-1.5 rounded bg-success/15 px-1.5 py-0.5 text-[9px] font-mono uppercase">
+                  {promo.codigo}
+                </span>
+              ) : null}
+            </span>
+            <span className="shrink-0 font-medium">
+              {promo.descuento > 0 ? `- ${formatPrice(promo.descuento)}` : "Aplicada"}
+            </span>
+          </div>
+        ))
+      ) : descuentoPromociones > 0 ? (
+        <div className="flex justify-between text-[11px] uppercase tracking-wider text-success">
+          <span>Promociones / Cupón</span>
+          <span className="font-medium">- {formatPrice(descuentoPromociones)}</span>
+        </div>
+      ) : null}
+
+      <div className="flex justify-between text-[11px] uppercase tracking-wider text-muted">
+        <span>Costo de envío</span>
+        <span className="flex items-center gap-1.5">
+          {descuentoEnvio > 0 && shippingCost > 0 ? (
+            <>
+              <span className="line-through text-subtle">{formatPrice(shippingCost)}</span>
+              <span className="text-success font-semibold">
+                {netShipping === 0 ? "Gratis" : formatPrice(netShipping)}
+              </span>
+            </>
+          ) : (
+            <span className={shippingCost === 0 ? "text-success font-medium" : "text-foreground font-medium"}>
+              {shippingLabel}
+            </span>
+          )}
+        </span>
+      </div>
+
+      {totalSavings > 0 && (
+        <div className="rounded-xl border border-success/20 bg-success/8 px-3 py-2 text-[11px] text-success font-medium flex items-center justify-between">
+          <span>Ahorro total</span>
+          <span>{formatPrice(totalSavings)}</span>
+        </div>
+      )}
+
+      <div className="pt-3 border-t border-border flex justify-between items-baseline">
+        <span className="text-sm font-medium text-foreground uppercase tracking-widest">
+          Total a pagar
+        </span>
+        <div className="text-right">
+          <span className={`text-2xl font-serif text-foreground font-bold ${pricingLoading ? "opacity-60" : ""}`}>
+            {formatPrice(finalTotal)}
+          </span>
+          {pricingLoading && (
+            <p className="text-[10px] text-subtle">Actualizando...</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <>
-      <div
-        className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-md mobile-safe-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.06)]"
-      >
+      {/* Tarjeta de cupón y desglose visible en móvil antes de la barra fija */}
+      <div className="lg:hidden">
+        <Card className="rounded-[28px] space-y-5">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-subtle mb-4">
+              Resumen de compra
+            </p>
+            {breakdownContent}
+          </div>
+          {couponSection}
+        </Card>
+      </div>
+
+      {/* Barra fija inferior en móvil */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-md mobile-safe-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
         <div className="mx-auto flex max-w-[1240px] flex-col gap-2.5 px-4 pt-3 pb-2">
           {error ? (
             <div className="rounded-[14px] border border-danger/30 bg-danger/10 px-3.5 py-2 text-xs text-danger font-medium">
@@ -47,13 +275,15 @@ export function CheckoutSummarySidebar({
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] uppercase tracking-[0.16em] text-subtle">
-                Total {shippingCost > 0 ? "(con envío)" : ""}
+                Total {netShipping > 0 ? "(con envío)" : ""}
               </p>
-              <p className="text-xl font-serif font-bold text-foreground">
+              <p className={`text-xl font-serif font-bold text-foreground ${pricingLoading ? "opacity-60" : ""}`}>
                 {formatPrice(finalTotal)}
               </p>
               <p className="text-[11px] text-muted truncate">
-                {totalItems} prenda{totalItems !== 1 ? "s" : ""} · Envío: {shippingLabel}
+                {totalSavings > 0
+                  ? `Ahorras ${formatPrice(totalSavings)} · ${totalItems} prenda${totalItems !== 1 ? "s" : ""}`
+                  : `${totalItems} prenda${totalItems !== 1 ? "s" : ""} · Envío: ${descuentoEnvio > 0 && netShipping === 0 ? "Gratis" : shippingLabel}`}
               </p>
             </div>
             <Button
@@ -70,29 +300,17 @@ export function CheckoutSummarySidebar({
         </div>
       </div>
 
+      {/* Sidebar sticky en desktop */}
       <div className="hidden lg:block">
-        <Card className="sticky top-24 space-y-6">
+        <Card className="sticky top-24 space-y-5">
           <div>
             <p className="text-[10px] uppercase tracking-[0.16em] text-subtle mb-4">
               Resumen de compra
             </p>
-            <div className="space-y-3">
-              <div className="flex justify-between text-[11px] uppercase tracking-wider text-muted">
-                <span>Prendas ({totalItems})</span>
-                <span>{formatPrice(totalAmount)}</span>
-              </div>
-              <div className="flex justify-between text-[11px] uppercase tracking-wider text-muted">
-                <span>Costo de envío</span>
-                <span className={shippingCost === 0 ? "text-success font-medium" : "text-foreground font-medium"}>
-                  {shippingLabel}
-                </span>
-              </div>
-              <div className="pt-3 border-t border-border flex justify-between items-baseline">
-                <span className="text-sm font-medium text-foreground uppercase tracking-widest">Total a pagar</span>
-                <span className="text-2xl font-serif text-foreground font-bold">{formatPrice(finalTotal)}</span>
-              </div>
-            </div>
+            {breakdownContent}
           </div>
+
+          {couponSection}
 
           {error && (
             <div className="border border-danger/30 bg-danger/10 p-3 rounded-xl text-xs text-danger font-medium leading-relaxed">

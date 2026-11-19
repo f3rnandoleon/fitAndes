@@ -25,7 +25,7 @@ const NAV_LINKS = [
 
 export default function SiteHeader({ authenticated = false, fullname, firstName: firstNameProp, email }: Props) {
   const pathname = usePathname();
-  const { items, totalAmount, totalItems, removeItem, updateQuantity } = useReservationCart();
+  const { items, totalAmount, totalItems, cuponCodigo, removeItem, updateQuantity } = useReservationCart();
   const [userOpen, setUserOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const userRef = useRef<HTMLDivElement | null>(null);
@@ -149,9 +149,16 @@ export default function SiteHeader({ authenticated = false, fullname, firstName:
                                   {item.color} / {item.talla}
                                 </p>
                                 <div className="mt-3 flex items-center justify-between gap-3">
-                                  <p className="text-sm text-foreground">
-                                    {formatPrice(item.precio)}
-                                  </p>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <p className="text-sm text-foreground">
+                                      {formatPrice(item.precio)}
+                                    </p>
+                                    {item.precioLista && item.precioLista > item.precio ? (
+                                      <span className="text-[11px] line-through text-subtle">
+                                        {formatPrice(item.precioLista)}
+                                      </span>
+                                    ) : null}
+                                  </div>
                                   <button
                                     type="button"
                                     onClick={() => removeItem(item.id)}
@@ -188,8 +195,14 @@ export default function SiteHeader({ authenticated = false, fullname, firstName:
                         ))}
                       </div>
                       <div className="px-4 py-4 bg-surface/30 sm:px-5">
+                        {cuponCodigo ? (
+                          <div className="mb-2.5 flex items-center justify-between rounded-lg border border-success/25 bg-success/10 px-3 py-1.5 text-[11px] text-success">
+                            <span className="uppercase tracking-[0.12em] font-semibold">Cupón {cuponCodigo}</span>
+                            <span>Aplicado en checkout</span>
+                          </div>
+                        ) : null}
                         <div className="flex items-center justify-between text-sm mb-4">
-                          <span className="text-muted">Total reservado</span>
+                          <span className="text-muted">Subtotal prendas</span>
                           <strong className="text-foreground font-medium">{formatPrice(totalAmount)}</strong>
                         </div>
                         <div className="grid gap-3">

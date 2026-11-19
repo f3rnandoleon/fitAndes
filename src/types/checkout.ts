@@ -62,6 +62,7 @@ export interface CheckoutItemInput {
   talla: string;
   cantidad: number;
   precio: number;
+  precioLista?: number | null;
   stockDisponible: number;
 }
 
@@ -92,6 +93,7 @@ export interface CheckoutSubmitPayload {
   paymentMethod: PaymentMethod;
   delivery: CheckoutDeliveryInput;
   notes?: string;
+  cuponCodigo?: string | null;
   esInvitado?: boolean;
   clienteInvitado?: ClienteInvitadoInput;
 }
@@ -103,6 +105,9 @@ export interface CheckoutSubmitResponse {
   paymentId?: string | null;
   receiptRequired?: boolean;
   whatsappUrl?: string | null;
+  total?: number | null;
+  descuento?: number | null;
+  cuponCodigo?: string | null;
   message?: string;
   warning?: string | null;
 }

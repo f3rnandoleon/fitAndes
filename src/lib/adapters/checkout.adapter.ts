@@ -67,10 +67,12 @@ export function buildLegacyDeliveryPayload(delivery: CheckoutDeliveryInput) {
 }
 
 export function buildCanonicalCheckoutPayload(payload: CheckoutSubmitPayload): CanonicalCheckoutPayload {
+  const normalizedCupon = compactText(payload.cuponCodigo)?.toUpperCase();
   const base: CanonicalCheckoutPayload = {
     metodoPago: payload.paymentMethod,
     entrega: buildCanonicalDeliveryPayload(payload.delivery),
     notas: compactText(payload.notes),
+    ...(normalizedCupon ? { cuponCodigo: normalizedCupon } : {}),
   };
 
   if (payload.esInvitado) {
@@ -79,6 +81,7 @@ export function buildCanonicalCheckoutPayload(payload: CheckoutSubmitPayload): C
     base.items = payload.items.map((item) => ({
       productoId: item.productoId || item.id,
       variantId: item.variantId ?? undefined,
+      varianteId: item.variantId ?? undefined,
       color: item.color,
       talla: item.talla,
       cantidad: item.cantidad,
@@ -93,16 +96,19 @@ export interface LegacyCheckoutPayload {
   metodoPago: CheckoutSubmitPayload["paymentMethod"];
   delivery: ReturnType<typeof buildLegacyDeliveryPayload>;
   notes?: string;
+  cuponCodigo?: string;
   esInvitado?: boolean;
   clienteInvitado?: CheckoutSubmitPayload["clienteInvitado"];
   items?: CheckoutSubmitPayload["items"];
 }
 
 export function buildLegacyCheckoutPayload(payload: CheckoutSubmitPayload): LegacyCheckoutPayload {
+  const normalizedCupon = compactText(payload.cuponCodigo)?.toUpperCase();
   const base: LegacyCheckoutPayload = {
     metodoPago: payload.paymentMethod,
     delivery: buildLegacyDeliveryPayload(payload.delivery),
     notes: compactText(payload.notes),
+    ...(normalizedCupon ? { cuponCodigo: normalizedCupon } : {}),
   };
 
   if (payload.esInvitado) {

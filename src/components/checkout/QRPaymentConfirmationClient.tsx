@@ -7,18 +7,33 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/format";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
+import { resolveFinalCheckoutTotal } from "@/components/checkout/CheckoutSummarySidebar";
 import type { CheckoutSubmitPayload, CheckoutSubmitResponse } from "@/types/checkout";
+import { getCouponErrorMessage, type PricingSummary } from "@/types/promociones";
+
+interface PendingPreviewData {
+  shippingCost?: number;
+  shippingLabel?: string;
+  pricingSummary?: PricingSummary | null;
+}
 
 export default function QRPaymentConfirmationClient() {
   const router = useRouter();
   const { clearCart } = useReservationCart();
   const [payload, setPayload] = useState<CheckoutSubmitPayload | null>(null);
+  const [shippingCost, setShippingCost] = useState(0);
+  const [shippingLabel, setShippingLabel] = useState("Gratis");
+  const [pricingSummary, setPricingSummary] = useState<PricingSummary | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(false);
+  const [couponWarning, setCouponWarning] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const qrImageUrl = "https://res.cloudinary.com/dq1jeikev/image/upload/v1777964054/comprobante_xvdhuf.jpg";
+  const qrImageUrl =
+    process.env.NEXT_PUBLIC_BANCOSOL_QR_URL ||
+    "https://res.cloudinary.com/dq1jeikev/image/upload/v1777964054/comprobante_xvdhuf.jpg";
 
   useEffect(() => {
     const stored = window.localStorage.getItem("fitandes-pending-checkout");
@@ -26,11 +41,79 @@ export default function QRPaymentConfirmationClient() {
       router.replace("/checkout");
       return;
     }
+
+    let parsedPayload: CheckoutSubmitPayload;
     try {
-      setPayload(JSON.parse(stored));
+      parsedPayload = JSON.parse(stored) as CheckoutSubmitPayload;
+      setPayload(parsedPayload);
     } catch {
       router.replace("/checkout");
+      return;
     }
+
+    let initialShipping = 0;
+    try {
+      const rawPreview = window.localStorage.getItem("fitandes-pending-checkout-preview");
+      if (rawPreview) {
+        const preview = JSON.parse(rawPreview) as PendingPreviewData;
+        if (typeof preview.shippingCost === "number" && Number.isFinite(preview.shippingCost)) {
+          initialShipping = preview.shippingCost;
+          setShippingCost(preview.shippingCost);
+        }
+        if (typeof preview.shippingLabel === "string" && preview.shippingLabel.trim()) {
+          setShippingLabel(preview.shippingLabel);
+        }
+        if (preview.pricingSummary) {
+          setPricingSummary(preview.pricingSummary);
+        }
+      }
+    } catch {
+      // Ignora preview corrupto; re-evaluaremos en servidor
+    }
+
+    // Re-evaluación en vivo contra el servidor central para asegurar el monto exacto a transferir
+    const validItems = parsedPayload.items
+      .filter((item) => Boolean(item.productoId))
+      .map((item) => ({
+        productoId: item.productoId,
+        varianteId: item.variantId ?? undefined,
+        color: item.color,
+        talla: item.talla,
+        cantidad: item.cantidad,
+      }));
+
+    if (validItems.length === 0) return;
+
+    const controller = new AbortController();
+    setPricingLoading(true);
+    void fetch("/api/promociones/evaluar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        items: validItems,
+        cuponCodigo: parsedPayload.cuponCodigo || undefined,
+        costoEnvio: initialShipping,
+        telefonoInvitado: parsedPayload.esInvitado ? parsedPayload.clienteInvitado?.telefono : undefined,
+      }),
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok || !data.resumenPrecios) return;
+        const summary = data.resumenPrecios as PricingSummary;
+        setPricingSummary(summary);
+        if (parsedPayload.cuponCodigo && summary.cuponValido === false) {
+          setCouponWarning(getCouponErrorMessage(summary.cuponErrorCodigo, summary.cuponErrorMensaje));
+        }
+      })
+      .catch(() => {
+        // Mantiene el preview guardado si falla la red
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setPricingLoading(false);
+      });
+
+    return () => controller.abort();
   }, [router]);
 
   if (!payload) {
@@ -41,7 +124,12 @@ export default function QRPaymentConfirmationClient() {
     );
   }
 
-  const total = payload.items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
+  const baseItemsTotal = payload.items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
+  const total = resolveFinalCheckoutTotal(baseItemsTotal, shippingCost, pricingSummary);
+  const descuentoCatalogo = pricingSummary?.descuentoCatalogo ?? 0;
+  const descuentoPromociones = pricingSummary?.descuentoPromociones ?? 0;
+  const descuentoEnvio = pricingSummary?.descuentoEnvio ?? 0;
+  const netShipping = Math.max(0, shippingCost - descuentoEnvio);
 
   async function handleFinalize() {
     if (!file) {
@@ -53,7 +141,7 @@ export default function QRPaymentConfirmationClient() {
     setProcessing(true);
 
     try {
-      // 1. Crear el pedido
+      // 1. Crear el pedido (nunca enviamos montos de descuento; solo cuponCodigo opcional)
       const checkoutResponse = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,6 +165,7 @@ export default function QRPaymentConfirmationClient() {
 
       // 3. Limpiar todo (el pedido ya se creó, así que vaciamos el carrito local)
       window.localStorage.removeItem("fitandes-pending-checkout");
+      window.localStorage.removeItem("fitandes-pending-checkout-preview");
       clearCart();
 
       const isGuest = Boolean(payload?.esInvitado);
@@ -86,8 +175,8 @@ export default function QRPaymentConfirmationClient() {
         if (isGuest) {
           router.push(
             `/checkout/confirmacion?orderId=${checkoutData.orderId}&numero=${encodeURIComponent(
-              checkoutData.orderNumber || ""
-            )}&metodo=${encodeURIComponent(payload?.delivery?.method || "")}&comprobante=0`
+              checkoutData.orderNumber || "",
+            )}&metodo=${encodeURIComponent(payload?.delivery?.method || "")}&comprobante=0`,
           );
         } else {
           router.push(`/pedidos/${checkoutData.orderId}`);
@@ -101,8 +190,8 @@ export default function QRPaymentConfirmationClient() {
         if (isGuest) {
           router.push(
             `/checkout/confirmacion?orderId=${checkoutData.orderId}&numero=${encodeURIComponent(
-              checkoutData.orderNumber || ""
-            )}&metodo=${encodeURIComponent(payload?.delivery?.method || "")}&comprobante=1`
+              checkoutData.orderNumber || "",
+            )}&metodo=${encodeURIComponent(payload?.delivery?.method || "")}&comprobante=1`,
           );
         } else {
           router.push(`/pedidos/${checkoutData.orderId}`);
@@ -158,10 +247,53 @@ export default function QRPaymentConfirmationClient() {
         </div>
 
         <div className="space-y-4 w-full max-w-[320px]">
-          <div className="flex justify-between items-center py-3 border-y border-border/50">
-            <span className="text-sm text-muted">Total a pagar:</span>
-            <span className="text-lg font-bold text-foreground">{formatPrice(total)}</span>
+          <div className="py-3 border-y border-border/50 space-y-1.5 text-xs">
+            {descuentoCatalogo > 0 && (
+              <div className="flex justify-between text-success">
+                <span>Rebajas de catálogo</span>
+                <span>- {formatPrice(descuentoCatalogo)}</span>
+              </div>
+            )}
+            {descuentoPromociones > 0 && (
+              <div className="flex justify-between text-success">
+                <span>
+                  Promociones{payload.cuponCodigo ? ` (${payload.cuponCodigo})` : ""}
+                </span>
+                <span>- {formatPrice(descuentoPromociones)}</span>
+              </div>
+            )}
+            {shippingCost > 0 && (
+              <div className="flex justify-between text-muted">
+                <span>Envío</span>
+                <span>
+                  {descuentoEnvio > 0 && netShipping === 0 ? (
+                    <span className="text-success font-medium">Gratis</span>
+                  ) : (
+                    formatPrice(netShipping)
+                  )}
+                </span>
+              </div>
+            )}
+            {shippingCost === 0 && shippingLabel && (
+              <div className="flex justify-between text-muted">
+                <span>Envío</span>
+                <span className="text-success">{shippingLabel}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center pt-2 border-t border-border/40">
+              <span className="text-sm text-muted">Total a pagar:</span>
+              <span className={`text-lg font-bold text-foreground ${pricingLoading ? "opacity-60" : ""}`}>
+                {formatPrice(total)}
+              </span>
+            </div>
           </div>
+
+          {couponWarning && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-[11px] text-amber-900 text-left">
+              <strong>Aviso sobre tu cupón:</strong> {couponWarning}
+            </div>
+          )}
+
           <Button variant="outline" size="sm" onClick={handleDownloadQR} className="w-full">
             Descargar Código QR
           </Button>

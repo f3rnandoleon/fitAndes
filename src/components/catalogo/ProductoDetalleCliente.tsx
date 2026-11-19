@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { FaWhatsapp } from "react-icons/fa";
-import { FiMaximize2, FiX } from "react-icons/fi";
+import { FiMaximize2, FiTag, FiX } from "react-icons/fi";
 import { useReservationCart } from "@/components/providers/ReservationCartProvider";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/format";
@@ -12,24 +12,33 @@ import { getWhatsAppLink } from "@/lib/constants";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor } from "@/lib/product-colors";
 import {
+  catalogVariantHasSale,
   filterCatalogAvailableVariants,
   getCatalogVariantAvailableStock,
+  getCatalogVariantDiscountPercent,
   getCatalogVariantId,
+  getCatalogVariantListPrice,
   getCatalogVariantPrice,
   type CatalogProduct,
   type CatalogVariant,
 } from "@/types/catalogo";
+import {
+  formatPromotionBadgeLabel,
+  formatPromotionConditionsHint,
+  type PublicPromotion,
+} from "@/types/promociones";
 
 interface Props {
   producto: CatalogProduct;
   colores: string[];
   tallas: string[];
+  promociones?: PublicPromotion[];
   colorInicial?: string;
   tallaInicial?: string;
 }
 
 
-export default function ProductoDetalleCliente({ producto, colorInicial, tallaInicial }: Props) {
+export default function ProductoDetalleCliente({ producto, promociones = [], colorInicial, tallaInicial }: Props) {
   const { addItem } = useReservationCart();
   const productoDisponible = filterCatalogAvailableVariants(producto);
   const variantesDisponibles = productoDisponible.variantes;
@@ -86,11 +95,13 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
     varianteSeleccionada?.descripcion?.trim() ??
     producto.variantes.find((variante) => variante.descripcion?.trim())?.descripcion?.trim() ??
     "";
-  const descuento = producto.descuento ?? 0;
   const precioActual = getCatalogVariantPrice(producto, varianteSeleccionada);
+  const precioAnterior = getCatalogVariantListPrice(producto, varianteSeleccionada);
+  const tieneRebaja = catalogVariantHasSale(producto, varianteSeleccionada);
+  const descuento = getCatalogVariantDiscountPercent(producto, varianteSeleccionada);
+  const ahorroBOB = precioAnterior && precioAnterior > precioActual ? Number((precioAnterior - precioActual).toFixed(2)) : 0;
   const tienePrecioDiferenciado =
     Boolean(varianteSeleccionada?.precioVenta && varianteSeleccionada.precioVenta !== producto.precioVenta);
-  const precioAnterior = descuento > 0 ? precioActual / (1 - descuento / 100) : null;
   const imagenPrincipal = imagenesActivas[indiceImagenActual] ?? null;
   const imagenesActivasKey = imagenesActivas.join("|");
   const colorWhatsapp = varianteSeleccionada
@@ -201,6 +212,7 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
       talla: varianteSeleccionada.talla,
       cantidad,
       precio: precioActual,
+      precioLista: precioAnterior,
       stockDisponible: stockActual,
     });
 
@@ -341,17 +353,17 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
           </div>
 
           <div className="mt-6 flex flex-wrap items-end gap-3">
-            <p className="font-serif text-[1.9rem] leading-none sm:text-[2.2rem] text-foreground">
+            <p className={`font-serif text-[1.9rem] leading-none sm:text-[2.2rem] ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
               {formatPrice(precioActual)}
             </p>
             {precioAnterior ? (
-              <p className="pb-1 text-sm line-through text-subtle/60">
-                {formatPrice(precioAnterior)}
+              <p className="pb-1 text-sm line-through text-subtle/75">
+                Antes {formatPrice(precioAnterior)}
               </p>
             ) : null}
             {descuento > 0 ? (
-              <span className="inline-flex rounded-full bg-danger/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-danger">
-                Ahorra {descuento}%
+              <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 border border-danger/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-danger">
+                -{descuento}%{ahorroBOB > 0 ? ` · Ahorras ${formatPrice(ahorroBOB)}` : ""}
               </span>
             ) : null}
             {tienePrecioDiferenciado && varianteSeleccionada?.talla ? (
@@ -360,6 +372,37 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
               </span>
             ) : null}
           </div>
+
+          {promociones.length > 0 && (
+            <div className="mt-4 space-y-2" aria-label="Promociones automáticas vigentes">
+              <div className="flex flex-wrap gap-2">
+                {promociones.map((promo, idx) => (
+                  <span
+                    key={promo._id ?? promo.id ?? `${promo.nombre}-${idx}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald-700/25 bg-emerald-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-900"
+                  >
+                    <FiTag className="h-3 w-3 shrink-0" aria-hidden="true" />
+                    <span>{formatPromotionBadgeLabel(promo)}</span>
+                  </span>
+                ))}
+              </div>
+              <div className="rounded-[var(--radius-md)] border border-emerald-700/15 bg-emerald-50/55 px-3.5 py-2.5 space-y-1.5">
+                {promociones.map((promo, idx) => {
+                  const hint = formatPromotionConditionsHint(promo);
+                  return (
+                    <div key={promo._id ?? promo.id ?? `detail-${idx}`} className="text-xs leading-relaxed text-emerald-950">
+                      <span className="font-semibold">{promo.nombre}</span>
+                      {promo.descripcion ? <span className="text-emerald-900/85"> — {promo.descripcion}</span> : null}
+                      {hint ? <span className="block text-[11px] text-emerald-800/85">{hint}</span> : null}
+                    </div>
+                  );
+                })}
+                <p className="text-[10px] uppercase tracking-[0.14em] text-emerald-800/80 pt-0.5">
+                  Se aplica automáticamente al finalizar tu compra
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Selectores de Talla y Color */}
@@ -766,9 +809,16 @@ export default function ProductoDetalleCliente({ producto, colorInicial, tallaIn
             <p className="text-[10px] uppercase tracking-[0.14em] text-subtle truncate">
               {colorWhatsapp} · Talla {tallaWhatsapp}
             </p>
-            <p className="font-serif text-lg font-semibold text-foreground leading-tight">
-              {formatPrice(precioActual)}
-            </p>
+            <div className="flex items-baseline gap-2">
+              <p className={`font-serif text-lg font-semibold leading-tight ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
+                {formatPrice(precioActual)}
+              </p>
+              {precioAnterior ? (
+                <span className="text-xs line-through text-subtle">
+                  {formatPrice(precioAnterior)}
+                </span>
+              ) : null}
+            </div>
           </div>
           <Button
             type="button"

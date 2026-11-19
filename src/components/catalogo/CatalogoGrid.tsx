@@ -3,18 +3,26 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FiSearch, FiSliders, FiX } from "react-icons/fi";
+import { FiSearch, FiSliders, FiTag, FiX } from "react-icons/fi";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor, sortProductColors } from "@/lib/product-colors";
 import { formatPrice } from "@/lib/format";
 import {
+  catalogProductHasSale,
   catalogVariantIsAvailable,
   getCatalogProductAvailableStock,
+  getCatalogProductDiscountPercent,
+  getCatalogProductListPriceRange,
   getCatalogProductPriceRange,
   type CatalogProduct,
   type CatalogPaginationMeta,
 } from "@/types/catalogo";
+import {
+  formatPromotionBadgeLabel,
+  getPromotionsForProduct,
+  type PublicPromotion,
+} from "@/types/promociones";
 
 type OrdenKey = "fecha" | "ventas" | "descuento" | "precio-desc" | "precio-asc" | "nombre-asc" | "nombre-desc";
 
@@ -54,6 +62,7 @@ function colorStyle(color: string) {
 
 interface CatalogoGridProps {
   productos: CatalogProduct[];
+  promociones?: PublicPromotion[];
   pagination?: CatalogPaginationMeta;
   filtroInicial?: {
     busqueda?: string;
@@ -61,11 +70,12 @@ interface CatalogoGridProps {
     color?: string;
     talla?: string;
     orden?: string;
+    soloOfertas?: boolean;
     page?: number;
   };
 }
 
-export default function CatalogoGrid({ productos, pagination, filtroInicial }: CatalogoGridProps) {
+export default function CatalogoGrid({ productos, promociones = [], pagination, filtroInicial }: CatalogoGridProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -74,6 +84,9 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
   const [colorFiltro, setColorFiltro] = useState(filtroInicial?.color ?? searchParams?.get("color") ?? "");
   const [categoriaFiltro, setCategoriaFiltro] = useState(filtroInicial?.categoria ?? searchParams?.get("categoria") ?? "");
   const [tallaFiltro, setTallaFiltro] = useState(filtroInicial?.talla ?? searchParams?.get("talla") ?? "");
+  const [soloOfertas, setSoloOfertas] = useState<boolean>(
+    filtroInicial?.soloOfertas ?? (searchParams?.get("soloOfertas") === "true" || searchParams?.get("soloOfertas") === "1"),
+  );
   const [orden, setOrden] = useState<OrdenKey>(
     ((filtroInicial?.orden || searchParams?.get("orden")) as OrdenKey) || "fecha",
   );
@@ -92,6 +105,7 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
     const catParam = searchParams?.get("categoria") ?? "";
     const colParam = searchParams?.get("color") ?? "";
     const talParam = searchParams?.get("talla") ?? "";
+    const ofertasParam = searchParams?.get("soloOfertas") === "true" || searchParams?.get("soloOfertas") === "1";
     const ordParam = (searchParams?.get("orden") as OrdenKey) || "fecha";
 
     if (!searchDebounceRef.current) {
@@ -100,6 +114,7 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
     setCategoriaFiltro(catParam);
     setColorFiltro(colParam);
     setTallaFiltro(talParam);
+    setSoloOfertas(ofertasParam);
     setOrden(ordParam);
   }, [searchParams]);
 
@@ -144,6 +159,7 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
       categoria?: string;
       color?: string;
       talla?: string;
+      soloOfertas?: boolean;
       orden?: OrdenKey;
       page?: number;
     }) => {
@@ -151,6 +167,7 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
       const catVal = overrides?.categoria !== undefined ? overrides.categoria : categoriaFiltro;
       const colVal = overrides?.color !== undefined ? overrides.color : colorFiltro;
       const talVal = overrides?.talla !== undefined ? overrides.talla : tallaFiltro;
+      const ofertasVal = overrides?.soloOfertas !== undefined ? overrides.soloOfertas : soloOfertas;
       const ordVal = overrides?.orden !== undefined ? overrides.orden : orden;
       const pageVal = overrides?.page !== undefined ? overrides.page : pagination?.page ?? 1;
 
@@ -159,12 +176,13 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
       if (catVal && catVal !== "todas") params.set("categoria", catVal);
       if (colVal) params.set("color", colVal);
       if (talVal) params.set("talla", talVal);
+      if (ofertasVal) params.set("soloOfertas", "true");
       if (ordVal && ordVal !== "fecha") params.set("orden", ordVal);
       if (pageVal > 1) params.set("page", String(pageVal));
       const qs = params.toString();
       return qs ? `/catalogo?${qs}` : "/catalogo";
     },
-    [busqueda, categoriaFiltro, colorFiltro, tallaFiltro, orden, pagination?.page],
+    [busqueda, categoriaFiltro, colorFiltro, tallaFiltro, soloOfertas, orden, pagination?.page],
   );
 
   function syncUrl(overrides: Parameters<typeof buildUrl>[0]) {
@@ -201,6 +219,11 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
     syncUrl({ talla: resolved, page: 1 });
   }
 
+  function handleSoloOfertasChange(nextValue: boolean) {
+    setSoloOfertas(nextValue);
+    syncUrl({ soloOfertas: nextValue, page: 1 });
+  }
+
   function handleOrdenChange(nextOrden: OrdenKey) {
     setOrden(nextOrden);
     const targetUrl = buildUrl({ orden: nextOrden, page: pagination?.page ?? 1 });
@@ -213,7 +236,8 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
     setColorFiltro("");
     setTallaFiltro("");
     setCategoriaFiltro("");
-    syncUrl({ q: "", color: "", talla: "", categoria: "", page: 1 });
+    setSoloOfertas(false);
+    syncUrl({ q: "", color: "", talla: "", categoria: "", soloOfertas: false, page: 1 });
   }
 
   const termino = busqueda.trim().toLowerCase();
@@ -231,8 +255,9 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
       categoriaFiltro === "todas" ||
       producto.categoria?.toLowerCase() === categoriaFiltro.toLowerCase();
     const coincideTalla = !tallaFiltro || variantesDisponibles.some((variante) => variante.talla === tallaFiltro);
+    const coincideOferta = !soloOfertas || catalogProductHasSale(producto);
 
-    return coincideBusqueda && coincideColor && coincideCategoria && coincideTalla;
+    return coincideBusqueda && coincideColor && coincideCategoria && coincideTalla && coincideOferta;
   });
 
   const productosVisibles = [...filtrados].sort((a, b) => {
@@ -240,7 +265,7 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
       case "ventas":
         return (b.totalVendidos ?? 0) - (a.totalVendidos ?? 0);
       case "descuento":
-        return (b.descuento ?? 0) - (a.descuento ?? 0);
+        return getCatalogProductDiscountPercent(b) - getCatalogProductDiscountPercent(a);
       case "precio-desc": {
         const pA = getCatalogProductPriceRange(a).max;
         const pB = getCatalogProductPriceRange(b).max;
@@ -267,10 +292,39 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
     colorFiltro,
     tallaFiltro,
     categoriaFiltro && categoriaFiltro !== "todas" ? categoriaFiltro : "",
+    soloOfertas ? "ofertas" : "",
   ].filter(Boolean).length;
 
   const filterFormContent = (
     <div className="space-y-6">
+      <div>
+        <p className="block text-[10px] uppercase mb-3 tracking-[0.18em] text-subtle">
+          Ofertas y rebajas
+        </p>
+        <button
+          type="button"
+          onClick={() => handleSoloOfertasChange(!soloOfertas)}
+          aria-pressed={soloOfertas}
+          className={`flex w-full items-center justify-between rounded-[var(--radius-md)] border px-4 py-3 text-left transition-all cursor-pointer ${
+            soloOfertas
+              ? "border-danger bg-danger/10 text-danger font-medium"
+              : "border-border bg-background text-foreground hover:border-foreground/50"
+          }`}
+        >
+          <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.12em]">
+            <FiTag className="h-3.5 w-3.5" aria-hidden="true" />
+            Solo ofertas
+          </span>
+          <span
+            className={`inline-flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${
+              soloOfertas ? "bg-danger justify-end" : "bg-border justify-start"
+            }`}
+          >
+            <span className="h-4 w-4 rounded-full bg-white shadow-2xs" />
+          </span>
+        </button>
+      </div>
+
       <div>
         <label htmlFor="catalog-search" className="block text-[10px] uppercase mb-3 tracking-[0.18em] text-subtle">
           Buscar en catálogo
@@ -391,39 +445,50 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
 
   return (
     <div className="flex flex-col gap-6 lg:gap-8">
-      {/* Pestañas de categorías */}
-      {categorias.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar" role="tablist" aria-label="Categorías de prendas">
-          <button
-            type="button"
-            onClick={() => handleCategoriaChange("")}
-            className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm cursor-pointer ${!categoriaFiltro || categoriaFiltro === "todas"
-              ? "bg-foreground text-background border-foreground font-semibold"
-              : "bg-white text-muted border-border hover:bg-surface"
-              }`}
-            aria-pressed={!categoriaFiltro || categoriaFiltro === "todas"}
-          >
-            Todas las prendas
-          </button>
-          {categorias.map((categoria) => {
-            const activa = categoriaFiltro.toLowerCase() === categoria.toLowerCase();
-            return (
-              <button
-                key={categoria}
-                type="button"
-                onClick={() => handleCategoriaChange(categoria)}
-                className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm cursor-pointer ${activa
-                  ? "bg-foreground text-background border-foreground font-semibold"
-                  : "bg-white text-muted border-border hover:bg-surface"
-                  }`}
-                aria-pressed={activa}
-              >
-                {categoria}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Pestañas de categorías + acceso rápido Solo Ofertas */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar" role="tablist" aria-label="Categorías de prendas">
+        <button
+          type="button"
+          onClick={() => handleCategoriaChange("")}
+          className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm cursor-pointer ${!categoriaFiltro || categoriaFiltro === "todas"
+            ? "bg-foreground text-background border-foreground font-semibold"
+            : "bg-white text-muted border-border hover:bg-surface"
+            }`}
+          aria-pressed={!categoriaFiltro || categoriaFiltro === "todas"}
+        >
+          Todas las prendas
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSoloOfertasChange(!soloOfertas)}
+          className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm cursor-pointer ${
+            soloOfertas
+              ? "bg-danger text-white border-danger font-semibold"
+              : "bg-white text-danger border-danger/35 hover:bg-danger/5"
+          }`}
+          aria-pressed={soloOfertas}
+        >
+          <FiTag className="h-3 w-3" aria-hidden="true" />
+          Solo ofertas
+        </button>
+        {categorias.map((categoria) => {
+          const activa = categoriaFiltro.toLowerCase() === categoria.toLowerCase();
+          return (
+            <button
+              key={categoria}
+              type="button"
+              onClick={() => handleCategoriaChange(categoria)}
+              className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm cursor-pointer ${activa
+                ? "bg-foreground text-background border-foreground font-semibold"
+                : "bg-white text-muted border-border hover:bg-surface"
+                }`}
+              aria-pressed={activa}
+            >
+              {categoria}
+            </button>
+          );
+        })}
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
         {/* Sidebar Desktop */}
@@ -501,6 +566,12 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
           {/* Chips de filtros activos removibles */}
           {filtrosActivos > 0 && (
             <div className="mb-6 flex flex-wrap items-center gap-2">
+              {soloOfertas && (
+                <FilterChip
+                  label="Solo ofertas"
+                  onRemove={() => handleSoloOfertasChange(false)}
+                />
+              )}
               {termino && (
                 <FilterChip
                   label={`Búsqueda: "${busqueda.trim()}"`}
@@ -563,7 +634,13 @@ export default function CatalogoGrid({ productos, pagination, filtroInicial }: C
           ) : (
             <div className={`grid grid-cols-2 gap-4 sm:gap-6 xl:grid-cols-3 transition-opacity ${isPending ? "opacity-60" : "opacity-100"}`}>
               {productosVisibles.map((producto) => (
-                <ProductoCard key={producto._id} producto={producto} colorFiltro={colorFiltro} tallaFiltro={tallaFiltro} />
+                <ProductoCard
+                  key={producto._id}
+                  producto={producto}
+                  promociones={getPromotionsForProduct(promociones, producto)}
+                  colorFiltro={colorFiltro}
+                  tallaFiltro={tallaFiltro}
+                />
               ))}
             </div>
           )}
@@ -684,7 +761,17 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
   );
 }
 
-function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: CatalogProduct; colorFiltro?: string; tallaFiltro?: string }) {
+function ProductoCard({
+  producto,
+  promociones = [],
+  colorFiltro,
+  tallaFiltro,
+}: {
+  producto: CatalogProduct;
+  promociones?: PublicPromotion[];
+  colorFiltro?: string;
+  tallaFiltro?: string;
+}) {
   const variantesDisponibles = variantesConStock(producto);
 
   let imagenes = imagenesDeProducto(producto);
@@ -707,29 +794,43 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
   const href = `/catalogo/${producto._id}${queryString}`;
 
   const nuevo = esNuevo(producto.createdAt);
-  const descuento = producto.descuento ?? 0;
+  const descuento = getCatalogProductDiscountPercent(producto);
+  const tieneRebaja = catalogProductHasSale(producto);
   const stock = totalStock(producto);
   const colores = sortProductColors(Array.from(new Set(variantesDisponibles.map((variante) => variante.color))));
   const tallas = Array.from(new Set(variantesDisponibles.map((variante) => variante.talla))).sort((a, b) =>
     a.localeCompare(b, "es", { numeric: true, sensitivity: "base" }),
   );
   const priceRange = getCatalogProductPriceRange(producto);
-  const originalMin = descuento > 0 ? priceRange.min / (1 - descuento / 100) : null;
+  const listPriceRange = tieneRebaja ? getCatalogProductListPriceRange(producto) : null;
+  const promoBadges = promociones.slice(0, 2);
 
   return (
     <Link href={href} className="group block">
       <article className="h-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-white transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] hover:shadow-[0_18px_40px_rgba(17,17,17,0.06)]">
         <div className="relative aspect-[3/4] overflow-hidden bg-surface-soft">
-          {descuento > 0 && (
-            <span className="absolute left-3 top-3 z-10 rounded-full bg-danger px-3 py-1 text-[10px] uppercase text-white tracking-[0.12em]">
-              -{descuento}%
-            </span>
-          )}
-          {descuento === 0 && nuevo && (
-            <span className="absolute left-3 top-3 z-10 rounded-full bg-accent px-3 py-1 text-[10px] uppercase text-white tracking-[0.12em]">
-              Nuevo
-            </span>
-          )}
+          <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-1.5 max-w-[calc(100%-1.5rem)]">
+            {descuento > 0 && (
+              <span className="rounded-full bg-danger px-3 py-1 text-[10px] font-semibold uppercase text-white tracking-[0.12em] shadow-xs">
+                -{descuento}%
+              </span>
+            )}
+            {descuento === 0 && nuevo && (
+              <span className="rounded-full bg-accent px-3 py-1 text-[10px] uppercase text-white tracking-[0.12em] shadow-xs">
+                Nuevo
+              </span>
+            )}
+            {promoBadges.map((promo, idx) => (
+              <span
+                key={promo._id ?? promo.id ?? `${promo.nombre}-${idx}`}
+                title={promo.descripcion || promo.nombre}
+                className="inline-flex items-center gap-1 rounded-full border border-emerald-700/20 bg-emerald-950/88 backdrop-blur-xs px-2.5 py-1 text-[9px] sm:text-[10px] font-semibold uppercase text-emerald-50 tracking-[0.1em] shadow-xs truncate max-w-full"
+              >
+                <FiTag className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
+                <span className="truncate">{formatPromotionBadgeLabel(promo)}</span>
+              </span>
+            ))}
+          </div>
 
           {imagenes.length > 0 ? (
             <CarruselImagenes
@@ -767,14 +868,16 @@ function ProductoCard({ producto, colorFiltro, tallaFiltro }: { producto: Catalo
             {producto.modelo}
           </h3>
           <div className="mt-3 flex flex-wrap items-baseline gap-2">
-            <p className="text-lg font-semibold sm:text-xl text-foreground font-serif">
+            <p className={`text-lg font-semibold sm:text-xl font-serif ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
               {priceRange.hasRange
                 ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
                 : formatPrice(priceRange.min)}
             </p>
-            {originalMin && !priceRange.hasRange && (
+            {listPriceRange && (
               <span className="text-xs line-through text-subtle">
-                {formatPrice(originalMin)}
+                {listPriceRange.hasRange
+                  ? `${formatPrice(listPriceRange.min)} - ${formatPrice(listPriceRange.max)}`
+                  : formatPrice(listPriceRange.min)}
               </span>
             )}
           </div>

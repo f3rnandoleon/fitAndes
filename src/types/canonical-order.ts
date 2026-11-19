@@ -33,6 +33,7 @@ export interface CanonicalCheckoutPayload {
   metodoPago: PaymentMethod;
   entrega: CanonicalDelivery;
   notas?: string;
+  cuponCodigo?: string;
   esInvitado?: boolean;
   clienteInvitado?: {
     nombreCompleto: string;
@@ -43,6 +44,7 @@ export interface CanonicalCheckoutPayload {
   items?: Array<{
     productoId: string;
     variantId?: string;
+    varianteId?: string;
     color: string;
     talla: string;
     cantidad: number;

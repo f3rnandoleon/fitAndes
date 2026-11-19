@@ -6,11 +6,17 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
 import { formatPrice } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants";
+import { getPublicPromotions } from "@/lib/promociones-server";
 import {
+  catalogProductHasSale,
   filterCatalogAvailableVariants,
+  getCatalogProductDiscountPercent,
+  getCatalogProductListPriceRange,
+  getCatalogProductPriceRange,
   unwrapCatalogProducts,
   type CatalogProduct,
 } from "@/types/catalogo";
+import { formatPromotionBadgeLabel, getPromotionsForProduct } from "@/types/promociones";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -114,8 +120,12 @@ export default async function ProductoDetallePage({
   const tallas = Array.from(new Set(producto.variantes.map((v) => v.talla))) as string[];
   const fotos = imagenesDeProducto(producto);
 
-  // Obtener productos relacionados
-  const relacionados = await getProductosRelacionados(producto._id, producto.categoria);
+  // Obtener productos relacionados y promociones automáticas vigentes en paralelo
+  const [relacionados, promociones] = await Promise.all([
+    getProductosRelacionados(producto._id, producto.categoria),
+    getPublicPromotions(),
+  ]);
+  const promocionesProducto = getPromotionsForProduct(promociones, producto);
 
   // Datos estructurados JSON-LD para motores de búsqueda
   const jsonLd = {
@@ -157,6 +167,7 @@ export default async function ProductoDetallePage({
           producto={producto}
           colores={colores}
           tallas={tallas}
+          promociones={promocionesProducto}
           colorInicial={typeof color === "string" ? color : undefined}
           tallaInicial={typeof talla === "string" ? talla : undefined}
         />
@@ -184,10 +195,33 @@ export default async function ProductoDetallePage({
             <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
               {relacionados.map((item) => {
                 const itemFotos = imagenesDeProducto(item);
+                const itemDescuento = getCatalogProductDiscountPercent(item);
+                const itemTieneRebaja = catalogProductHasSale(item);
+                const itemPriceRange = getCatalogProductPriceRange(item);
+                const itemListRange = itemTieneRebaja ? getCatalogProductListPriceRange(item) : null;
+                const itemPromos = getPromotionsForProduct(promociones, item).slice(0, 1);
+
                 return (
                   <Link key={item._id} href={`/catalogo/${item._id}`} className="group block">
                     <article className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-white transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] hover:shadow-[0_14px_30px_rgba(0,0,0,0.06)]">
                       <div className="relative aspect-[3/4] overflow-hidden bg-background">
+                        {(itemDescuento > 0 || itemPromos.length > 0) && (
+                          <div className="absolute left-2.5 top-2.5 z-10 flex flex-col items-start gap-1 max-w-[calc(100%-1.25rem)]">
+                            {itemDescuento > 0 && (
+                              <span className="rounded-full bg-danger px-2.5 py-0.5 text-[10px] font-semibold uppercase text-white tracking-[0.1em]">
+                                -{itemDescuento}%
+                              </span>
+                            )}
+                            {itemPromos.map((promo, idx) => (
+                              <span
+                                key={promo._id ?? promo.id ?? idx}
+                                className="rounded-full bg-emerald-950/88 px-2.5 py-0.5 text-[9px] font-semibold uppercase text-emerald-50 tracking-[0.08em] truncate max-w-full"
+                              >
+                                {formatPromotionBadgeLabel(promo)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         {itemFotos.length > 0 ? (
                           <Image
                             src={itemFotos[0]}
@@ -209,9 +243,18 @@ export default async function ProductoDetallePage({
                         <h3 className="mt-1 text-sm font-medium text-foreground truncate">
                           {item.modelo}
                         </h3>
-                        <p className="mt-2 text-base font-serif font-semibold text-foreground">
-                          {formatPrice(item.precioVenta)}
-                        </p>
+                        <div className="mt-2 flex flex-wrap items-baseline gap-1.5">
+                          <p className={`text-base font-serif font-semibold ${itemTieneRebaja ? "text-danger" : "text-foreground"}`}>
+                            {itemPriceRange.hasRange
+                              ? `${formatPrice(itemPriceRange.min)} - ${formatPrice(itemPriceRange.max)}`
+                              : formatPrice(itemPriceRange.min)}
+                          </p>
+                          {itemListRange && (
+                            <span className="text-xs line-through text-subtle">
+                              {formatPrice(itemListRange.min)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </article>
                   </Link>

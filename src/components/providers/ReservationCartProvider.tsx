@@ -16,6 +16,7 @@ export interface ReservationItem {
   talla: string;
   cantidad: number;
   precio: number;
+  precioLista?: number | null;
   stockDisponible: number;
 }
 
@@ -23,6 +24,8 @@ interface ReservationCartContextValue {
   items: ReservationItem[];
   totalItems: number;
   totalAmount: number;
+  cuponCodigo: string | null;
+  setCuponCodigo: (codigo: string | null) => void;
   addItem: (item: ReservationItem) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, cantidad: number) => void;
@@ -30,6 +33,7 @@ interface ReservationCartContextValue {
 }
 
 const STORAGE_KEY = "fitandes-reservas";
+const COUPON_STORAGE_KEY = "fitandes-cupon";
 
 const ReservationCartContext = createContext<ReservationCartContextValue | null>(null);
 
@@ -42,6 +46,7 @@ function mergeItem(items: ReservationItem[], item: ReservationItem): Reservation
       ? {
           ...current,
           precio: item.precio,
+          precioLista: item.precioLista ?? current.precioLista ?? null,
           stockDisponible: item.stockDisponible,
           cartItemId: item.cartItemId || current.cartItemId,
           cantidad: Math.min(current.cantidad + item.cantidad, item.stockDisponible),
@@ -53,6 +58,7 @@ function mergeItem(items: ReservationItem[], item: ReservationItem): Reservation
 export function ReservationCartProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const [items, setItems] = useState<ReservationItem[]>([]);
+  const [cuponCodigo, setCuponCodigoState] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const isAuthenticated = status === "authenticated" && session?.user?.role === "CLIENTE";
   const syncedRef = useRef(false);
@@ -61,13 +67,15 @@ export function ReservationCartProvider({ children }: { children: React.ReactNod
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        setLoaded(true);
-        return;
+      if (raw) {
+        const parsed = JSON.parse(raw) as ReservationItem[];
+        setItems(Array.isArray(parsed) ? parsed : []);
       }
 
-      const parsed = JSON.parse(raw) as ReservationItem[];
-      setItems(Array.isArray(parsed) ? parsed : []);
+      const rawCoupon = window.localStorage.getItem(COUPON_STORAGE_KEY);
+      if (rawCoupon && rawCoupon.trim()) {
+        setCuponCodigoState(rawCoupon.trim().toUpperCase());
+      }
     } catch {
       setItems([]);
     } finally {
@@ -81,6 +89,15 @@ export function ReservationCartProvider({ children }: { children: React.ReactNod
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items, loaded]);
 
+  useEffect(() => {
+    if (!loaded) return;
+    if (cuponCodigo && cuponCodigo.trim()) {
+      window.localStorage.setItem(COUPON_STORAGE_KEY, cuponCodigo.trim().toUpperCase());
+    } else {
+      window.localStorage.removeItem(COUPON_STORAGE_KEY);
+    }
+  }, [cuponCodigo, loaded]);
+
   // 3. Sincronización bidireccional con backend al iniciar sesión
   useEffect(() => {
     if (!loaded || !isAuthenticated || syncedRef.current) return;
@@ -93,6 +110,10 @@ export function ReservationCartProvider({ children }: { children: React.ReactNod
 
         const serverCart = await res.json();
         const serverItems = Array.isArray(serverCart?.items) ? (serverCart.items as ReservationItem[]) : [];
+
+        if (typeof serverCart?.cuponCodigo === "string" && serverCart.cuponCodigo.trim()) {
+          setCuponCodigoState(serverCart.cuponCodigo.trim().toUpperCase());
+        }
 
         // Fusión inteligente: Si hay ítems locales que no están en el servidor, agregarlos
         const localItems = [...items];
@@ -119,10 +140,17 @@ export function ReservationCartProvider({ children }: { children: React.ReactNod
     void syncWithServer();
   }, [loaded, isAuthenticated, items]);
 
+  const setCuponCodigo = (codigo: string | null) => {
+    const normalized = codigo && codigo.trim() ? codigo.trim().toUpperCase() : null;
+    setCuponCodigoState(normalized);
+  };
+
   const value: ReservationCartContextValue = {
     items,
     totalItems: items.reduce((sum, item) => sum + item.cantidad, 0),
     totalAmount: items.reduce((sum, item) => sum + item.cantidad * item.precio, 0),
+    cuponCodigo,
+    setCuponCodigo,
     addItem: (item) => {
       setItems((current) => mergeItem(current, item));
 
@@ -171,6 +199,7 @@ export function ReservationCartProvider({ children }: { children: React.ReactNod
     },
     clearCart: () => {
       setItems([]);
+      setCuponCodigoState(null);
       if (isAuthenticated) {
         void fetch("/api/cart", { method: "DELETE" });
       }

@@ -16,6 +16,7 @@ export const checkoutItemSchema = z.object({
   talla: z.string().trim().min(1),
   cantidad: z.number().int().min(1).max(1000),
   precio: z.number().nonnegative(),
+  precioLista: z.number().nonnegative().nullable().optional(),
   stockDisponible: z.number().int().min(0),
 });
 
@@ -46,6 +47,7 @@ export const checkoutPayloadSchema = z.object({
   paymentMethod: paymentMethodEnum,
   delivery: checkoutDeliverySchema,
   notes: z.string().trim().max(300, "Las observaciones no pueden superar los 300 caracteres.").optional(),
+  cuponCodigo: z.string().trim().max(64).nullable().optional(),
   esInvitado: z.boolean().optional(),
   clienteInvitado: clienteInvitadoSchema.optional(),
 });

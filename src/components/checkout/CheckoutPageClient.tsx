@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { DEFAULT_NATIONAL_SHIPPING_FEE } from "@/lib/constants";
 import { sanitizeCallbackUrl } from "@/lib/text";
+import { getCouponErrorMessage, type PricingSummary } from "@/types/promociones";
 
 function buildDefaultAddress(context: CheckoutCustomerContext | null) {
   if (!context?.defaultAddress) return "";
@@ -47,7 +48,7 @@ function persistPaymentReference(orderId: string | null | undefined, paymentId: 
 export default function CheckoutPageClient() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { items, totalAmount, totalItems, updateQuantity, removeItem, clearCart } = useReservationCart();
+  const { items, totalAmount, totalItems, cuponCodigo, setCuponCodigo, updateQuantity, removeItem, clearCart } = useReservationCart();
 
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("WHATSAPP");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("EFECTIVO");
@@ -83,6 +84,13 @@ export default function CheckoutPageClient() {
   const [systemWarning, setSystemWarning] = useState<string | null>(null);
   const [isSystemReadOnly, setIsSystemReadOnly] = useState<boolean>(false);
 
+  // Estado de promociones automáticas y cupón (evaluados en servidor)
+  const [pricingSummary, setPricingSummary] = useState<PricingSummary | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(false);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+
   const authenticated = status === "authenticated" && session?.user?.role === "CLIENTE";
   const pickupPointOptions = deliveryConfig.pickupPoints;
   const shippingDepartments = getShippingDepartments(deliveryConfig);
@@ -98,6 +106,177 @@ export default function CheckoutPageClient() {
       : deliveryMethod === "SHIPPING_NATIONAL"
       ? `Bs ${nationalFlatFee}.00`
       : "Por coordinar";
+
+  const evaluationItemsKey = items
+    .map((item) => `${item.productoId ?? ""}:${item.variantId ?? ""}:${item.color}:${item.talla}:${item.cantidad}`)
+    .join("|");
+  const guestPhoneNormalized = guestPhone.replace(/\D/g, "").trim();
+
+  // Evaluación en vivo de rebajas de catálogo, promociones automáticas y cupón contra el servidor central
+  useEffect(() => {
+    if (items.length === 0) {
+      setPricingSummary(null);
+      return;
+    }
+
+    const validItems = items
+      .filter((item) => Boolean(item.productoId))
+      .map((item) => ({
+        productoId: item.productoId,
+        varianteId: item.variantId ?? undefined,
+        color: item.color,
+        talla: item.talla,
+        cantidad: item.cantidad,
+      }));
+
+    if (validItems.length === 0) {
+      setPricingSummary(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      setPricingLoading(true);
+      void fetch("/api/promociones/evaluar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          items: validItems,
+          cuponCodigo: cuponCodigo || undefined,
+          costoEnvio: shippingCost,
+          telefonoInvitado: !authenticated && guestPhoneNormalized.length >= 7 ? guestPhoneNormalized : undefined,
+        }),
+      })
+        .then(async (res) => {
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data?.ok || !data.resumenPrecios) return;
+          const summary = data.resumenPrecios as PricingSummary;
+          setPricingSummary(summary);
+
+          if (cuponCodigo && summary.cuponValido === false) {
+            setCouponError(getCouponErrorMessage(summary.cuponErrorCodigo, summary.cuponErrorMensaje));
+            setCouponSuccess(null);
+            setCuponCodigo(null);
+          }
+        })
+        .catch(() => {
+          // Si falla la evaluación en vivo, mantenemos el subtotal base sin bloquear la UI
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) {
+            setPricingLoading(false);
+          }
+        });
+    }, 250);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [evaluationItemsKey, cuponCodigo, shippingCost, authenticated, guestPhoneNormalized]);
+
+  async function handleApplyCoupon(rawCode: string) {
+    const code = rawCode.trim().toUpperCase();
+    if (!code) return;
+
+    setCouponLoading(true);
+    setCouponError(null);
+    setCouponSuccess(null);
+
+    try {
+      // 1. Si el cliente está autenticado, persistimos el cupón en su carrito del servidor (Sección 12.4)
+      if (authenticated) {
+        const cartRes = await fetch("/api/cart/cupon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo: code }),
+        });
+        const cartData = await cartRes.json().catch(() => null);
+
+        if (cartRes.ok && cartData?.ok) {
+          const appliedCode = typeof cartData.cuponCodigo === "string" ? cartData.cuponCodigo : code;
+          setCuponCodigo(appliedCode);
+          if (cartData.resumenPrecios) {
+            setPricingSummary(cartData.resumenPrecios as PricingSummary);
+          }
+          setCouponSuccess(cartData.message || "Cupón aplicado correctamente.");
+          return;
+        }
+
+        // Si el backend rechazó el cupón por reglas de negocio (no por carrito vacío/404), mostramos el error exacto
+        if (cartRes.status !== 404 && cartRes.status < 500 && cartData?.cuponErrorCodigo) {
+          setCouponError(getCouponErrorMessage(cartData.cuponErrorCodigo, cartData.message));
+          return;
+        }
+      }
+
+      // 2. Evaluación directa (invitados o fallback si el carrito remoto aún no se sincronizó)
+      const validItems = items
+        .filter((item) => Boolean(item.productoId))
+        .map((item) => ({
+          productoId: item.productoId,
+          varianteId: item.variantId ?? undefined,
+          color: item.color,
+          talla: item.talla,
+          cantidad: item.cantidad,
+        }));
+
+      const evalRes = await fetch("/api/promociones/evaluar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: validItems,
+          cuponCodigo: code,
+          costoEnvio: shippingCost,
+          telefonoInvitado: !authenticated && guestPhoneNormalized.length >= 7 ? guestPhoneNormalized : undefined,
+        }),
+      });
+      const evalData = await evalRes.json().catch(() => null);
+
+      if (!evalRes.ok || !evalData?.ok || !evalData.resumenPrecios) {
+        setCouponError(getCouponErrorMessage(evalData?.cuponErrorCodigo, evalData?.message));
+        return;
+      }
+
+      const summary = evalData.resumenPrecios as PricingSummary;
+      setPricingSummary(summary);
+
+      if (summary.cuponValido === false) {
+        setCouponError(getCouponErrorMessage(summary.cuponErrorCodigo, summary.cuponErrorMensaje));
+        return;
+      }
+
+      setCuponCodigo(code);
+      setCouponSuccess("Cupón aplicado correctamente.");
+    } catch {
+      setCouponError("No pude validar el cupón en este momento. Intenta nuevamente.");
+    } finally {
+      setCouponLoading(false);
+    }
+  }
+
+  async function handleRemoveCoupon() {
+    setCouponLoading(true);
+    setCouponError(null);
+    setCouponSuccess(null);
+
+    try {
+      setCuponCodigo(null);
+      if (authenticated) {
+        const res = await fetch("/api/cart/cupon", { method: "DELETE" });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.resumenPrecios) {
+          setPricingSummary(data.resumenPrecios as PricingSummary);
+        }
+      }
+    } catch {
+      // El efecto en vivo recalculará automáticamente sin cupón
+    } finally {
+      setCouponLoading(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -383,6 +562,7 @@ export default function CheckoutPageClient() {
         senderPhone: senderPhone.trim() || activeCustomerPhone,
       },
       notes: notes.trim(),
+      ...(cuponCodigo ? { cuponCodigo } : {}),
       esInvitado: !authenticated,
       clienteInvitado: !authenticated
         ? {
@@ -397,6 +577,14 @@ export default function CheckoutPageClient() {
     if (paymentMethod === "QR") {
       try {
         window.localStorage.setItem("fitandes-pending-checkout", JSON.stringify(checkoutPayload));
+        window.localStorage.setItem(
+          "fitandes-pending-checkout-preview",
+          JSON.stringify({
+            shippingCost,
+            shippingLabel,
+            pricingSummary,
+          }),
+        );
         router.push("/pagar/confirmar");
         return;
       } catch {
@@ -628,6 +816,7 @@ export default function CheckoutPageClient() {
               </h2>
               <CheckoutCartSummary
                 items={items}
+                evaluatedItems={pricingSummary?.items}
                 updateQuantity={updateQuantity}
                 removeItem={removeItem}
               />
@@ -732,6 +921,14 @@ export default function CheckoutPageClient() {
               totalItems={totalItems}
               shippingCost={shippingCost}
               shippingLabel={shippingLabel}
+              pricingSummary={pricingSummary}
+              pricingLoading={pricingLoading}
+              appliedCoupon={cuponCodigo}
+              couponLoading={couponLoading}
+              couponError={couponError}
+              couponSuccess={couponSuccess}
+              onApplyCoupon={handleApplyCoupon}
+              onRemoveCoupon={handleRemoveCoupon}
               loading={loading}
               disabled={isSystemReadOnly}
               error={error}

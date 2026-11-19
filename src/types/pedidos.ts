@@ -63,8 +63,21 @@ export interface PedidoDelivery {
 export interface PedidoTotales {
   subtotal?: number | null;
   descuento?: number | null;
+  descuentoCatalogo?: number | null;
+  descuentoPromociones?: number | null;
+  descuentoEnvio?: number | null;
   impuesto?: number | null;
   total?: number | null;
+}
+
+export interface PedidoPromocionAplicada {
+  promocionId?: string | null;
+  nombre?: string | null;
+  tipo?: string | null;
+  codigo?: string | null;
+  cuponCodigo?: string | null;
+  descuento?: number | null;
+  montoDescuento?: number | null;
 }
 
 export interface PedidoEntregaTracking {
@@ -105,6 +118,11 @@ export interface Pedido {
   total?: number | null;
   subtotal?: number | null;
   descuento?: number | null;
+  descuentoCatalogo?: number | null;
+  descuentoPromociones?: number | null;
+  descuentoEnvio?: number | null;
+  cuponCodigo?: string | null;
+  promocionesAplicadas?: PedidoPromocionAplicada[] | null;
   metodoPago?: string | null;
   items?: PedidoItem[];
   entrega?: PedidoDelivery | null;

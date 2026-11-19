@@ -76,11 +76,12 @@ export async function syncRemoteCart(
 
     const payload = JSON.stringify({
       productoId: item.productoId,
+      varianteId: item.variantId ?? undefined,
       variantId: item.variantId ?? undefined,
       color: item.color,
+      colorSecundario: item.colorSecundario ?? undefined,
       talla: item.talla,
       cantidad: item.cantidad,
-      precio: item.precio,
     });
 
     const addResult = await fetchCentralApiWithFallback([

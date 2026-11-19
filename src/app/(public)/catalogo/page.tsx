@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import CatalogoGrid from "@/components/catalogo/CatalogoGrid";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { getPublicPromotions } from "@/lib/promociones-server";
 import {
   catalogVariantIsAvailable,
   unwrapCatalogProducts,
@@ -22,6 +23,7 @@ interface PageProps {
     color?: string;
     talla?: string;
     orden?: string;
+    soloOfertas?: string;
     page?: string;
   }>;
 }
@@ -33,6 +35,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
   const colorParam = resolvedParams.color || "";
   const tallaParam = resolvedParams.talla || "";
   const ordenParam = resolvedParams.orden || "";
+  const soloOfertasParam = resolvedParams.soloOfertas === "true" || resolvedParams.soloOfertas === "1";
   const pageParam = Math.max(1, parseInt(resolvedParams.page || "1", 10) || 1);
   const limitParam = 24;
 
@@ -42,30 +45,30 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
   const productosConStock = (items: CatalogProduct[]) =>
     items.filter((producto) => producto.variantes.some(catalogVariantIsAvailable));
 
-  try {
-    const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://control-ventas-azure.vercel.app/api";
-    const url = new URL(`${rawApiUrl}/productos/publicos`);
-    if (queryTerm) url.searchParams.set("q", queryTerm);
-    if (categoriaParam && categoriaParam !== "todas") url.searchParams.set("categoria", categoriaParam);
-    if (colorParam) url.searchParams.set("color", colorParam);
-    if (tallaParam) url.searchParams.set("talla", tallaParam);
-    url.searchParams.set("soloDisponible", "true");
-    url.searchParams.set("page", String(pageParam));
-    url.searchParams.set("limit", String(limitParam));
+  const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://control-ventas-azure.vercel.app/api";
+  const url = new URL(`${rawApiUrl}/productos/publicos`);
+  if (queryTerm) url.searchParams.set("q", queryTerm);
+  if (categoriaParam && categoriaParam !== "todas") url.searchParams.set("categoria", categoriaParam);
+  if (colorParam) url.searchParams.set("color", colorParam);
+  if (tallaParam) url.searchParams.set("talla", tallaParam);
+  if (soloOfertasParam) url.searchParams.set("soloOfertas", "true");
+  url.searchParams.set("soloDisponible", "true");
+  url.searchParams.set("page", String(pageParam));
+  url.searchParams.set("limit", String(limitParam));
 
-    const res = await fetch(url.toString(), {
+  const [catalogResult, promociones] = await Promise.all([
+    fetch(url.toString(), {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(10000),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      productos = productosConStock(unwrapCatalogProducts(data));
-      pagination = unwrapCatalogPagination(data);
-    } else {
-      productos = [];
-    }
-  } catch {
-    productos = [];
+    })
+      .then(async (res) => (res.ok ? res.json() : null))
+      .catch(() => null),
+    getPublicPromotions(),
+  ]);
+
+  if (catalogResult) {
+    productos = productosConStock(unwrapCatalogProducts(catalogResult));
+    pagination = unwrapCatalogPagination(catalogResult);
   }
 
   return (
@@ -79,7 +82,13 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
                   { label: "Catálogo", href: "/catalogo" },
                   { label: categoriaParam },
                 ]
-              : [{ label: "Inicio", href: "/" }, { label: "Catálogo" }]
+              : soloOfertasParam
+                ? [
+                    { label: "Inicio", href: "/" },
+                    { label: "Catálogo", href: "/catalogo" },
+                    { label: "Ofertas" },
+                  ]
+                : [{ label: "Inicio", href: "/" }, { label: "Catálogo" }]
           }
           className="mb-6 sm:mb-8"
         />
@@ -87,6 +96,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
         <Suspense fallback={<CatalogoSkeleton />}>
           <CatalogoGrid
             productos={productos}
+            promociones={promociones}
             pagination={pagination}
             filtroInicial={{
               busqueda: queryTerm,
@@ -94,6 +104,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
               color: colorParam,
               talla: tallaParam,
               orden: ordenParam,
+              soloOfertas: soloOfertasParam,
               page: pageParam,
             }}
           />

@@ -7,7 +7,10 @@ import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
 import { DEFAULT_NATIONAL_SHIPPING_FEE, SEASONAL_THEME_ENABLED } from "@/lib/constants";
 import { formatPrice } from "@/lib/format";
 import {
+  catalogProductHasSale,
   getCatalogProductAvailableStock,
+  getCatalogProductDiscountPercent,
+  getCatalogProductListPriceRange,
   getCatalogProductPriceRange,
   unwrapCatalogProducts,
   type CatalogProduct,
@@ -128,6 +131,8 @@ export default async function HomePage() {
     ),
   ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
+  const hayOfertas = productosDisponibles.some((p) => catalogProductHasSale(p as unknown as CatalogProduct));
+
   return (
     <main className="min-h-screen bg-background text-foreground font-sans">
       {/* Carrusel de Banners Dinámicos del Sistema Central o Fallback Hero */}
@@ -246,6 +251,14 @@ export default async function HomePage() {
               >
                 Todo el catálogo
               </Link>
+              {hayOfertas && (
+                <Link
+                  href="/catalogo?soloOfertas=true"
+                  className="whitespace-nowrap rounded-full border border-danger/30 bg-danger/10 px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-danger font-semibold transition-colors hover:bg-danger hover:text-white"
+                >
+                  Ofertas
+                </Link>
+              )}
               {categoriasDisponibles.map((categoria) => (
                 <Link
                   key={categoria}
@@ -287,15 +300,19 @@ export default async function HomePage() {
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3 lg:gap-8">
               {recienLlegados.map((item) => {
+                const catalogItem = item as unknown as CatalogProduct;
                 const imagenes = imagenesDeProducto(item);
                 const badge = esNuevo(item.createdAt) ? "Nuevo" : "Disponible";
-                const descuento = item.descuento ?? 0;
+                const descuento = getCatalogProductDiscountPercent(catalogItem);
+                const tieneRebaja = catalogProductHasSale(catalogItem);
+                const priceRange = getCatalogProductPriceRange(catalogItem);
+                const listPriceRange = tieneRebaja ? getCatalogProductListPriceRange(catalogItem) : null;
 
                 return (
                   <Link key={item._id} href={`/catalogo/${item._id}`} className="group block">
                     <article className="overflow-hidden rounded-[var(--radius-lg)] border bg-white shadow-[0_14px_40px_rgba(17,17,17,0.04)] transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
                       <div className="relative mb-4 overflow-hidden bg-surface-soft aspect-[3/4]">
-                        <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-white bg-accent">
+                        <div className={`absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-white ${descuento > 0 ? "bg-danger" : "bg-accent"}`}>
                           {descuento > 0 ? `-${descuento}%` : badge}
                         </div>
 
@@ -329,24 +346,20 @@ export default async function HomePage() {
                       <div className="px-4 pb-5 sm:px-5">
                         <h3 className="text-sm font-normal sm:text-base text-foreground">{item.nombre}</h3>
                         <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-subtle">{item.modelo}</p>
-                        {(() => {
-                          const priceRange = getCatalogProductPriceRange(item as unknown as CatalogProduct);
-                          const originalMin = descuento > 0 ? priceRange.min / (1 - descuento / 100) : null;
-                          return (
-                            <div className="mt-3 flex flex-wrap items-baseline gap-2">
-                              <p className="text-sm sm:text-base font-medium text-foreground">
-                                {priceRange.hasRange
-                                  ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
-                                  : formatPrice(priceRange.min)}
-                              </p>
-                              {originalMin && !priceRange.hasRange ? (
-                                <span className="text-xs line-through text-subtle">
-                                  {formatPrice(originalMin)}
-                                </span>
-                              ) : null}
-                            </div>
-                          );
-                        })()}
+                        <div className="mt-3 flex flex-wrap items-baseline gap-2">
+                          <p className={`text-sm sm:text-base font-medium ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
+                            {priceRange.hasRange
+                              ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
+                              : formatPrice(priceRange.min)}
+                          </p>
+                          {listPriceRange ? (
+                            <span className="text-xs line-through text-subtle">
+                              {listPriceRange.hasRange
+                                ? `${formatPrice(listPriceRange.min)} - ${formatPrice(listPriceRange.max)}`
+                                : formatPrice(listPriceRange.min)}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                     </article>
                   </Link>
@@ -384,8 +397,12 @@ export default async function HomePage() {
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 lg:gap-6">
               {seleccion.map((item) => {
+                const catalogItem = item as unknown as CatalogProduct;
                 const imagenes = imagenesDeProducto(item);
-                const descuento = item.descuento ?? 0;
+                const descuento = getCatalogProductDiscountPercent(catalogItem);
+                const tieneRebaja = catalogProductHasSale(catalogItem);
+                const priceRange = getCatalogProductPriceRange(catalogItem);
+                const listPriceRange = tieneRebaja ? getCatalogProductListPriceRange(catalogItem) : null;
 
                 return (
                   <Link key={item._id} href={`/catalogo/${item._id}`} className="group block">
@@ -427,24 +444,20 @@ export default async function HomePage() {
                       <div className="px-4 py-4 sm:px-5 sm:py-5">
                         <p className="text-sm font-semibold leading-6 text-foreground">{item.nombre}</p>
                         <p className="text-sm font-normal leading-6 text-muted/80">{item.modelo}</p>
-                        {(() => {
-                          const priceRange = getCatalogProductPriceRange(item as unknown as CatalogProduct);
-                          const originalMin = descuento > 0 ? priceRange.min / (1 - descuento / 100) : null;
-                          return (
-                            <div className="mt-1 flex flex-wrap items-baseline gap-2">
-                              <p className="text-sm font-medium text-foreground">
-                                {priceRange.hasRange
-                                  ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
-                                  : formatPrice(priceRange.min)}
-                              </p>
-                              {originalMin && !priceRange.hasRange ? (
-                                <span className="text-xs line-through text-subtle">
-                                  {formatPrice(originalMin)}
-                                </span>
-                              ) : null}
-                            </div>
-                          );
-                        })()}
+                        <div className="mt-1 flex flex-wrap items-baseline gap-2">
+                          <p className={`text-sm font-medium ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
+                            {priceRange.hasRange
+                              ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
+                              : formatPrice(priceRange.min)}
+                          </p>
+                          {listPriceRange ? (
+                            <span className="text-xs line-through text-subtle">
+                              {listPriceRange.hasRange
+                                ? `${formatPrice(listPriceRange.min)} - ${formatPrice(listPriceRange.max)}`
+                                : formatPrice(listPriceRange.min)}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                     </article>
                   </Link>
