@@ -430,3 +430,67 @@ export function formatPromotionConditionsHint(promo: PublicPromotion): string | 
 
   return parts.length > 0 ? parts.join(" · ") : null;
 }
+
+export function formatPromotionBenefitDescription(promo: PublicPromotion): string {
+  const tipo = (promo.tipo ?? "").toUpperCase().trim();
+  const valor = toFiniteNumber(promo.valor, 0);
+  const nxm = resolveNxM(promo.reglaNxM);
+
+  if (nxm) {
+    return `Lleva ${nxm.lleva} prendas y paga solo ${nxm.paga} automáticamente al pasar por caja.`;
+  }
+
+  if (tipo.includes("ENVIO") || tipo.includes("SHIPPING")) {
+    return "Envío gratuito aplicado automáticamente en tu pedido.";
+  }
+
+  if ((tipo.includes("PORCENT") || tipo === "PERCENTAGE") && valor > 0) {
+    return `${Math.round(valor)}% de descuento automático sobre las prendas participantes.`;
+  }
+
+  if ((tipo.includes("MONTO") || tipo.includes("FIJO") || tipo === "FIXED") && valor > 0) {
+    return `${formatPrice(valor)} de descuento directo aplicado automáticamente en tu compra.`;
+  }
+
+  return "Descuento automático aplicado directamente en el resumen de tu compra.";
+}
+
+export function formatPromotionScopeLabel(promo: PublicPromotion): string {
+  const alcance = (promo.alcance ?? "").toUpperCase().trim();
+  const categorias = Array.isArray(promo.categoriasIncluidas)
+    ? promo.categoriasIncluidas.filter((c): c is string => typeof c === "string" && Boolean(c.trim()))
+    : [];
+  const productos = Array.isArray(promo.productosIncluidos) ? promo.productosIncluidos : [];
+
+  if (alcance.includes("CATEG") || (categorias.length > 0 && !alcance.includes("TODO") && !alcance.includes("GLOBAL"))) {
+    if (categorias.length > 0) return `Categorías: ${categorias.join(", ")}`;
+    return "Categorías seleccionadas";
+  }
+
+  if (alcance.includes("PRODUCT") || (productos.length > 0 && !alcance.includes("TODO") && !alcance.includes("GLOBAL"))) {
+    return productos.length === 1 ? "1 prenda seleccionada" : `${productos.length} prendas seleccionadas`;
+  }
+
+  return "Todo el catálogo web";
+}
+
+export function formatPromotionValidityLabel(promo: PublicPromotion): string | null {
+  const formatDate = (iso?: string | null) => {
+    if (!iso) return null;
+    const date = new Date(iso);
+    if (!Number.isFinite(date.getTime())) return null;
+    return date.toLocaleDateString("es-BO", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const endStr = formatDate(promo.fechaFin);
+  if (endStr) return `Válido hasta el ${endStr}`;
+
+  const startStr = formatDate(promo.fechaInicio);
+  if (startStr) return `Vigente desde el ${startStr}`;
+
+  return null;
+}

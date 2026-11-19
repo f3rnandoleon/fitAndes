@@ -5,10 +5,15 @@ import ChatWidgetClient from "@/components/chat/ChatWidgetClient";
 import FloatingWhatsApp from "@/components/layout/FloatingWhatsApp";
 import ChristmasTopBanner from "@/components/layout/ChristmasTopBanner";
 import ChristmasSnow from "@/components/layout/ChristmasSnow";
+import ActivePromotionsModal from "@/components/layout/ActivePromotionsModal";
 import { authOptions } from "@/lib/auth-options";
+import { getPublicPromotions } from "@/lib/promociones-server";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
+  const [session, promociones] = await Promise.all([
+    getServerSession(authOptions),
+    getPublicPromotions(),
+  ]);
   const authenticated = Boolean(session && session.user.role === "CLIENTE");
 
   return (
@@ -20,6 +25,7 @@ export default async function PublicLayout({ children }: { children: React.React
       <SiteFooter />
       <ChatWidgetClient />
       <FloatingWhatsApp />
+      <ActivePromotionsModal promociones={promociones} />
     </div>
   );
 }
