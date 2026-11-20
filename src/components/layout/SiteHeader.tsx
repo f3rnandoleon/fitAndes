@@ -148,13 +148,13 @@ export default function SiteHeader({ authenticated = false, fullname, firstName:
                                 <p className="text-[11px] uppercase mt-1 tracking-[0.08em] text-subtle">
                                   {item.color} / {item.talla}
                                 </p>
-                                <div className="mt-3 flex items-center justify-between gap-3">
-                                  <div className="flex items-baseline gap-1.5">
-                                    <p className="text-sm text-foreground">
+                                <div className="mt-2.5 flex items-center justify-between gap-2">
+                                  <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 min-w-0">
+                                    <p className={`text-sm whitespace-nowrap ${item.precioLista && item.precioLista > item.precio ? "text-danger font-medium" : "text-foreground"}`}>
                                       {formatPrice(item.precio)}
                                     </p>
                                     {item.precioLista && item.precioLista > item.precio ? (
-                                      <span className="text-[11px] line-through text-subtle">
+                                      <span className="text-[11px] line-through text-subtle whitespace-nowrap">
                                         {formatPrice(item.precioLista)}
                                       </span>
                                     ) : null}
@@ -162,7 +162,7 @@ export default function SiteHeader({ authenticated = false, fullname, firstName:
                                   <button
                                     type="button"
                                     onClick={() => removeItem(item.id)}
-                                    className="text-[11px] uppercase transition-opacity hover:opacity-60 tracking-[0.12em] text-subtle"
+                                    className="shrink-0 text-[11px] uppercase transition-opacity hover:opacity-60 tracking-[0.12em] text-subtle"
                                   >
                                     Quitar
                                   </button>
@@ -196,9 +196,11 @@ export default function SiteHeader({ authenticated = false, fullname, firstName:
                       </div>
                       <div className="px-4 py-4 bg-surface/30 sm:px-5">
                         {cuponCodigo ? (
-                          <div className="mb-2.5 flex items-center justify-between rounded-lg border border-success/25 bg-success/10 px-3 py-1.5 text-[11px] text-success">
-                            <span className="uppercase tracking-[0.12em] font-semibold">Cupón {cuponCodigo}</span>
-                            <span>Aplicado en checkout</span>
+                          <div className="mb-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 rounded-lg border border-success/25 bg-success/10 px-3 py-1.5 text-[11px] text-success">
+                            <span className="min-w-0 truncate uppercase tracking-[0.1em] font-semibold">
+                              Cupón {cuponCodigo}
+                            </span>
+                            <span className="shrink-0 text-[10px]">Aplicado en checkout</span>
                           </div>
                         ) : null}
                         <div className="flex items-center justify-between text-sm mb-4">

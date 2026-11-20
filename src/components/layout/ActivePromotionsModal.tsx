@@ -156,39 +156,40 @@ export default function ActivePromotionsModal({ promociones }: Props) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="active-promotions-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-xs animate-fade-in"
       onClick={handleClose}
     >
       <div
-        className="relative w-full max-w-[560px] max-h-[90vh] flex flex-col rounded-[28px] border border-border bg-white text-foreground shadow-2xl overflow-hidden"
+        className="relative w-full sm:max-w-[560px] max-h-[88dvh] sm:max-h-[90vh] flex flex-col rounded-t-[26px] sm:rounded-[28px] border border-border bg-white text-foreground shadow-2xl overflow-hidden"
         onClick={(event) => event.stopPropagation()}
       >
         {/* Cabecera destacada */}
-        <div className="relative border-b border-border/80 bg-gradient-to-br from-[#faf8f5] via-[#fdf5f6] to-[#f3efea] px-6 py-5 sm:px-7 sm:py-6">
+        <div className="relative border-b border-border/80 bg-gradient-to-br from-[#faf8f5] via-[#fdf5f6] to-[#f3efea] px-4 pt-3 pb-4 sm:px-7 sm:py-6">
+          <div className="mx-auto mb-2.5 h-1 w-10 rounded-full bg-border sm:hidden" aria-hidden="true" />
           <button
             type="button"
             onClick={handleClose}
             aria-label="Cerrar aviso de promoción"
-            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-border/80 bg-white/80 text-muted hover:text-foreground hover:bg-white transition-colors cursor-pointer"
+            className="absolute right-3 top-3 sm:right-4 sm:top-4 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-border/80 bg-white/85 text-muted hover:text-foreground hover:bg-white transition-colors cursor-pointer"
           >
             <FiX className="h-4 w-4" />
           </button>
 
-          <div className="pr-10">
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow-2xs">
-                <FiTag className="h-3 w-3" aria-hidden="true" />
+          <div className="pr-9 sm:pr-10">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2.5 sm:mb-3">
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-white shadow-2xs">
+                <FiTag className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" aria-hidden="true" />
                 {isSingle ? "Promoción activa" : `${activePromotions.length} promociones activas`}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-700/25 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-900">
-                <FiZap className="h-3 w-3" aria-hidden="true" />
-                Se activa automáticamente
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-700/25 bg-emerald-50 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.1em] sm:tracking-[0.12em] text-emerald-900">
+                <FiZap className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" aria-hidden="true" />
+                Automática
               </span>
             </div>
 
             <h2
               id="active-promotions-modal-title"
-              className="font-serif text-2xl sm:text-[1.85rem] font-normal leading-tight text-foreground"
+              className="font-serif text-xl sm:text-[1.85rem] font-normal leading-tight text-foreground break-words"
             >
               {isSingle ? primaryPromo.nombre : "Beneficios activos en nuestra tienda web"}
             </h2>
@@ -199,7 +200,7 @@ export default function ActivePromotionsModal({ promociones }: Props) {
         </div>
 
         {/* Detalle de promociones activas */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 sm:px-7 space-y-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-7 sm:py-5 space-y-3 sm:space-y-4">
           {activePromotions.map((promo, index) => {
             const badge = formatPromotionBadgeLabel(promo);
             const benefitDesc = formatPromotionBenefitDescription(promo);
@@ -213,33 +214,33 @@ export default function ActivePromotionsModal({ promociones }: Props) {
             return (
               <div
                 key={promo._id ?? promo.id ?? `${promo.nombre}-${index}`}
-                className="rounded-[20px] border border-border bg-background/70 p-4 sm:p-5 space-y-3"
+                className="rounded-[18px] sm:rounded-[20px] border border-border bg-background/70 p-3.5 sm:p-5 space-y-3"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                  <span className="self-start sm:order-last shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-950 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-emerald-50 max-w-full truncate">
+                    {badge}
+                  </span>
+
                   <div className="min-w-0 flex-1">
                     {!isSingle && (
-                      <h3 className="font-serif text-lg font-normal text-foreground leading-snug">
+                      <h3 className="font-serif text-base sm:text-lg font-normal text-foreground leading-snug break-words">
                         {promo.nombre}
                       </h3>
                     )}
-                    <p className={`text-xs sm:text-sm text-foreground/90 leading-relaxed ${!isSingle ? "mt-1" : "font-medium"}`}>
+                    <p className={`text-xs sm:text-sm text-foreground/90 leading-relaxed break-words ${!isSingle ? "mt-1" : "font-medium"}`}>
                       {promo.descripcion?.trim() || benefitDesc}
                     </p>
                     {promo.descripcion?.trim() && (
-                      <p className="mt-1 text-xs text-muted leading-relaxed">{benefitDesc}</p>
+                      <p className="mt-1 text-xs text-muted leading-relaxed break-words">{benefitDesc}</p>
                     )}
                   </div>
-
-                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-950 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-50">
-                    {badge}
-                  </span>
                 </div>
 
                 {/* Metadatos: Alcance y Vigencia */}
                 <div className="grid gap-2 pt-2 border-t border-border/60 text-xs text-muted">
                   <div className="flex items-start gap-2">
                     <FiLayers className="h-3.5 w-3.5 mt-0.5 text-subtle shrink-0" aria-hidden="true" />
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 break-words">
                       <span className="font-medium text-foreground">Aplica en: </span>
                       <span>{scopeLabel}</span>
                       {categorias.length > 0 && (
@@ -249,7 +250,7 @@ export default function ActivePromotionsModal({ promociones }: Props) {
                               key={categoria}
                               href={`/catalogo?categoria=${encodeURIComponent(categoria)}`}
                               onClick={handleClose}
-                              className="inline-flex rounded-full border border-border bg-white px-2.5 py-0.5 text-[10px] uppercase tracking-[0.1em] text-foreground hover:border-foreground transition-colors"
+                              className="inline-flex rounded-full border border-border bg-white px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] text-foreground hover:border-foreground transition-colors"
                             >
                               {categoria} →
                             </Link>
@@ -260,8 +261,8 @@ export default function ActivePromotionsModal({ promociones }: Props) {
                   </div>
 
                   {validityLabel && (
-                    <div className="flex items-center gap-2">
-                      <FiCalendar className="h-3.5 w-3.5 text-subtle shrink-0" aria-hidden="true" />
+                    <div className="flex items-start gap-2">
+                      <FiCalendar className="h-3.5 w-3.5 mt-0.5 text-subtle shrink-0" aria-hidden="true" />
                       <span>{validityLabel}</span>
                     </div>
                   )}
@@ -284,7 +285,7 @@ export default function ActivePromotionsModal({ promociones }: Props) {
         </div>
 
         {/* Pie con acciones */}
-        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5 border-t border-border/80 bg-[#faf8f5] px-6 py-4 sm:px-7">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2.5 border-t border-border/80 bg-[#faf8f5] px-4 pt-3 pb-3 sm:px-7 sm:py-4 mobile-safe-bottom">
           <button
             type="button"
             onClick={handleClose}
@@ -296,7 +297,7 @@ export default function ActivePromotionsModal({ promociones }: Props) {
           <Link
             href={primaryCtaHref}
             onClick={handleClose}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-6 py-2.5 text-[11px] font-medium uppercase tracking-[0.16em] text-background hover:opacity-90 transition-opacity text-center"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-6 py-2.5 text-[11px] font-medium uppercase tracking-[0.16em] text-background hover:opacity-90 transition-opacity text-center whitespace-nowrap"
           >
             {primaryCtaLabel}
             <span aria-hidden="true">→</span>

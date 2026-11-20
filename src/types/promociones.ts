@@ -180,13 +180,20 @@ function normalizeEvaluatedLineItem(raw: unknown): EvaluatedLineItem | null {
     color: typeof rec.color === "string" ? rec.color : undefined,
     talla: typeof rec.talla === "string" ? rec.talla : undefined,
     cantidad: typeof rec.cantidad === "number" ? rec.cantidad : undefined,
-    precioLista: rec.precioLista != null ? toFiniteNumber(rec.precioLista) : undefined,
+    precioLista:
+      rec.precioLista != null
+        ? toFiniteNumber(rec.precioLista)
+        : rec.precioUnitarioLista != null
+          ? toFiniteNumber(rec.precioUnitarioLista)
+          : undefined,
     precioUnitario:
       rec.precioUnitario != null
         ? toFiniteNumber(rec.precioUnitario)
-        : rec.precioVenta != null
-          ? toFiniteNumber(rec.precioVenta)
-          : undefined,
+        : rec.precioWebEfectivo != null
+          ? toFiniteNumber(rec.precioWebEfectivo)
+          : rec.precioVenta != null
+            ? toFiniteNumber(rec.precioVenta)
+            : undefined,
     subtotalLista: rec.subtotalLista != null ? toFiniteNumber(rec.subtotalLista) : undefined,
     subtotalPostCatalogo: rec.subtotalPostCatalogo != null ? toFiniteNumber(rec.subtotalPostCatalogo) : undefined,
     descuentoCatalogo: rec.descuentoCatalogo != null ? toFiniteNumber(rec.descuentoCatalogo) : undefined,
@@ -201,9 +208,11 @@ function normalizeEvaluatedLineItem(raw: unknown): EvaluatedLineItem | null {
     totalLinea:
       rec.totalLinea != null
         ? toFiniteNumber(rec.totalLinea)
-        : rec.subtotalFinal != null
-          ? toFiniteNumber(rec.subtotalFinal)
-          : undefined,
+        : rec.totalLineaNeto != null
+          ? toFiniteNumber(rec.totalLineaNeto)
+          : rec.subtotalFinal != null
+            ? toFiniteNumber(rec.subtotalFinal)
+            : undefined,
   };
 }
 

@@ -240,21 +240,21 @@ export default async function HomePage() {
       {/* Accesos rápidos por categoría */}
       {categoriasDisponibles.length > 0 && (
         <section aria-label="Explorar por categoría" className="border-b border-border/60 bg-background">
-          <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-4 px-5 py-5 sm:px-6">
+          <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6 sm:py-5">
             <span className="hidden sm:inline-block shrink-0 text-[10px] uppercase tracking-[0.2em] text-subtle">
               Categorías
             </span>
             <div className="flex flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
               <Link
                 href="/catalogo"
-                className="whitespace-nowrap rounded-full border border-foreground bg-foreground px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-background transition-opacity hover:opacity-90"
+                className="whitespace-nowrap rounded-full border border-foreground bg-foreground px-3.5 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-[11px] uppercase tracking-[0.12em] sm:tracking-[0.14em] text-background transition-opacity hover:opacity-90"
               >
                 Todo el catálogo
               </Link>
               {hayOfertas && (
                 <Link
                   href="/catalogo?soloOfertas=true"
-                  className="whitespace-nowrap rounded-full border border-danger/30 bg-danger/10 px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-danger font-semibold transition-colors hover:bg-danger hover:text-white"
+                  className="whitespace-nowrap rounded-full border border-danger/30 bg-danger/10 px-3.5 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-[11px] uppercase tracking-[0.12em] sm:tracking-[0.14em] text-danger font-semibold transition-colors hover:bg-danger hover:text-white"
                 >
                   Ofertas
                 </Link>
@@ -263,7 +263,7 @@ export default async function HomePage() {
                 <Link
                   key={categoria}
                   href={`/catalogo?categoria=${encodeURIComponent(categoria)}`}
-                  className="whitespace-nowrap rounded-full border border-border bg-white px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-foreground hover:text-foreground"
+                  className="whitespace-nowrap rounded-full border border-border bg-white px-3.5 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-[11px] uppercase tracking-[0.12em] sm:tracking-[0.14em] text-muted transition-colors hover:border-foreground hover:text-foreground"
                 >
                   {categoria}
                 </Link>
@@ -298,7 +298,7 @@ export default async function HomePage() {
               No hay productos disponibles por el momento.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3 lg:gap-8">
+            <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 lg:gap-8">
               {recienLlegados.map((item) => {
                 const catalogItem = item as unknown as CatalogProduct;
                 const imagenes = imagenesDeProducto(item);
@@ -309,10 +309,10 @@ export default async function HomePage() {
                 const listPriceRange = tieneRebaja ? getCatalogProductListPriceRange(catalogItem) : null;
 
                 return (
-                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block">
-                    <article className="overflow-hidden rounded-[var(--radius-lg)] border bg-white shadow-[0_14px_40px_rgba(17,17,17,0.04)] transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
-                      <div className="relative mb-4 overflow-hidden bg-surface-soft aspect-[3/4]">
-                        <div className={`absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-white ${descuento > 0 ? "bg-danger" : "bg-accent"}`}>
+                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block h-full">
+                    <article className="h-full flex flex-col overflow-hidden rounded-[20px] sm:rounded-[var(--radius-lg)] border bg-white shadow-[0_14px_40px_rgba(17,17,17,0.04)] transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
+                      <div className="relative mb-3 sm:mb-4 overflow-hidden bg-surface-soft aspect-[3/4]">
+                        <div className={`absolute top-2 left-2 sm:top-3 sm:left-3 z-10 rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.08em] sm:tracking-[0.12em] text-white ${descuento > 0 ? "bg-danger" : "bg-accent"}`}>
                           {descuento > 0 ? `-${descuento}%` : badge}
                         </div>
 
@@ -343,20 +343,34 @@ export default async function HomePage() {
                           </span>
                         </div>
                       </div>
-                      <div className="px-4 pb-5 sm:px-5">
-                        <h3 className="text-sm font-normal sm:text-base text-foreground">{item.nombre}</h3>
-                        <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-subtle">{item.modelo}</p>
-                        <div className="mt-3 flex flex-wrap items-baseline gap-2">
-                          <p className={`text-sm sm:text-base font-medium ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
-                            {priceRange.hasRange
-                              ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
-                              : formatPrice(priceRange.min)}
+                      <div className="px-3 pb-4 sm:px-5 sm:pb-5 flex-1 flex flex-col">
+                        <h3 className="text-[13px] font-normal sm:text-base text-foreground line-clamp-1">{item.nombre}</h3>
+                        <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] uppercase tracking-[0.1em] sm:tracking-[0.12em] text-subtle line-clamp-2">{item.modelo}</p>
+                        <div className="mt-auto pt-2 sm:pt-3 flex flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2">
+                          <p className={`text-sm sm:text-base font-medium leading-tight ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
+                            {priceRange.hasRange ? (
+                              <>
+                                <span className="sm:hidden whitespace-nowrap">Desde {formatPrice(priceRange.min)}</span>
+                                <span className="hidden sm:inline">
+                                  {formatPrice(priceRange.min)} - {formatPrice(priceRange.max)}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="whitespace-nowrap">{formatPrice(priceRange.min)}</span>
+                            )}
                           </p>
                           {listPriceRange ? (
-                            <span className="text-xs line-through text-subtle">
-                              {listPriceRange.hasRange
-                                ? `${formatPrice(listPriceRange.min)} - ${formatPrice(listPriceRange.max)}`
-                                : formatPrice(listPriceRange.min)}
+                            <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight whitespace-nowrap">
+                              {listPriceRange.hasRange ? (
+                                <>
+                                  <span className="sm:hidden">{formatPrice(listPriceRange.min)}</span>
+                                  <span className="hidden sm:inline">
+                                    {formatPrice(listPriceRange.min)} - {formatPrice(listPriceRange.max)}
+                                  </span>
+                                </>
+                              ) : (
+                                formatPrice(listPriceRange.min)
+                              )}
                             </span>
                           ) : null}
                         </div>
@@ -395,7 +409,7 @@ export default async function HomePage() {
               No hay productos destacados por el momento.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 lg:gap-6">
+            <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4 lg:gap-6">
               {seleccion.map((item) => {
                 const catalogItem = item as unknown as CatalogProduct;
                 const imagenes = imagenesDeProducto(item);
@@ -405,11 +419,11 @@ export default async function HomePage() {
                 const listPriceRange = tieneRebaja ? getCatalogProductListPriceRange(catalogItem) : null;
 
                 return (
-                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block">
-                    <article className="overflow-hidden rounded-[var(--radius-lg)] border bg-white shadow-[0_10px_30px_rgba(17,17,17,0.03)] transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
-                      <div className="relative mb-3 overflow-hidden bg-surface-soft aspect-[3/4]">
+                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block h-full">
+                    <article className="h-full flex flex-col overflow-hidden rounded-[20px] sm:rounded-[var(--radius-lg)] border bg-white shadow-[0_10px_30px_rgba(17,17,17,0.03)] transition-transform duration-300 hover:-translate-y-1 active:scale-95 border-border">
+                      <div className="relative mb-2 sm:mb-3 overflow-hidden bg-surface-soft aspect-[3/4]">
                         {descuento > 0 && (
-                          <div className="absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-white bg-danger">
+                          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.08em] sm:tracking-[0.12em] text-white bg-danger">
                             -{descuento}%
                           </div>
                         )}
@@ -441,20 +455,34 @@ export default async function HomePage() {
                           </span>
                         </div>
                       </div>
-                      <div className="px-4 py-4 sm:px-5 sm:py-5">
-                        <p className="text-sm font-semibold leading-6 text-foreground">{item.nombre}</p>
-                        <p className="text-sm font-normal leading-6 text-muted/80">{item.modelo}</p>
-                        <div className="mt-1 flex flex-wrap items-baseline gap-2">
-                          <p className={`text-sm font-medium ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
-                            {priceRange.hasRange
-                              ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
-                              : formatPrice(priceRange.min)}
+                      <div className="px-3 py-3 sm:px-5 sm:py-5 flex-1 flex flex-col">
+                        <p className="text-[13px] sm:text-sm font-semibold leading-snug sm:leading-6 text-foreground line-clamp-1">{item.nombre}</p>
+                        <p className="text-xs sm:text-sm font-normal leading-snug sm:leading-6 text-muted/80 line-clamp-2">{item.modelo}</p>
+                        <div className="mt-auto pt-2 flex flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2">
+                          <p className={`text-sm font-medium leading-tight ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
+                            {priceRange.hasRange ? (
+                              <>
+                                <span className="sm:hidden whitespace-nowrap">Desde {formatPrice(priceRange.min)}</span>
+                                <span className="hidden sm:inline">
+                                  {formatPrice(priceRange.min)} - {formatPrice(priceRange.max)}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="whitespace-nowrap">{formatPrice(priceRange.min)}</span>
+                            )}
                           </p>
                           {listPriceRange ? (
-                            <span className="text-xs line-through text-subtle">
-                              {listPriceRange.hasRange
-                                ? `${formatPrice(listPriceRange.min)} - ${formatPrice(listPriceRange.max)}`
-                                : formatPrice(listPriceRange.min)}
+                            <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight whitespace-nowrap">
+                              {listPriceRange.hasRange ? (
+                                <>
+                                  <span className="sm:hidden">{formatPrice(listPriceRange.min)}</span>
+                                  <span className="hidden sm:inline">
+                                    {formatPrice(listPriceRange.min)} - {formatPrice(listPriceRange.max)}
+                                  </span>
+                                </>
+                              ) : (
+                                formatPrice(listPriceRange.min)
+                              )}
                             </span>
                           ) : null}
                         </div>

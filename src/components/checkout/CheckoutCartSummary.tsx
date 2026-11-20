@@ -57,8 +57,10 @@ export function CheckoutCartSummary({ items, evaluatedItems, updateQuantity, rem
           const evaluated = findEvaluatedLine(item, evaluatedItems);
           const unitPrice = evaluated?.precioUnitario ?? item.precio;
           const unitListPrice =
-            evaluated?.precioLista && evaluated.precioLista > unitPrice
-              ? evaluated.precioLista
+            evaluated?.precioLista != null
+              ? evaluated.precioLista > unitPrice
+                ? evaluated.precioLista
+                : null
               : item.precioLista && item.precioLista > unitPrice
                 ? item.precioLista
                 : null;
@@ -96,7 +98,7 @@ export function CheckoutCartSummary({ items, evaluatedItems, updateQuantity, rem
                     </p>
                   )}
                   {linePromoDiscount > 0 && (
-                    <span className="mt-1.5 inline-flex rounded-full bg-success/10 px-2.5 py-0.5 text-[10px] font-medium text-success">
+                    <span className="mt-1.5 inline-flex max-w-full rounded-full bg-success/10 px-2.5 py-0.5 text-[10px] font-medium leading-snug text-success">
                       Promo aplicada: -{formatPrice(linePromoDiscount)}
                     </span>
                   )}
@@ -129,28 +131,34 @@ export function CheckoutCartSummary({ items, evaluatedItems, updateQuantity, rem
               </div>
 
               <div className="flex items-end justify-between gap-3 md:block md:text-right">
-                <div>
+                <div className="min-w-0">
                   <p className="text-[10px] uppercase tracking-[0.14em] text-subtle md:hidden">Precio</p>
-                  <p className="mt-1 text-base font-serif text-foreground md:mt-0">
-                    {formatPrice(lineFinal)}
-                  </p>
-                  {unitListPrice ? (
-                    <p className="text-[11px] line-through text-subtle">
-                      {formatPrice(unitListPrice * item.cantidad)}
+                  <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 md:mt-0 md:block">
+                    <p
+                      className={`text-base font-serif whitespace-nowrap ${
+                        unitListPrice || lineFinal < lineBase ? "text-danger font-medium" : "text-foreground"
+                      }`}
+                    >
+                      {formatPrice(lineFinal)}
                     </p>
-                  ) : lineFinal < lineBase ? (
-                    <p className="text-[11px] line-through text-subtle">
-                      {formatPrice(lineBase)}
-                    </p>
-                  ) : null}
-                  <p className="text-[11px] mt-0.5 text-subtle">
+                    {unitListPrice ? (
+                      <p className="text-[11px] line-through text-subtle whitespace-nowrap">
+                        {formatPrice(unitListPrice * item.cantidad)}
+                      </p>
+                    ) : lineFinal < lineBase ? (
+                      <p className="text-[11px] line-through text-subtle whitespace-nowrap">
+                        {formatPrice(lineBase)}
+                      </p>
+                    ) : null}
+                  </div>
+                  <p className="text-[11px] mt-0.5 text-subtle whitespace-nowrap">
                     {formatPrice(unitPrice)} c/u
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => removeItem(item.id)}
-                  className="inline-flex items-center justify-center rounded-full border px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-subtle transition-colors hover:bg-surface md:hidden"
+                  className="shrink-0 inline-flex items-center justify-center rounded-full border border-border px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-subtle transition-colors hover:bg-surface md:hidden"
                   aria-label={`Quitar ${item.nombre}`}
                 >
                   Quitar

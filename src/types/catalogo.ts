@@ -111,15 +111,48 @@ export function getCatalogVariantPrice(product: CatalogProduct, variant?: Catalo
 export function getCatalogVariantListPrice(product: CatalogProduct, variant?: CatalogVariant | null): number | null {
   const effectivePrice = getCatalogVariantPrice(product, variant);
 
-  if (variant && typeof variant.precioLista === "number" && Number.isFinite(variant.precioLista) && variant.precioLista > effectivePrice) {
-    return variant.precioLista;
+  if (variant) {
+    // Respetar bandera explícita del sistema central
+    if (variant.tieneRebaja === false) {
+      return null;
+    }
+
+    // Si la variante trae su propio precioLista, usar solo ese valor
+    // (evita comparar una talla más económica contra el precio base del producto)
+    if (typeof variant.precioLista === "number" && Number.isFinite(variant.precioLista) && variant.precioLista > 0) {
+      return variant.precioLista > effectivePrice ? variant.precioLista : null;
+    }
+
+    // Si la variante tiene precio diferenciado respecto al producto base y no trae precioLista propio,
+    // no comparar contra product.precioLista porque corresponde a otra talla
+    const hasDifferentiatedVariantPrice =
+      typeof variant.precioVenta === "number" &&
+      Number.isFinite(variant.precioVenta) &&
+      variant.precioVenta > 0 &&
+      variant.precioVenta !== product.precioVenta;
+
+    if (hasDifferentiatedVariantPrice) {
+      return null;
+    }
   }
 
-  if (typeof product.precioLista === "number" && Number.isFinite(product.precioLista) && product.precioLista > effectivePrice) {
+  if (product.tieneRebaja === false) {
+    return null;
+  }
+
+  const baseProductPrice =
+    typeof product.precioVenta === "number" && Number.isFinite(product.precioVenta) ? product.precioVenta : effectivePrice;
+
+  if (
+    typeof product.precioLista === "number" &&
+    Number.isFinite(product.precioLista) &&
+    product.precioLista > baseProductPrice &&
+    product.precioLista > effectivePrice
+  ) {
     return product.precioLista;
   }
 
-  // Fallback legado si el backend no expone precioLista pero sí descuento %
+  // Fallback legado si el backend no expone precioLista ni tieneRebaja pero sí descuento %
   if (
     variant?.precioLista == null &&
     product.precioLista == null &&
@@ -136,8 +169,14 @@ export function getCatalogVariantListPrice(product: CatalogProduct, variant?: Ca
 }
 
 export function getCatalogVariantDiscountPercent(product: CatalogProduct, variant?: CatalogVariant | null): number {
-  if (variant && typeof variant.porcentajeDescuento === "number" && Number.isFinite(variant.porcentajeDescuento) && variant.porcentajeDescuento > 0) {
-    return Math.round(variant.porcentajeDescuento);
+  if (variant) {
+    if (variant.tieneRebaja === false) {
+      return 0;
+    }
+    if (typeof variant.porcentajeDescuento === "number" && Number.isFinite(variant.porcentajeDescuento)) {
+      if (variant.porcentajeDescuento > 0) return Math.round(variant.porcentajeDescuento);
+      if (variant.precioLista != null) return 0;
+    }
   }
 
   const effectivePrice = getCatalogVariantPrice(product, variant);
@@ -146,18 +185,22 @@ export function getCatalogVariantDiscountPercent(product: CatalogProduct, varian
     return Math.round(((listPrice - effectivePrice) / listPrice) * 100);
   }
 
-  if (typeof product.porcentajeDescuentoMaximo === "number" && Number.isFinite(product.porcentajeDescuentoMaximo) && product.porcentajeDescuentoMaximo > 0) {
-    return Math.round(product.porcentajeDescuentoMaximo);
-  }
+  // Solo heredar porcentajes de nivel producto cuando no se evalúa una variante específica
+  if (!variant) {
+    if (typeof product.porcentajeDescuentoMaximo === "number" && Number.isFinite(product.porcentajeDescuentoMaximo) && product.porcentajeDescuentoMaximo > 0) {
+      return Math.round(product.porcentajeDescuentoMaximo);
+    }
 
-  if (typeof product.descuento === "number" && Number.isFinite(product.descuento) && product.descuento > 0) {
-    return Math.round(product.descuento);
+    if (typeof product.descuento === "number" && Number.isFinite(product.descuento) && product.descuento > 0) {
+      return Math.round(product.descuento);
+    }
   }
 
   return 0;
 }
 
 export function catalogVariantHasSale(product: CatalogProduct, variant?: CatalogVariant | null): boolean {
+  if (variant?.tieneRebaja === false) return false;
   if (variant?.tieneRebaja === true) return true;
   const listPrice = getCatalogVariantListPrice(product, variant);
   const effectivePrice = getCatalogVariantPrice(product, variant);
@@ -203,20 +246,26 @@ export function getCatalogProductListPriceRange(product: CatalogProduct): {
   max: number;
   hasRange: boolean;
 } | null {
+  if (product.tieneRebaja === false) {
+    return null;
+  }
+
   const effectiveRange = getCatalogProductPriceRange(product);
 
   if (
     typeof product.precioMinimoLista === "number" &&
     typeof product.precioMaximoLista === "number" &&
     Number.isFinite(product.precioMinimoLista) &&
-    Number.isFinite(product.precioMaximoLista) &&
-    (product.precioMinimoLista > effectiveRange.min || product.precioMaximoLista > effectiveRange.max)
+    Number.isFinite(product.precioMaximoLista)
   ) {
-    return {
-      min: product.precioMinimoLista,
-      max: product.precioMaximoLista,
-      hasRange: product.precioMinimoLista !== product.precioMaximoLista,
-    };
+    if (product.precioMinimoLista > effectiveRange.min || product.precioMaximoLista > effectiveRange.max) {
+      return {
+        min: product.precioMinimoLista,
+        max: product.precioMaximoLista,
+        hasRange: product.precioMinimoLista !== product.precioMaximoLista,
+      };
+    }
+    return null;
   }
 
   const availableVariants = product.variantes?.length ? product.variantes.filter(catalogVariantIsAvailable) : [];
@@ -236,7 +285,9 @@ export function getCatalogProductListPriceRange(product: CatalogProduct): {
   if (
     typeof product.precioLista === "number" &&
     Number.isFinite(product.precioLista) &&
-    product.precioLista > effectiveRange.min
+    typeof product.precioVenta === "number" &&
+    Number.isFinite(product.precioVenta) &&
+    product.precioLista > product.precioVenta
   ) {
     return { min: product.precioLista, max: product.precioLista, hasRange: false };
   }
@@ -245,6 +296,10 @@ export function getCatalogProductListPriceRange(product: CatalogProduct): {
 }
 
 export function getCatalogProductDiscountPercent(product: CatalogProduct): number {
+  if (product.tieneRebaja === false) {
+    return 0;
+  }
+
   if (
     typeof product.porcentajeDescuentoMaximo === "number" &&
     Number.isFinite(product.porcentajeDescuentoMaximo) &&
@@ -278,6 +333,7 @@ export function getCatalogProductDiscountPercent(product: CatalogProduct): numbe
 }
 
 export function catalogProductHasSale(product: CatalogProduct): boolean {
+  if (product.tieneRebaja === false) return false;
   if (product.tieneRebaja === true) return true;
   if (getCatalogProductDiscountPercent(product) > 0) return true;
   const listRange = getCatalogProductListPriceRange(product);

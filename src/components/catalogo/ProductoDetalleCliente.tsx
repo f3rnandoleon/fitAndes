@@ -328,20 +328,20 @@ export default function ProductoDetalleCliente({ producto, promociones = [], col
         </div>
       </section>
 
-      <section className="flex flex-col gap-6 rounded-[var(--radius-lg)] border bg-white px-5 py-6 sm:px-6 lg:px-7 lg:py-7 border-border shadow-sm">
+      <section className="flex flex-col gap-5 sm:gap-6 rounded-[var(--radius-lg)] border bg-white px-4 py-5 sm:px-6 lg:px-7 lg:py-7 border-border shadow-sm">
         <div>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-subtle">
+          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.22em] text-subtle break-words">
                 {(producto.categoria ?? "Catalogo").toUpperCase()} {producto.nombre ? `· ${producto.nombre.toUpperCase()}` : ""}
               </p>
-              <h1 className="mt-3 font-serif text-[2.1rem] font-normal leading-[1.02] sm:text-[2.7rem] text-foreground">
+              <h1 className="mt-2.5 sm:mt-3 font-serif text-[1.9rem] font-normal leading-[1.05] sm:text-[2.7rem] text-foreground break-words">
                 {producto.modelo}
               </h1>
             </div>
 
             <span
-              className="inline-flex w-fit rounded-full border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
+              className="inline-flex w-fit shrink-0 rounded-full border px-3.5 py-1.5 sm:px-4 sm:py-2 text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.18em]"
               style={{
                 color: stockActual > 0 ? "var(--success)" : "var(--danger)",
                 borderColor: stockActual > 0 ? "rgba(22,91,51,0.22)" : "rgba(155,27,48,0.22)",
@@ -352,52 +352,58 @@ export default function ProductoDetalleCliente({ producto, promociones = [], col
             </span>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-end gap-3">
-            <p className={`font-serif text-[1.9rem] leading-none sm:text-[2.2rem] ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
-              {formatPrice(precioActual)}
-            </p>
-            {precioAnterior ? (
-              <p className="pb-1 text-sm line-through text-subtle/75">
-                Antes {formatPrice(precioAnterior)}
+          <div className="mt-5 sm:mt-6 space-y-2.5">
+            <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+              <p className={`font-serif text-[1.85rem] leading-none sm:text-[2.2rem] whitespace-nowrap ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
+                {formatPrice(precioActual)}
               </p>
-            ) : null}
-            {descuento > 0 ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 border border-danger/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-danger">
-                -{descuento}%{ahorroBOB > 0 ? ` · Ahorras ${formatPrice(ahorroBOB)}` : ""}
-              </span>
-            ) : null}
-            {tienePrecioDiferenciado && varianteSeleccionada?.talla ? (
-              <span className="inline-flex rounded-full bg-surface border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-muted font-medium">
-                Precio para talla {varianteSeleccionada.talla}
-              </span>
-            ) : null}
+              {precioAnterior ? (
+                <p className="text-sm line-through text-subtle/75 whitespace-nowrap">
+                  Antes {formatPrice(precioAnterior)}
+                </p>
+              ) : null}
+            </div>
+            {(descuento > 0 || (tienePrecioDiferenciado && varianteSeleccionada?.talla)) && (
+              <div className="flex flex-wrap items-center gap-2">
+                {descuento > 0 ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 border border-danger/20 px-2.5 sm:px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-danger">
+                    -{descuento}%{ahorroBOB > 0 ? ` · Ahorras ${formatPrice(ahorroBOB)}` : ""}
+                  </span>
+                ) : null}
+                {tienePrecioDiferenciado && varianteSeleccionada?.talla ? (
+                  <span className="inline-flex rounded-full bg-surface border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.14em] text-muted font-medium">
+                    Precio para talla {varianteSeleccionada.talla}
+                  </span>
+                ) : null}
+              </div>
+            )}
           </div>
 
           {promociones.length > 0 && (
             <div className="mt-4 space-y-2" aria-label="Promociones automáticas vigentes">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {promociones.map((promo, idx) => (
                   <span
                     key={promo._id ?? promo.id ?? `${promo.nombre}-${idx}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald-700/25 bg-emerald-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-900"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald-700/25 bg-emerald-50 px-2.5 sm:px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] sm:tracking-[0.12em] text-emerald-900 max-w-full"
                   >
                     <FiTag className="h-3 w-3 shrink-0" aria-hidden="true" />
-                    <span>{formatPromotionBadgeLabel(promo)}</span>
+                    <span className="truncate">{formatPromotionBadgeLabel(promo)}</span>
                   </span>
                 ))}
               </div>
-              <div className="rounded-[var(--radius-md)] border border-emerald-700/15 bg-emerald-50/55 px-3.5 py-2.5 space-y-1.5">
+              <div className="rounded-[var(--radius-md)] border border-emerald-700/15 bg-emerald-50/55 p-3 sm:px-3.5 sm:py-2.5 space-y-1.5">
                 {promociones.map((promo, idx) => {
                   const hint = formatPromotionConditionsHint(promo);
                   return (
-                    <div key={promo._id ?? promo.id ?? `detail-${idx}`} className="text-xs leading-relaxed text-emerald-950">
+                    <div key={promo._id ?? promo.id ?? `detail-${idx}`} className="text-xs leading-relaxed text-emerald-950 break-words">
                       <span className="font-semibold">{promo.nombre}</span>
                       {promo.descripcion ? <span className="text-emerald-900/85"> — {promo.descripcion}</span> : null}
-                      {hint ? <span className="block text-[11px] text-emerald-800/85">{hint}</span> : null}
+                      {hint ? <span className="block text-[11px] text-emerald-800/85 mt-0.5">{hint}</span> : null}
                     </div>
                   );
                 })}
-                <p className="text-[10px] uppercase tracking-[0.14em] text-emerald-800/80 pt-0.5">
+                <p className="text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.14em] text-emerald-800/80 pt-0.5">
                   Se aplica automáticamente al finalizar tu compra
                 </p>
               </div>
@@ -803,18 +809,18 @@ export default function ProductoDetalleCliente({ producto, promociones = [], col
       </section>
 
       {/* Barra fija inferior en móvil para facilitar la compra */}
-      <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md px-4 pt-3 pb-2 mobile-safe-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
-        <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-subtle truncate">
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md px-3.5 sm:px-4 pt-2.5 sm:pt-3 pb-2 mobile-safe-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
+        <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-2.5 sm:gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.14em] text-subtle truncate">
               {colorWhatsapp} · Talla {tallaWhatsapp}
             </p>
-            <div className="flex items-baseline gap-2">
-              <p className={`font-serif text-lg font-semibold leading-tight ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
+            <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
+              <p className={`font-serif text-base sm:text-lg font-semibold leading-tight whitespace-nowrap ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
                 {formatPrice(precioActual)}
               </p>
               {precioAnterior ? (
-                <span className="text-xs line-through text-subtle">
+                <span className="text-[11px] sm:text-xs line-through text-subtle whitespace-nowrap">
                   {formatPrice(precioAnterior)}
                 </span>
               ) : null}
@@ -826,7 +832,7 @@ export default function ProductoDetalleCliente({ producto, promociones = [], col
             size="md"
             onClick={reservarSeleccion}
             disabled={!varianteSeleccionada || stockActual <= 0}
-            className="shrink-0"
+            className="shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] tracking-[0.12em] sm:tracking-[0.16em] whitespace-nowrap"
           >
             Añadir al carrito
           </Button>

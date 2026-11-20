@@ -130,6 +130,12 @@ export default function QRPaymentConfirmationClient() {
   const descuentoPromociones = pricingSummary?.descuentoPromociones ?? 0;
   const descuentoEnvio = pricingSummary?.descuentoEnvio ?? 0;
   const netShipping = Math.max(0, shippingCost - descuentoEnvio);
+  const subtotalBase = pricingSummary
+    ? descuentoCatalogo > 0
+      ? pricingSummary.subtotalLista
+      : pricingSummary.subtotalPostCatalogo
+    : baseItemsTotal;
+  const hasAnyDiscount = descuentoCatalogo > 0 || descuentoPromociones > 0 || descuentoEnvio > 0;
 
   async function handleFinalize() {
     if (!file) {
@@ -237,35 +243,41 @@ export default function QRPaymentConfirmationClient() {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2 max-w-5xl mx-auto">
-      <Card className="flex flex-col items-center text-center">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-4">Paso 1: Realizar el Pago</p>
-        <h2 className="text-xl font-serif mb-6">Pagar con QR</h2>
+    <div className="grid gap-6 sm:gap-8 lg:grid-cols-2 max-w-5xl mx-auto">
+      <Card padding="none" className="p-4 sm:p-6 flex flex-col items-center text-center">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-3 sm:mb-4">Paso 1: Realizar el Pago</p>
+        <h2 className="text-xl font-serif mb-5 sm:mb-6">Pagar con QR</h2>
 
-        <div className="relative w-full aspect-square max-w-[320px] bg-white p-4 border border-border/50 rounded-xl mb-6 shadow-sm">
+        <div className="relative w-full aspect-square max-w-[280px] sm:max-w-[320px] bg-white p-3 sm:p-4 border border-border/50 rounded-xl mb-5 sm:mb-6 shadow-sm">
           <Image src={qrImageUrl} alt="QR de Pago FitAndes" fill className="object-contain p-2" />
         </div>
 
         <div className="space-y-4 w-full max-w-[320px]">
-          <div className="py-3 border-y border-border/50 space-y-1.5 text-xs">
+          <div className="py-3 border-y border-border/50 space-y-2 text-xs text-left">
+            {hasAnyDiscount && (
+              <div className="flex items-start justify-between gap-3 text-muted">
+                <span className="min-w-0">{descuentoCatalogo > 0 ? "Precio de lista" : "Subtotal prendas"}</span>
+                <span className="shrink-0 whitespace-nowrap">{formatPrice(subtotalBase)}</span>
+              </div>
+            )}
             {descuentoCatalogo > 0 && (
-              <div className="flex justify-between text-success">
-                <span>Rebajas de catálogo</span>
-                <span>- {formatPrice(descuentoCatalogo)}</span>
+              <div className="flex items-start justify-between gap-3 text-success">
+                <span className="min-w-0">Rebajas de catálogo</span>
+                <span className="shrink-0 whitespace-nowrap font-medium">- {formatPrice(descuentoCatalogo)}</span>
               </div>
             )}
             {descuentoPromociones > 0 && (
-              <div className="flex justify-between text-success">
-                <span>
+              <div className="flex items-start justify-between gap-3 text-success">
+                <span className="min-w-0 break-words">
                   Promociones{payload.cuponCodigo ? ` (${payload.cuponCodigo})` : ""}
                 </span>
-                <span>- {formatPrice(descuentoPromociones)}</span>
+                <span className="shrink-0 whitespace-nowrap font-medium">- {formatPrice(descuentoPromociones)}</span>
               </div>
             )}
             {shippingCost > 0 && (
-              <div className="flex justify-between text-muted">
-                <span>Envío</span>
-                <span>
+              <div className="flex items-start justify-between gap-3 text-muted">
+                <span className="min-w-0">Envío</span>
+                <span className="shrink-0 whitespace-nowrap">
                   {descuentoEnvio > 0 && netShipping === 0 ? (
                     <span className="text-success font-medium">Gratis</span>
                   ) : (
@@ -275,21 +287,21 @@ export default function QRPaymentConfirmationClient() {
               </div>
             )}
             {shippingCost === 0 && shippingLabel && (
-              <div className="flex justify-between text-muted">
-                <span>Envío</span>
-                <span className="text-success">{shippingLabel}</span>
+              <div className="flex items-start justify-between gap-3 text-muted">
+                <span className="min-w-0">Envío</span>
+                <span className="shrink-0 whitespace-nowrap text-success">{shippingLabel}</span>
               </div>
             )}
-            <div className="flex justify-between items-center pt-2 border-t border-border/40">
+            <div className="flex justify-between items-center gap-3 pt-2 border-t border-border/40">
               <span className="text-sm text-muted">Total a pagar:</span>
-              <span className={`text-lg font-bold text-foreground ${pricingLoading ? "opacity-60" : ""}`}>
+              <span className={`text-lg font-bold text-foreground whitespace-nowrap ${pricingLoading ? "opacity-60" : ""}`}>
                 {formatPrice(total)}
               </span>
             </div>
           </div>
 
           {couponWarning && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-[11px] text-amber-900 text-left">
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-[11px] text-amber-900 text-left leading-snug">
               <strong>Aviso sobre tu cupón:</strong> {couponWarning}
             </div>
           )}
@@ -300,20 +312,20 @@ export default function QRPaymentConfirmationClient() {
         </div>
       </Card>
 
-      <Card className="flex flex-col">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-4">Paso 2: Finalizar Pedido</p>
-        <h2 className="text-xl font-serif mb-6">Confirmar y Enviar</h2>
+      <Card padding="none" className="p-4 sm:p-6 flex flex-col">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-3 sm:mb-4">Paso 2: Finalizar Pedido</p>
+        <h2 className="text-xl font-serif mb-5 sm:mb-6">Confirmar y Enviar</h2>
 
         <div className="flex-1 flex flex-col justify-center">
-          <div className="border-2 border-dashed border-border rounded-2xl p-8 text-center bg-surface/30">
+          <div className="border-2 border-dashed border-border rounded-2xl p-5 sm:p-8 text-center bg-surface/30">
             <input type="file" id="receipt-upload" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="hidden" />
-            <label htmlFor="receipt-upload" className="cursor-pointer">
+            <label htmlFor="receipt-upload" className="cursor-pointer block">
               <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
                 <svg className="w-6 h-6 text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12 a2 2 0 002-2v-1M16 8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
               </div>
-              <p className="text-sm font-medium mb-1">{file ? file.name : "Sube tu comprobante aquí"}</p>
+              <p className="text-sm font-medium mb-1 break-all">{file ? file.name : "Sube tu comprobante aquí"}</p>
               <p className="text-xs text-muted">El pedido se creará y la reserva se extenderá al subir el archivo</p>
             </label>
           </div>

@@ -665,10 +665,10 @@ export default function CheckoutPageClient() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-82px)] bg-gradient-to-b from-background to-surface/40 px-4 py-6 pb-28 sm:px-6 sm:py-8 sm:pb-32 lg:py-12 lg:pb-12">
+    <main className="min-h-[calc(100vh-82px)] bg-gradient-to-b from-background to-surface/40 px-4 py-6 pb-36 sm:px-6 sm:py-8 sm:pb-36 lg:py-12 lg:pb-12">
       <div className="max-w-[1240px] mx-auto">
-        <header className="mb-8 rounded-[28px] border bg-white px-5 py-6 sm:mb-10 sm:px-6 border-border shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-6">
+        <header className="mb-8 rounded-[24px] sm:rounded-[28px] border bg-white px-4 py-5 sm:mb-10 sm:px-6 sm:py-6 border-border shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-5 sm:gap-6">
             <div className="max-w-2xl">
               <p className="text-[10px] uppercase mb-2 tracking-[0.2em] text-subtle">
                 Revisión final
@@ -676,7 +676,7 @@ export default function CheckoutPageClient() {
               <h1 className="text-3xl font-serif text-foreground sm:text-5xl">
                 Finalizar compra
               </h1>
-              <p className="mt-4 text-sm text-muted leading-relaxed">
+              <p className="mt-3 sm:mt-4 text-sm text-muted leading-relaxed">
                 Revisa tus prendas, datos de entrega y el método de pago antes de confirmar.
               </p>
             </div>
@@ -690,15 +690,20 @@ export default function CheckoutPageClient() {
           </div>
 
           {/* Stepper visual de progreso */}
-          <ol aria-label="Pasos del proceso de compra" className="mt-6 pt-5 border-t border-border/70 grid grid-cols-3 gap-2 sm:gap-4">
+          <ol aria-label="Pasos del proceso de compra" className="mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-border/70 grid grid-cols-3 gap-2 sm:gap-4">
             {[
-              { step: "01", label: "Prendas reservadas", done: true },
-              { step: "02", label: "Datos y entrega", active: true },
-              { step: "03", label: deliveryMethod === "WHATSAPP" ? "Confirmación" : "Pago y envío", active: false },
+              { step: "01", label: "Prendas", desktopLabel: "Prendas reservadas", done: true },
+              { step: "02", label: "Entrega", desktopLabel: "Datos y entrega", active: true },
+              {
+                step: "03",
+                label: deliveryMethod === "WHATSAPP" ? "Confirmar" : "Pago",
+                desktopLabel: deliveryMethod === "WHATSAPP" ? "Confirmación" : "Pago y envío",
+                active: false,
+              },
             ].map((item) => (
-              <li key={item.step} className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <li key={item.step} className="flex items-center gap-1.5 sm:gap-3 min-w-0">
                 <span
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold tracking-wider ${
+                  className={`flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold tracking-wider ${
                     item.done
                       ? "bg-success text-white"
                       : item.active
@@ -709,11 +714,12 @@ export default function CheckoutPageClient() {
                   {item.done ? "✓" : item.step}
                 </span>
                 <span
-                  className={`text-[10px] sm:text-xs uppercase tracking-[0.12em] truncate ${
+                  className={`text-[10px] sm:text-xs uppercase tracking-[0.06em] sm:tracking-[0.12em] truncate ${
                     item.done || item.active ? "text-foreground font-medium" : "text-subtle"
                   }`}
                 >
-                  {item.label}
+                  <span className="sm:hidden">{item.label}</span>
+                  <span className="hidden sm:inline">{item.desktopLabel}</span>
                 </span>
               </li>
             ))}
@@ -754,7 +760,7 @@ export default function CheckoutPageClient() {
             {/* Formulario de Comprador Invitado */}
             {!authenticated && (
               <section>
-                <div className="flex items-center justify-between mb-4 px-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4 px-1">
                   <h2 className="text-xs uppercase tracking-widest text-subtle font-semibold">
                     1. Datos de quien compra (Invitado)
                   </h2>

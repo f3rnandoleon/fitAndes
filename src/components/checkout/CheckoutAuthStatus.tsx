@@ -18,7 +18,7 @@ interface Props {
  */
 export function CheckoutAuthStatus({ authenticated, user, loading, onLogin }: Props) {
   return (
-    <Card className="min-w-[280px] bg-white/90">
+    <Card padding="none" className="w-full sm:w-auto sm:min-w-[280px] p-4 sm:p-6 bg-white/90">
       <p className="text-[10px] uppercase tracking-[0.16em] text-subtle mb-3">
         {authenticated ? "Cuenta vinculada" : "Modo de compra"}
       </p>

@@ -446,11 +446,11 @@ export default function CatalogoGrid({ productos, promociones = [], pagination, 
   return (
     <div className="flex flex-col gap-6 lg:gap-8">
       {/* Pestañas de categorías + acceso rápido Solo Ofertas */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar" role="tablist" aria-label="Categorías de prendas">
+      <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar" role="tablist" aria-label="Categorías de prendas">
         <button
           type="button"
           onClick={() => handleCategoriaChange("")}
-          className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm cursor-pointer ${!categoriaFiltro || categoriaFiltro === "todas"
+          className={`whitespace-nowrap rounded-full border px-3.5 py-2 sm:px-5 sm:py-2.5 text-[10px] sm:text-[11px] uppercase transition-all tracking-[0.12em] sm:tracking-[0.14em] shadow-sm cursor-pointer ${!categoriaFiltro || categoriaFiltro === "todas"
             ? "bg-foreground text-background border-foreground font-semibold"
             : "bg-white text-muted border-border hover:bg-surface"
             }`}
@@ -461,14 +461,14 @@ export default function CatalogoGrid({ productos, promociones = [], pagination, 
         <button
           type="button"
           onClick={() => handleSoloOfertasChange(!soloOfertas)}
-          className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm cursor-pointer ${
+          className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-2 sm:px-5 sm:py-2.5 text-[10px] sm:text-[11px] uppercase transition-all tracking-[0.12em] sm:tracking-[0.14em] shadow-sm cursor-pointer ${
             soloOfertas
               ? "bg-danger text-white border-danger font-semibold"
               : "bg-white text-danger border-danger/35 hover:bg-danger/5"
           }`}
           aria-pressed={soloOfertas}
         >
-          <FiTag className="h-3 w-3" aria-hidden="true" />
+          <FiTag className="h-3 w-3 shrink-0" aria-hidden="true" />
           Solo ofertas
         </button>
         {categorias.map((categoria) => {
@@ -478,7 +478,7 @@ export default function CatalogoGrid({ productos, promociones = [], pagination, 
               key={categoria}
               type="button"
               onClick={() => handleCategoriaChange(categoria)}
-              className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-[11px] uppercase transition-all tracking-[0.14em] shadow-sm cursor-pointer ${activa
+              className={`whitespace-nowrap rounded-full border px-3.5 py-2 sm:px-5 sm:py-2.5 text-[10px] sm:text-[11px] uppercase transition-all tracking-[0.12em] sm:tracking-[0.14em] shadow-sm cursor-pointer ${activa
                 ? "bg-foreground text-background border-foreground font-semibold"
                 : "bg-white text-muted border-border hover:bg-surface"
                 }`}
@@ -517,11 +517,11 @@ export default function CatalogoGrid({ productos, promociones = [], pagination, 
 
         <section>
           {/* Barra de resultados + orden + botón filtros móvil */}
-          <div className="mb-5 flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border bg-white px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6 shadow-sm">
+          <div className="mb-5 flex flex-col gap-3 sm:gap-4 rounded-[var(--radius-lg)] border border-border bg-white px-4 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:py-5 shadow-sm">
             <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
-              <div>
+              <div className="min-w-0">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-subtle">Resultado actual</p>
-                <p className="mt-1.5 text-sm leading-6 text-muted">
+                <p className="mt-1 text-xs sm:text-sm leading-5 sm:leading-6 text-muted">
                   {productosVisibles.length} prenda{productosVisibles.length !== 1 ? "s" : ""} visible{productosVisibles.length !== 1 ? "s" : ""}
                   {pagination?.total ? ` (de ${pagination.total} totales)` : ""}.
                   {isPending ? " Actualizando..." : ""}
@@ -531,10 +531,10 @@ export default function CatalogoGrid({ productos, promociones = [], pagination, 
               <button
                 type="button"
                 onClick={() => setFiltrosAbiertos(true)}
-                className="lg:hidden inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-foreground active:scale-95 transition-transform shadow-xs relative shrink-0"
+                className="lg:hidden inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-border bg-background px-3.5 py-2 sm:px-4 sm:py-2.5 text-[11px] uppercase tracking-[0.14em] text-foreground active:scale-95 transition-transform shadow-xs relative shrink-0"
                 aria-label="Abrir filtros"
               >
-                <FiSliders className="w-4 h-4" />
+                <FiSliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Filtros</span>
                 {filtrosActivos > 0 && (
                   <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] text-white font-bold">
@@ -632,7 +632,7 @@ export default function CatalogoGrid({ productos, promociones = [], pagination, 
               )}
             </div>
           ) : (
-            <div className={`grid grid-cols-2 gap-4 sm:gap-6 xl:grid-cols-3 transition-opacity ${isPending ? "opacity-60" : "opacity-100"}`}>
+            <div className={`grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-3 transition-opacity ${isPending ? "opacity-60" : "opacity-100"}`}>
               {productosVisibles.map((producto) => (
                 <ProductoCard
                   key={producto._id}
@@ -700,7 +700,7 @@ export default function CatalogoGrid({ productos, promociones = [], pagination, 
           onClick={() => setFiltrosAbiertos(false)}
         >
           <div
-            className="w-full max-h-[85vh] sm:max-w-md flex flex-col rounded-t-[28px] sm:rounded-[28px] bg-white border border-border shadow-2xl overflow-hidden animate-slide-in-right"
+            className="w-full max-h-[85dvh] sm:max-w-md flex flex-col rounded-t-[28px] sm:rounded-[28px] bg-white border border-border shadow-2xl overflow-hidden animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-border px-5 py-4 bg-background">
@@ -804,19 +804,20 @@ function ProductoCard({
   const priceRange = getCatalogProductPriceRange(producto);
   const listPriceRange = tieneRebaja ? getCatalogProductListPriceRange(producto) : null;
   const promoBadges = promociones.slice(0, 2);
+  const extraMobilePromos = Math.max(0, promociones.length - 1);
 
   return (
-    <Link href={href} className="group block">
-      <article className="h-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-white transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] hover:shadow-[0_18px_40px_rgba(17,17,17,0.06)]">
+    <Link href={href} className="group block h-full">
+      <article className="h-full flex flex-col overflow-hidden rounded-[20px] sm:rounded-[var(--radius-lg)] border border-border bg-white transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] hover:shadow-[0_18px_40px_rgba(17,17,17,0.06)]">
         <div className="relative aspect-[3/4] overflow-hidden bg-surface-soft">
-          <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-1.5 max-w-[calc(100%-1.5rem)]">
+          <div className="absolute left-2 top-2 sm:left-3 sm:top-3 z-10 flex flex-col items-start gap-1 sm:gap-1.5 max-w-[calc(100%-1rem)] sm:max-w-[calc(100%-1.5rem)]">
             {descuento > 0 && (
-              <span className="rounded-full bg-danger px-3 py-1 text-[10px] font-semibold uppercase text-white tracking-[0.12em] shadow-xs">
+              <span className="rounded-full bg-danger px-2 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] font-semibold uppercase text-white tracking-[0.08em] sm:tracking-[0.12em] shadow-xs">
                 -{descuento}%
               </span>
             )}
             {descuento === 0 && nuevo && (
-              <span className="rounded-full bg-accent px-3 py-1 text-[10px] uppercase text-white tracking-[0.12em] shadow-xs">
+              <span className="rounded-full bg-accent px-2 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] uppercase text-white tracking-[0.08em] sm:tracking-[0.12em] shadow-xs">
                 Nuevo
               </span>
             )}
@@ -824,10 +825,15 @@ function ProductoCard({
               <span
                 key={promo._id ?? promo.id ?? `${promo.nombre}-${idx}`}
                 title={promo.descripcion || promo.nombre}
-                className="inline-flex items-center gap-1 rounded-full border border-emerald-700/20 bg-emerald-950/88 backdrop-blur-xs px-2.5 py-1 text-[9px] sm:text-[10px] font-semibold uppercase text-emerald-50 tracking-[0.1em] shadow-xs truncate max-w-full"
+                className={`${idx > 0 ? "hidden sm:inline-flex" : "inline-flex"} items-center gap-1 rounded-full border border-emerald-700/20 bg-emerald-950/88 backdrop-blur-xs px-2 py-0.5 sm:px-2.5 sm:py-1 text-[8.5px] sm:text-[10px] font-semibold uppercase text-emerald-50 tracking-[0.06em] sm:tracking-[0.1em] shadow-xs max-w-full`}
               >
                 <FiTag className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
                 <span className="truncate">{formatPromotionBadgeLabel(promo)}</span>
+                {idx === 0 && extraMobilePromos > 0 ? (
+                  <span className="sm:hidden shrink-0 rounded-full bg-white/15 px-1 text-[8px]">
+                    +{extraMobilePromos}
+                  </span>
+                ) : null}
               </span>
             ))}
           </div>
@@ -860,29 +866,43 @@ function ProductoCard({
           </div>
         </div>
 
-        <div className="p-4 sm:p-5">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-subtle">
+        <div className="p-3 sm:p-5 flex-1 flex flex-col">
+          <p className="text-[9.5px] sm:text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.14em] text-subtle truncate">
             {(producto.nombre ?? "").toUpperCase()}
           </p>
-          <h3 className="mt-2 min-h-[42px] text-sm leading-6 sm:min-h-[50px] sm:text-[0.98rem] text-foreground font-medium">
+          <h3 className="mt-1.5 min-h-[36px] text-[13px] leading-snug line-clamp-2 sm:mt-2 sm:min-h-[50px] sm:text-[0.98rem] sm:leading-6 text-foreground font-medium">
             {producto.modelo}
           </h3>
-          <div className="mt-3 flex flex-wrap items-baseline gap-2">
-            <p className={`text-lg font-semibold sm:text-xl font-serif ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
-              {priceRange.hasRange
-                ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
-                : formatPrice(priceRange.min)}
+          <div className="mt-2 sm:mt-3 flex flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2 sm:gap-y-0.5">
+            <p className={`text-[15px] leading-tight font-semibold sm:text-xl font-serif ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
+              {priceRange.hasRange ? (
+                <>
+                  <span className="sm:hidden whitespace-nowrap">Desde {formatPrice(priceRange.min)}</span>
+                  <span className="hidden sm:inline">
+                    {formatPrice(priceRange.min)} - {formatPrice(priceRange.max)}
+                  </span>
+                </>
+              ) : (
+                <span className="whitespace-nowrap">{formatPrice(priceRange.min)}</span>
+              )}
             </p>
             {listPriceRange && (
-              <span className="text-xs line-through text-subtle">
-                {listPriceRange.hasRange
-                  ? `${formatPrice(listPriceRange.min)} - ${formatPrice(listPriceRange.max)}`
-                  : formatPrice(listPriceRange.min)}
+              <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight whitespace-nowrap">
+                {listPriceRange.hasRange ? (
+                  <>
+                    <span className="sm:hidden">{formatPrice(listPriceRange.min)}</span>
+                    <span className="hidden sm:inline">
+                      {formatPrice(listPriceRange.min)} - {formatPrice(listPriceRange.max)}
+                    </span>
+                  </>
+                ) : (
+                  formatPrice(listPriceRange.min)
+                )}
               </span>
             )}
           </div>
-          <p className={`mt-2 text-[11px] ${stock > 0 ? "text-subtle" : "text-danger"}`}>
-            Ver colores y tallas disponibles
+          <p className={`mt-auto pt-2 text-[10.5px] sm:text-[11px] ${stock > 0 ? "text-subtle" : "text-danger"}`}>
+            Ver colores y tallas
           </p>
           {/*}
           <div className="mt-4 flex items-center justify-between gap-3">

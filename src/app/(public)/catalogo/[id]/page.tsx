@@ -192,7 +192,7 @@ export default async function ProductoDetallePage({
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
               {relacionados.map((item) => {
                 const itemFotos = imagenesDeProducto(item);
                 const itemDescuento = getCatalogProductDiscountPercent(item);
@@ -202,20 +202,20 @@ export default async function ProductoDetallePage({
                 const itemPromos = getPromotionsForProduct(promociones, item).slice(0, 1);
 
                 return (
-                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block">
-                    <article className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-white transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] hover:shadow-[0_14px_30px_rgba(0,0,0,0.06)]">
+                  <Link key={item._id} href={`/catalogo/${item._id}`} className="group block h-full">
+                    <article className="h-full flex flex-col overflow-hidden rounded-[20px] sm:rounded-[var(--radius-lg)] border border-border bg-white transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] hover:shadow-[0_14px_30px_rgba(0,0,0,0.06)]">
                       <div className="relative aspect-[3/4] overflow-hidden bg-background">
                         {(itemDescuento > 0 || itemPromos.length > 0) && (
-                          <div className="absolute left-2.5 top-2.5 z-10 flex flex-col items-start gap-1 max-w-[calc(100%-1.25rem)]">
+                          <div className="absolute left-2 top-2 sm:left-2.5 sm:top-2.5 z-10 flex flex-col items-start gap-1 max-w-[calc(100%-1rem)] sm:max-w-[calc(100%-1.25rem)]">
                             {itemDescuento > 0 && (
-                              <span className="rounded-full bg-danger px-2.5 py-0.5 text-[10px] font-semibold uppercase text-white tracking-[0.1em]">
+                              <span className="rounded-full bg-danger px-2 py-0.5 sm:px-2.5 text-[9px] sm:text-[10px] font-semibold uppercase text-white tracking-[0.08em] sm:tracking-[0.1em]">
                                 -{itemDescuento}%
                               </span>
                             )}
                             {itemPromos.map((promo, idx) => (
                               <span
                                 key={promo._id ?? promo.id ?? idx}
-                                className="rounded-full bg-emerald-950/88 px-2.5 py-0.5 text-[9px] font-semibold uppercase text-emerald-50 tracking-[0.08em] truncate max-w-full"
+                                className="rounded-full bg-emerald-950/88 px-2 py-0.5 sm:px-2.5 text-[8.5px] sm:text-[9px] font-semibold uppercase text-emerald-50 tracking-[0.06em] sm:tracking-[0.08em] truncate max-w-full"
                               >
                                 {formatPromotionBadgeLabel(promo)}
                               </span>
@@ -236,21 +236,28 @@ export default async function ProductoDetallePage({
                           </div>
                         )}
                       </div>
-                      <div className="p-4">
-                        <p className="text-[10px] uppercase tracking-[0.12em] text-subtle truncate">
+                      <div className="p-3 sm:p-4 flex-1 flex flex-col">
+                        <p className="text-[9.5px] sm:text-[10px] uppercase tracking-[0.12em] text-subtle truncate">
                           {item.nombre}
                         </p>
-                        <h3 className="mt-1 text-sm font-medium text-foreground truncate">
+                        <h3 className="mt-1 text-[13px] sm:text-sm font-medium text-foreground truncate">
                           {item.modelo}
                         </h3>
-                        <div className="mt-2 flex flex-wrap items-baseline gap-1.5">
-                          <p className={`text-base font-serif font-semibold ${itemTieneRebaja ? "text-danger" : "text-foreground"}`}>
-                            {itemPriceRange.hasRange
-                              ? `${formatPrice(itemPriceRange.min)} - ${formatPrice(itemPriceRange.max)}`
-                              : formatPrice(itemPriceRange.min)}
+                        <div className="mt-auto pt-2 flex flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-1.5">
+                          <p className={`text-[15px] sm:text-base leading-tight font-serif font-semibold ${itemTieneRebaja ? "text-danger" : "text-foreground"}`}>
+                            {itemPriceRange.hasRange ? (
+                              <>
+                                <span className="sm:hidden whitespace-nowrap">Desde {formatPrice(itemPriceRange.min)}</span>
+                                <span className="hidden sm:inline">
+                                  {formatPrice(itemPriceRange.min)} - {formatPrice(itemPriceRange.max)}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="whitespace-nowrap">{formatPrice(itemPriceRange.min)}</span>
+                            )}
                           </p>
                           {itemListRange && (
-                            <span className="text-xs line-through text-subtle">
+                            <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight whitespace-nowrap">
                               {formatPrice(itemListRange.min)}
                             </span>
                           )}
