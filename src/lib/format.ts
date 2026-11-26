@@ -13,6 +13,13 @@ export function formatPrice(value: number): string {
 }
 
 /**
+ * Formats a price range as a single price or "min - max" string in Bs.
+ */
+export function formatPriceRange(range: { min: number; max: number; hasRange: boolean }): string {
+  return range.hasRange ? `${formatPrice(range.min)} - ${formatPrice(range.max)}` : formatPrice(range.min);
+}
+
+/**
  * Alias for formatPrice to maintain compatibility with legacy code.
  */
 export const formatMoney = formatPrice;
@@ -23,7 +30,7 @@ export const formatMoney = formatPrice;
 export function formatDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return "Fecha invalida";
-  
+
   return new Intl.DateTimeFormat("es-BO", {
     day: "2-digit",
     month: "2-digit",

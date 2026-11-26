@@ -7,7 +7,7 @@ import { FiSearch, FiSliders, FiTag, FiX } from "react-icons/fi";
 import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import { imagenesDeProducto, imagenesDeVariante } from "@/lib/catalogo-imagenes";
 import { getProductColorValue, isLightProductColor, sortProductColors } from "@/lib/product-colors";
-import { formatPrice } from "@/lib/format";
+import { formatPriceRange } from "@/lib/format";
 import {
   catalogProductHasSale,
   catalogVariantIsAvailable,
@@ -875,29 +875,11 @@ function ProductoCard({
           </h3>
           <div className="mt-2 sm:mt-3 flex flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2 sm:gap-y-0.5">
             <p className={`text-[15px] leading-tight font-semibold sm:text-xl font-serif ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
-              {priceRange.hasRange ? (
-                <>
-                  <span className="sm:hidden whitespace-nowrap">Desde {formatPrice(priceRange.min)}</span>
-                  <span className="hidden sm:inline">
-                    {formatPrice(priceRange.min)} - {formatPrice(priceRange.max)}
-                  </span>
-                </>
-              ) : (
-                <span className="whitespace-nowrap">{formatPrice(priceRange.min)}</span>
-              )}
+              {formatPriceRange(priceRange)}
             </p>
             {listPriceRange && (
-              <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight whitespace-nowrap">
-                {listPriceRange.hasRange ? (
-                  <>
-                    <span className="sm:hidden">{formatPrice(listPriceRange.min)}</span>
-                    <span className="hidden sm:inline">
-                      {formatPrice(listPriceRange.min)} - {formatPrice(listPriceRange.max)}
-                    </span>
-                  </>
-                ) : (
-                  formatPrice(listPriceRange.min)
-                )}
+              <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight">
+                {formatPriceRange(listPriceRange)}
               </span>
             )}
           </div>

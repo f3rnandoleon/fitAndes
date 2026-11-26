@@ -5,7 +5,7 @@ import CarruselImagenes from "@/components/catalogo/CarruselImagenes";
 import HomeBannerCarousel from "@/components/home/HomeBannerCarousel";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
 import { DEFAULT_NATIONAL_SHIPPING_FEE, SEASONAL_THEME_ENABLED } from "@/lib/constants";
-import { formatPrice } from "@/lib/format";
+import { formatPriceRange } from "@/lib/format";
 import {
   catalogProductHasSale,
   getCatalogProductAvailableStock,
@@ -348,29 +348,11 @@ export default async function HomePage() {
                         <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] uppercase tracking-[0.1em] sm:tracking-[0.12em] text-subtle line-clamp-2">{item.modelo}</p>
                         <div className="mt-auto pt-2 sm:pt-3 flex flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2">
                           <p className={`text-sm sm:text-base font-medium leading-tight ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
-                            {priceRange.hasRange ? (
-                              <>
-                                <span className="sm:hidden whitespace-nowrap">Desde {formatPrice(priceRange.min)}</span>
-                                <span className="hidden sm:inline">
-                                  {formatPrice(priceRange.min)} - {formatPrice(priceRange.max)}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="whitespace-nowrap">{formatPrice(priceRange.min)}</span>
-                            )}
+                            {formatPriceRange(priceRange)}
                           </p>
                           {listPriceRange ? (
-                            <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight whitespace-nowrap">
-                              {listPriceRange.hasRange ? (
-                                <>
-                                  <span className="sm:hidden">{formatPrice(listPriceRange.min)}</span>
-                                  <span className="hidden sm:inline">
-                                    {formatPrice(listPriceRange.min)} - {formatPrice(listPriceRange.max)}
-                                  </span>
-                                </>
-                              ) : (
-                                formatPrice(listPriceRange.min)
-                              )}
+                            <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight">
+                              {formatPriceRange(listPriceRange)}
                             </span>
                           ) : null}
                         </div>
@@ -460,29 +442,11 @@ export default async function HomePage() {
                         <p className="text-xs sm:text-sm font-normal leading-snug sm:leading-6 text-muted/80 line-clamp-2">{item.modelo}</p>
                         <div className="mt-auto pt-2 flex flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2">
                           <p className={`text-sm font-medium leading-tight ${tieneRebaja ? "text-danger" : "text-foreground"}`}>
-                            {priceRange.hasRange ? (
-                              <>
-                                <span className="sm:hidden whitespace-nowrap">Desde {formatPrice(priceRange.min)}</span>
-                                <span className="hidden sm:inline">
-                                  {formatPrice(priceRange.min)} - {formatPrice(priceRange.max)}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="whitespace-nowrap">{formatPrice(priceRange.min)}</span>
-                            )}
+                            {formatPriceRange(priceRange)}
                           </p>
                           {listPriceRange ? (
-                            <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight whitespace-nowrap">
-                              {listPriceRange.hasRange ? (
-                                <>
-                                  <span className="sm:hidden">{formatPrice(listPriceRange.min)}</span>
-                                  <span className="hidden sm:inline">
-                                    {formatPrice(listPriceRange.min)} - {formatPrice(listPriceRange.max)}
-                                  </span>
-                                </>
-                              ) : (
-                                formatPrice(listPriceRange.min)
-                              )}
+                            <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight">
+                              {formatPriceRange(listPriceRange)}
                             </span>
                           ) : null}
                         </div>

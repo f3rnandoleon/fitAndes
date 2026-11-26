@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import ProductoDetalleCliente from "@/components/catalogo/ProductoDetalleCliente";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { imagenesDeProducto } from "@/lib/catalogo-imagenes";
-import { formatPrice } from "@/lib/format";
+import { formatPriceRange } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants";
 import { getPublicPromotions } from "@/lib/promociones-server";
 import {
@@ -245,20 +245,11 @@ export default async function ProductoDetallePage({
                         </h3>
                         <div className="mt-auto pt-2 flex flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-1.5">
                           <p className={`text-[15px] sm:text-base leading-tight font-serif font-semibold ${itemTieneRebaja ? "text-danger" : "text-foreground"}`}>
-                            {itemPriceRange.hasRange ? (
-                              <>
-                                <span className="sm:hidden whitespace-nowrap">Desde {formatPrice(itemPriceRange.min)}</span>
-                                <span className="hidden sm:inline">
-                                  {formatPrice(itemPriceRange.min)} - {formatPrice(itemPriceRange.max)}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="whitespace-nowrap">{formatPrice(itemPriceRange.min)}</span>
-                            )}
+                            {formatPriceRange(itemPriceRange)}
                           </p>
                           {itemListRange && (
-                            <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight whitespace-nowrap">
-                              {formatPrice(itemListRange.min)}
+                            <span className="text-[11px] sm:text-xs line-through text-subtle leading-tight">
+                              {formatPriceRange(itemListRange)}
                             </span>
                           )}
                         </div>
