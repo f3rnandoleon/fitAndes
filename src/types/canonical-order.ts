@@ -48,6 +48,6 @@ export interface CanonicalCheckoutPayload {
     color: string;
     talla: string;
     cantidad: number;
-    precio: number;
+    precio?: number;
   }>;
 }

@@ -40,6 +40,36 @@ export function validateCheckoutPayload(payload: CheckoutSubmitPayload): string 
     }
   }
 
+  // Modo Checkout Express de Promoción (La Paz = WHATSAPP + QR; Otro Depto = SHIPPING_NATIONAL + QR sin empresa/CI)
+  if (payload.promoExpress) {
+    if (payload.paymentMethod !== "QR") {
+      return "La promoción requiere pago mediante QR.";
+    }
+
+    const activeName = compactText(payload.delivery.recipientName) || compactText(payload.clienteInvitado?.nombreCompleto);
+    if (!activeName || activeName.length < 3) {
+      return "Ingresa tu nombre completo para coordinar la entrega.";
+    }
+
+    const activePhone = normalizePhone(payload.delivery.phone || payload.delivery.senderPhone || payload.clienteInvitado?.telefono);
+    if (activePhone.length < 7) {
+      return "Ingresa un número de celular válido para WhatsApp.";
+    }
+
+    if (payload.delivery.method === "SHIPPING_NATIONAL") {
+      if (!compactText(payload.delivery.department)) {
+        return "Selecciona el departamento de destino para tu envío.";
+      }
+      return null;
+    }
+
+    if (payload.delivery.method === "WHATSAPP") {
+      return null;
+    }
+
+    return "Selecciona si tu pedido es para La Paz u otro departamento.";
+  }
+
   if (payload.delivery.method === "PICKUP_POINT") {
     if (!compactText(payload.delivery.address)) {
       return "Ingresa el punto de encuentro o dirección de referencia.";

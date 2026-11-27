@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
   }
 
   const payload: CheckoutSubmitPayload = parsedPayload.data;
+  const isPromoExpress = Boolean(payload.promoExpress);
   const isGuest = Boolean(payload.esInvitado || !auth || auth.role !== "CLIENTE");
 
   if (isGuest) {
@@ -90,13 +91,15 @@ export async function POST(request: NextRequest) {
   logger.info("Checkout started", {
     requestId,
     isGuest,
+    isPromoExpress,
     userId: auth?.userId ?? "invitado",
     itemsCount: payload.items.length,
     paymentMethod: payload.paymentMethod
   });
 
-  // Sincronizar carrito remoto únicamente si el usuario está formalmente autenticado
-  if (!isGuest && auth) {
+  // Sincronizar carrito remoto únicamente en flujo clásico autenticado.
+  // En Promo Express enviamos items directamente para no borrar el carrito BD si la reserva de 10 min expira.
+  if (!isGuest && auth && !isPromoExpress) {
     const syncResult = await syncRemoteCart(auth, payload.items, { requestId });
     if (!syncResult.ok) {
       logger.error("Checkout cart sync failed", { 
@@ -118,24 +121,34 @@ export async function POST(request: NextRequest) {
     const canonicalCheckoutPayload = buildCanonicalCheckoutPayload(payload);
     const legacyCheckoutPayload = buildLegacyCheckoutPayload(payload);
 
+    const checkoutAttempts = isPromoExpress
+      ? [
+          {
+            path: "/pedidos/checkout",
+            method: "POST",
+            body: JSON.stringify(canonicalCheckoutPayload),
+          },
+        ]
+      : [
+          {
+            path: "/pedidos/checkout",
+            method: "POST",
+            body: JSON.stringify(canonicalCheckoutPayload),
+          },
+          {
+            path: "/pedidos/checkout",
+            method: "POST",
+            body: JSON.stringify(legacyCheckoutPayload),
+          },
+          {
+            path: "/orders/checkout",
+            method: "POST",
+            body: JSON.stringify(legacyCheckoutPayload),
+          },
+        ];
+
     const result = await fetchCentralJson(
-      [
-        {
-          path: "/pedidos/checkout",
-          method: "POST",
-          body: JSON.stringify(canonicalCheckoutPayload),
-        },
-        {
-          path: "/pedidos/checkout",
-          method: "POST",
-          body: JSON.stringify(legacyCheckoutPayload),
-        },
-        {
-          path: "/orders/checkout",
-          method: "POST",
-          body: JSON.stringify(legacyCheckoutPayload),
-        },
-      ],
+      checkoutAttempts,
       isGuest ? null : auth,
       { requestId }
     );
@@ -151,6 +164,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           ok: false,
+          code: typeof data?.code === "string" ? data.code : null,
           message: extractErrorMessage(
             data,
             !isGuest && !auth?.accessToken
@@ -164,18 +178,28 @@ export async function POST(request: NextRequest) {
 
     const { orderId, orderNumber } = extractOrderInfo(data);
     const pedidoRecord = parseJsonRecord(data?.pedido) ?? parseJsonRecord(data?.order);
-    const backendTotal =
-      typeof pedidoRecord?.total === "number" && Number.isFinite(pedidoRecord.total)
-        ? pedidoRecord.total
-        : typeof data?.total === "number" && Number.isFinite(data.total)
-          ? data.total
-          : null;
-    const backendDescuento =
-      typeof pedidoRecord?.descuento === "number" && Number.isFinite(pedidoRecord.descuento)
-        ? pedidoRecord.descuento
-        : typeof data?.descuento === "number" && Number.isFinite(data.descuento)
-          ? data.descuento
-          : null;
+    const readNumber = (...values: unknown[]): number | null => {
+      for (const value of values) {
+        if (typeof value === "number" && Number.isFinite(value)) return value;
+      }
+      return null;
+    };
+
+    const backendSubtotal = readNumber(pedidoRecord?.subtotal, data?.subtotal);
+    const backendCostoEnvio = readNumber(pedidoRecord?.costoEnvio, data?.costoEnvio);
+    const backendTotal = readNumber(pedidoRecord?.total, data?.total);
+    const backendDescuento = readNumber(pedidoRecord?.descuento, data?.descuento);
+    const backendDescuentoCatalogo = readNumber(pedidoRecord?.descuentoCatalogo, data?.descuentoCatalogo);
+    const backendDescuentoPromociones = readNumber(pedidoRecord?.descuentoPromociones, data?.descuentoPromociones);
+    const backendDescuentoEnvio = readNumber(pedidoRecord?.descuentoEnvio, data?.descuentoEnvio);
+    const expiresAt =
+      (typeof data?.expiresAt === "string" && data.expiresAt.trim()) ||
+      (typeof pedidoRecord?.reservaExpiraEn === "string" && pedidoRecord.reservaExpiraEn.trim()) ||
+      null;
+    const reservationToken =
+      typeof data?.reservationToken === "string" && data.reservationToken.trim()
+        ? data.reservationToken.trim()
+        : null;
     const appliedCupon =
       (typeof pedidoRecord?.cuponCodigo === "string" && pedidoRecord.cuponCodigo.trim()) ||
       (typeof payload.cuponCodigo === "string" && payload.cuponCodigo.trim().toUpperCase()) ||
@@ -190,7 +214,7 @@ export async function POST(request: NextRequest) {
       : auth?.email ?? undefined;
 
     const whatsappUrl =
-      payload.delivery.method === "WHATSAPP"
+      !isPromoExpress && payload.delivery.method === "WHATSAPP"
         ? buildWhatsappUrl({
             customerName: customerDisplayName,
             customerEmail,
@@ -221,7 +245,8 @@ export async function POST(request: NextRequest) {
       userId: auth?.userId ?? "invitado", 
       orderId, 
       orderNumber, 
-      hasPayment: !!paymentId 
+      hasPayment: !!paymentId,
+      isPromoExpress
     });
 
     return NextResponse.json({
@@ -229,10 +254,17 @@ export async function POST(request: NextRequest) {
       orderId,
       orderNumber,
       paymentId,
+      expiresAt,
+      reservationToken,
       receiptRequired: payload.paymentMethod === "QR",
       whatsappUrl,
+      subtotal: backendSubtotal,
+      costoEnvio: backendCostoEnvio,
       total,
       descuento: backendDescuento,
+      descuentoCatalogo: backendDescuentoCatalogo,
+      descuentoPromociones: backendDescuentoPromociones,
+      descuentoEnvio: backendDescuentoEnvio,
       cuponCodigo: appliedCupon,
       warning,
       message:

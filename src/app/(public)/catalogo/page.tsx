@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import CatalogoGrid from "@/components/catalogo/CatalogoGrid";
+import { ReservationExpiredBanner } from "@/components/catalogo/ReservationExpiredBanner";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { getPublicPromotions } from "@/lib/promociones-server";
 import {
@@ -92,6 +93,10 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
           }
           className="mb-6 sm:mb-8"
         />
+
+        <Suspense fallback={null}>
+          <ReservationExpiredBanner />
+        </Suspense>
 
         <Suspense fallback={<CatalogoSkeleton />}>
           <CatalogoGrid

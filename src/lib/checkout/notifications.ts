@@ -89,3 +89,81 @@ export function buildWhatsappUrl({
 
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
 }
+
+/**
+ * Builds a detailed WhatsApp URL for Promo Express orders after QR receipt upload.
+ */
+export function buildPromoExpressWhatsappUrl({
+  orderNumber,
+  customerName,
+  customerPhone,
+  isLaPaz,
+  department,
+  items,
+  subtotal,
+  descuentoTotal,
+  cuponCodigo,
+  costoEnvio,
+  descuentoEnvio,
+  total,
+}: {
+  orderNumber?: string | null;
+  customerName: string;
+  customerPhone: string;
+  isLaPaz: boolean;
+  department: string;
+  items: CheckoutItemInput[];
+  subtotal: number;
+  descuentoTotal?: number;
+  cuponCodigo?: string | null;
+  costoEnvio: number;
+  descuentoEnvio?: number;
+  total: number;
+}): string {
+  const netShipping = Math.max(0, costoEnvio - (descuentoEnvio ?? 0));
+  const locationLabel = isLaPaz
+    ? "La Paz (Entrega por coordinar)"
+    : `Envío departamental a ${department}`;
+
+  const lines: string[] = [
+    "¡Hola FitAndes! Acabo de realizar mi pedido y subir mi comprobante de pago QR para coordinar la entrega:",
+    "",
+    `Pedido: ${orderNumber || "Confirmado en web"}`,
+    `Nombre: ${customerName}`,
+    `Celular: ${customerPhone}`,
+    `Ubicación: ${locationLabel}`,
+    "",
+    "Detalle de prendas:",
+  ];
+
+  items.forEach((item, index) => {
+    lines.push(
+      `${index + 1}. ${item.nombre}${item.modelo ? ` (${item.modelo})` : ""}`,
+      `   Color: ${item.color}${item.colorSecundario ? ` / ${item.colorSecundario}` : ""} | Talla: ${item.talla} | Cant: ${item.cantidad}`,
+      `   Subtotal: ${formatPrice(item.cantidad * item.precio)}`
+    );
+  });
+
+  lines.push("", "Resumen de pago:");
+  lines.push(`Subtotal prendas: ${formatPrice(subtotal)}`);
+
+  if (cuponCodigo) {
+    lines.push(`Cupón aplicado: ${cuponCodigo}`);
+  }
+  if (typeof descuentoTotal === "number" && descuentoTotal > 0) {
+    lines.push(`Descuento aplicado: -${formatPrice(descuentoTotal)}`);
+  }
+
+  if (isLaPaz) {
+    lines.push("Envío: Gratis (La Paz)");
+  } else if (netShipping === 0 && costoEnvio > 0) {
+    lines.push(`Envío a ${department}: Gratis (promo aplicada)`);
+  } else {
+    lines.push(`Envío a ${department}: ${formatPrice(netShipping)}`);
+  }
+
+  lines.push(`Total pagado por QR: ${formatPrice(total)}`);
+  lines.push("", "Quedo atento(a) para coordinar la entrega/envío. ¡Gracias!");
+
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+}

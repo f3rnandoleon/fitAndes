@@ -41,6 +41,7 @@ export interface ShippingPolicy {
   nationalFlatFee?: number;
   currency?: string;
   estimatedTime?: string | null;
+  promoExpressCheckout?: boolean;
 }
 
 export interface DeliveryOptionsConfig {
@@ -96,6 +97,7 @@ export interface CheckoutSubmitPayload {
   cuponCodigo?: string | null;
   esInvitado?: boolean;
   clienteInvitado?: ClienteInvitadoInput;
+  promoExpress?: boolean;
 }
 
 export interface CheckoutSubmitResponse {
@@ -103,11 +105,19 @@ export interface CheckoutSubmitResponse {
   orderId?: string | null;
   orderNumber?: string | null;
   paymentId?: string | null;
+  expiresAt?: string | null;
+  reservationToken?: string | null;
   receiptRequired?: boolean;
   whatsappUrl?: string | null;
+  subtotal?: number | null;
+  costoEnvio?: number | null;
   total?: number | null;
   descuento?: number | null;
+  descuentoCatalogo?: number | null;
+  descuentoPromociones?: number | null;
+  descuentoEnvio?: number | null;
   cuponCodigo?: string | null;
+  code?: string | null;
   message?: string;
   warning?: string | null;
 }

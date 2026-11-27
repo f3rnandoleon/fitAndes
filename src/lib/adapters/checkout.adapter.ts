@@ -12,7 +12,18 @@ function compactText(value?: string | null) {
 
 export function buildCanonicalDeliveryPayload(delivery: CheckoutDeliveryInput): CanonicalDelivery {
   if (delivery.method === "WHATSAPP") {
-    return { metodo: "WHATSAPP" };
+    const departamento = compactText(delivery.department);
+    const ciudad = compactText(delivery.city);
+    const nombreDestinatario = compactText(delivery.recipientName);
+    const telefono = normalizePhone(delivery.phone) || undefined;
+
+    return {
+      metodo: "WHATSAPP",
+      ...(departamento ? { departamento } : {}),
+      ...(ciudad ? { ciudad } : {}),
+      ...(nombreDestinatario ? { nombreDestinatario } : {}),
+      ...(telefono ? { telefono } : {}),
+    };
   }
 
   if (delivery.method === "PICKUP_POINT") {
@@ -25,6 +36,9 @@ export function buildCanonicalDeliveryPayload(delivery: CheckoutDeliveryInput): 
     };
   }
 
+  const normalizedPhone = normalizePhone(delivery.phone || delivery.senderPhone) || undefined;
+  const normalizedSenderPhone = normalizePhone(delivery.senderPhone || delivery.phone) || undefined;
+
   return {
     metodo: "SHIPPING_NATIONAL",
     departamento: compactText(delivery.department),
@@ -32,9 +46,10 @@ export function buildCanonicalDeliveryPayload(delivery: CheckoutDeliveryInput): 
     empresaEnvio: compactText(delivery.shippingCompany),
     sucursal: compactText(delivery.branch),
     nombreDestinatario: compactText(delivery.recipientName),
+    telefono: normalizedPhone,
     nombreRemitente: compactText(delivery.senderName),
     ciRemitente: compactText(delivery.senderCI),
-    telefonoRemitente: normalizePhone(delivery.senderPhone),
+    telefonoRemitente: normalizedSenderPhone,
   };
 }
 
@@ -78,6 +93,9 @@ export function buildCanonicalCheckoutPayload(payload: CheckoutSubmitPayload): C
   if (payload.esInvitado) {
     base.esInvitado = true;
     base.clienteInvitado = payload.clienteInvitado;
+  }
+
+  if (payload.esInvitado || payload.promoExpress) {
     base.items = payload.items.map((item) => ({
       productoId: item.productoId || item.id,
       variantId: item.variantId ?? undefined,

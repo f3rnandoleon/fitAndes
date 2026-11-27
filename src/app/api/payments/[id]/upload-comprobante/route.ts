@@ -94,32 +94,62 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ message: "El comprobante no puede superar los 5 MB." }, { status: 400 });
   }
 
+  const headerReservationToken = request.headers.get("x-reservation-token")?.trim();
+  const formReservationToken = formData.get("reservationToken");
+  const reservationToken =
+    headerReservationToken ||
+    (typeof formReservationToken === "string" && formReservationToken.trim() ? formReservationToken.trim() : null);
+
+  const extraHeaders: HeadersInit | undefined = reservationToken
+    ? { "x-reservation-token": reservationToken }
+    : undefined;
+
   try {
-    const result = await fetchCentralJson([
-      {
-        path: `/pagos/${id}/upload-comprobante`,
-        method: "POST",
-        body: cloneFormData(formData),
-      },
-      {
-        path: `/payments/${id}/upload-comprobante`,
-        method: "POST",
-        body: cloneFormData(formData),
-      },
-    ], auth, { requestId });
+    const attempts = reservationToken
+      ? [
+          {
+            path: `/pagos/${id}/upload-comprobante`,
+            method: "POST",
+            body: cloneFormData(formData),
+            headers: extraHeaders,
+          },
+        ]
+      : [
+          {
+            path: `/pagos/${id}/upload-comprobante`,
+            method: "POST",
+            body: cloneFormData(formData),
+          },
+          {
+            path: `/payments/${id}/upload-comprobante`,
+            method: "POST",
+            body: cloneFormData(formData),
+          },
+        ];
+
+    const result = await fetchCentralJson(attempts, auth, { requestId });
 
     const data = parseJsonRecord(result.data);
     if (!result.response.ok) {
-      logger.error("Payment receipt upload API failed", { status: result.response.status, requestId, paymentId: id, error: data });
+      logger.error("Payment receipt upload API failed", {
+        status: result.response.status,
+        requestId,
+        paymentId: id,
+        error: data,
+      });
       return NextResponse.json(
-        { message: extractErrorMessage(data, "No pude subir el comprobante en este momento.") }, 
+        {
+          ok: false,
+          code: typeof data?.code === "string" ? data.code : null,
+          message: extractErrorMessage(data, "No pude subir el comprobante en este momento."),
+        },
         { status: result.response.status }
       );
     }
 
     logger.info("Payment receipt upload successful", { requestId, paymentId: id, isGuest: !auth });
 
-    return NextResponse.json(result.data);
+    return NextResponse.json(result.data, { status: result.response.status });
   } catch (error) {
     logger.error("Payment receipt upload critical failure", { error, requestId, paymentId: id });
     return NextResponse.json({ message: "No pude conectar con la API principal para subir el comprobante." }, { status: 502 });

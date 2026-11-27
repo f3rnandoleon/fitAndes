@@ -25,6 +25,8 @@ interface Props {
   error?: string;
   onSubmit: () => void;
   authenticated: boolean;
+  submitLabel?: string;
+  hideShippingRow?: boolean;
 }
 
 export function resolveFinalCheckoutTotal(
@@ -74,6 +76,8 @@ export function CheckoutSummarySidebar({
   error,
   onSubmit,
   authenticated,
+  submitLabel,
+  hideShippingRow = false,
 }: Props) {
   const [couponInput, setCouponInput] = useState("");
 
@@ -207,23 +211,25 @@ export function CheckoutSummarySidebar({
         </div>
       ) : null}
 
-      <div className="flex items-start justify-between gap-3 text-[11px] uppercase tracking-wider text-muted">
-        <span className="min-w-0 leading-snug">Costo de envío</span>
-        <span className="shrink-0 flex items-center gap-1.5 whitespace-nowrap">
-          {descuentoEnvio > 0 && shippingCost > 0 ? (
-            <>
-              <span className="line-through text-subtle">{formatPrice(shippingCost)}</span>
-              <span className="text-success font-semibold">
-                {netShipping === 0 ? "Gratis" : formatPrice(netShipping)}
+      {!hideShippingRow && (
+        <div className="flex items-start justify-between gap-3 text-[11px] uppercase tracking-wider text-muted">
+          <span className="min-w-0 leading-snug">Costo de envío</span>
+          <span className="shrink-0 flex items-center gap-1.5 whitespace-nowrap">
+            {descuentoEnvio > 0 && shippingCost > 0 ? (
+              <>
+                <span className="line-through text-subtle">{formatPrice(shippingCost)}</span>
+                <span className="text-success font-semibold">
+                  {netShipping === 0 ? "Gratis" : formatPrice(netShipping)}
+                </span>
+              </>
+            ) : (
+              <span className={shippingCost === 0 ? "text-success font-medium" : "text-foreground font-medium"}>
+                {shippingLabel}
               </span>
-            </>
-          ) : (
-            <span className={shippingCost === 0 ? "text-success font-medium" : "text-foreground font-medium"}>
-              {shippingLabel}
-            </span>
-          )}
-        </span>
-      </div>
+            )}
+          </span>
+        </div>
+      )}
 
       {totalSavings > 0 && (
         <div className="rounded-xl border border-success/20 bg-success/8 px-3 py-2 text-[11px] text-success font-medium flex items-center justify-between gap-3">
@@ -294,7 +300,7 @@ export function CheckoutSummarySidebar({
               disabled={disabled || loading}
               onClick={onSubmit}
             >
-              {authenticated ? "Confirmar pedido" : "Finalizar compra"}
+              {submitLabel ?? (authenticated ? "Confirmar pedido" : "Finalizar compra")}
             </Button>
           </div>
         </div>
@@ -326,7 +332,7 @@ export function CheckoutSummarySidebar({
             disabled={disabled || loading}
             onClick={onSubmit}
           >
-            {authenticated ? "Confirmar pedido" : "Confirmar como invitado"}
+            {submitLabel ?? (authenticated ? "Confirmar pedido" : "Confirmar como invitado")}
           </Button>
 
           <p className="text-[10px] text-center text-subtle leading-relaxed">

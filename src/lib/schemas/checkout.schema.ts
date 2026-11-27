@@ -50,6 +50,7 @@ export const checkoutPayloadSchema = z.object({
   cuponCodigo: z.string().trim().max(64).nullable().optional(),
   esInvitado: z.boolean().optional(),
   clienteInvitado: clienteInvitadoSchema.optional(),
+  promoExpress: z.boolean().optional(),
 });
 
 export type CheckoutPayloadInput = z.infer<typeof checkoutPayloadSchema>;

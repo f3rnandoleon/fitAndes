@@ -10,6 +10,24 @@ export const SITE_NAME = "FitAndes";
 
 export const SEASONAL_THEME_ENABLED = process.env.NEXT_PUBLIC_SEASONAL_THEME === "false";
 export const DEFAULT_NATIONAL_SHIPPING_FEE = Number(process.env.NEXT_PUBLIC_NATIONAL_SHIPPING_FEE) || 10;
+export const PROMO_NATIONAL_SHIPPING_FEE = 20;
+
+const rawPromoExpressEnv = process.env.NEXT_PUBLIC_PROMO_EXPRESS_CHECKOUT?.trim().toLowerCase();
+export const PROMO_EXPRESS_ENV_OVERRIDE: boolean | undefined =
+  rawPromoExpressEnv === "true" ? true : rawPromoExpressEnv === "false" ? false : undefined;
+
+export const BOLIVIA_OTHER_DEPARTMENTS = [
+  "Oruro",
+  "Potosí",
+  "Cochabamba",
+  "Sucre",
+  "Tarija",
+  "Pando",
+  "Beni",
+  "Santa Cruz",
+] as const;
+
+export type BoliviaOtherDepartment = (typeof BOLIVIA_OTHER_DEPARTMENTS)[number];
 
 export const SOCIAL_LINKS = {
   tiktok: "https://www.tiktok.com/@fitandes",
