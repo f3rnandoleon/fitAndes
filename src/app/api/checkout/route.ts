@@ -80,6 +80,16 @@ export async function POST(request: NextRequest) {
 
   if (isGuest) {
     payload.esInvitado = true;
+    if (isPromoExpress && !payload.clienteInvitado) {
+      const fallbackName = payload.delivery.recipientName?.trim() || "";
+      const fallbackPhone = (payload.delivery.phone || payload.delivery.senderPhone || "").trim();
+      if (fallbackName && fallbackPhone) {
+        payload.clienteInvitado = {
+          nombreCompleto: fallbackName,
+          telefono: fallbackPhone,
+        };
+      }
+    }
   }
 
   const validationError = validateCheckoutPayload(payload);

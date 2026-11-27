@@ -33,6 +33,20 @@ import { getCouponErrorMessage, type PricingSummary } from "@/types/promociones"
 const ACTIVE_RESERVATION_KEY = "fitandes-promo-active-reservation";
 const CONFIRMED_ORDER_KEY = "fitandes-promo-confirmed-order";
 const EXPIRED_ORDERS_KEY = "fitandes-promo-expired-orders";
+const CART_STORAGE_KEY = "fitandes-reservas";
+const MAX_RECEIPT_SIZE_BYTES = 5 * 1024 * 1024;
+
+function hasStoredCartItems(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0;
+  } catch {
+    return false;
+  }
+}
 
 type PromoStep = 1 | 2 | 3 | 4;
 type LocationMode = "LA_PAZ" | "OTHER";
@@ -207,6 +221,7 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
   const [confirmedOrder, setConfirmedOrder] = useState<ActivePromoReservation | null>(null);
 
   const expiringRef = useRef(false);
+  const uploadingRef = useRef(false);
 
   const qrImageUrl =
     process.env.NEXT_PUBLIC_BANCOSOL_QR_URL ||
@@ -345,9 +360,11 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
     }
 
     const confirmed = readConfirmedOrder();
-    if (confirmed && items.length === 0) {
+    if (confirmed && !hasStoredCartItems()) {
       setConfirmedOrder(confirmed);
       setStep(4);
+    } else if (confirmed && hasStoredCartItems()) {
+      saveConfirmedOrder(null);
     }
     setHydratedStorage(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -512,7 +529,7 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
     const tick = () => {
       const remaining = Math.max(0, targetMs - Date.now());
       setTimeLeftMs(remaining);
-      if (remaining <= 0 && !expiringRef.current) {
+      if (remaining <= 0 && !expiringRef.current && !uploadingRef.current) {
         void expireAndRedirectToCatalog(activeReservation, false);
       }
     };
@@ -762,6 +779,7 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
     }
 
     setError("");
+    uploadingRef.current = true;
     setUploading(true);
 
     try {
@@ -789,11 +807,14 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
       } | null;
 
       if (response.status === 410 || data?.code === "RESERVATION_EXPIRED") {
+        uploadingRef.current = false;
+        setUploading(false);
         await expireAndRedirectToCatalog(activeReservation, true);
         return;
       }
 
       if (!response.ok) {
+        uploadingRef.current = false;
         setError(data?.message || "No pude subir tu comprobante. Verifica la imagen e intenta nuevamente.");
         setUploading(false);
         return;
@@ -801,6 +822,7 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
 
       // Comprobante subido con éxito: bloqueamos expiración, limpiamos carrito y pasamos al Paso 4
       expiringRef.current = true;
+      uploadingRef.current = false;
       saveStoredReservation(null);
       saveConfirmedOrder(activeReservation);
       setConfirmedOrder(activeReservation);
@@ -810,6 +832,7 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
       setStep(4);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
+      uploadingRef.current = false;
       setError("Ocurrió un error de conexión al subir tu comprobante. Intenta nuevamente.");
       setUploading(false);
     }
@@ -1331,13 +1354,13 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                     </div>
                   )}
 
-                  {activeReservation.descuento > 0 &&
+                  {Math.max(0, activeReservation.descuento - activeReservation.descuentoEnvio) > 0 &&
                     activeReservation.descuentoCatalogo === 0 &&
                     activeReservation.descuentoPromociones === 0 && (
                       <div className="flex justify-between gap-2 text-success">
                         <span>Descuento{activeReservation.cuponCodigo ? ` (${activeReservation.cuponCodigo})` : ""}</span>
                         <span className="whitespace-nowrap font-medium">
-                          - {formatPrice(activeReservation.descuento)}
+                          - {formatPrice(Math.max(0, activeReservation.descuento - activeReservation.descuentoEnvio))}
                         </span>
                       </div>
                     )}
@@ -1405,7 +1428,22 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                       id="promo-receipt-upload"
                       accept="image/*"
                       onChange={(e) => {
-                        setReceiptFile(e.target.files?.[0] ?? null);
+                        const selected = e.target.files?.[0] ?? null;
+                        if (!selected) {
+                          setReceiptFile(null);
+                          return;
+                        }
+                        if (!selected.type.startsWith("image/")) {
+                          setReceiptFile(null);
+                          setError("Solo se permiten archivos de imagen (JPG, PNG o WEBP).");
+                          return;
+                        }
+                        if (selected.size > MAX_RECEIPT_SIZE_BYTES) {
+                          setReceiptFile(null);
+                          setError("La imagen del comprobante supera los 5 MB. Por favor envía una captura más liviana.");
+                          return;
+                        }
+                        setReceiptFile(selected);
                         setError("");
                       }}
                       className="hidden"
@@ -1553,7 +1591,7 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                     department: confirmedOrder.department,
                     items: confirmedOrder.items,
                     subtotal: confirmedOrder.subtotal,
-                    descuentoTotal: confirmedOrder.descuento,
+                    descuentoTotal: Math.max(0, confirmedOrder.descuento - confirmedOrder.descuentoEnvio),
                     cuponCodigo: confirmedOrder.cuponCodigo,
                     costoEnvio: confirmedOrder.costoEnvio,
                     descuentoEnvio: confirmedOrder.descuentoEnvio,
