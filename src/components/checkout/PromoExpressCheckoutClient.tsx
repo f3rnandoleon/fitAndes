@@ -942,26 +942,30 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
     { num: 1 as PromoStep, short: "Prendas", desktop: "Prendas" },
     { num: 2 as PromoStep, short: "Envío", desktop: "Ubicación y datos" },
     { num: 3 as PromoStep, short: "Pago QR", desktop: "Pago QR (10 min)" },
-    { num: 4 as PromoStep, short: "WhatsApp", desktop: "Confirmar" },
+    { num: 4 as PromoStep, short: "Listo", desktop: "Confirmar" },
   ];
 
   return (
-    <main className="min-h-[calc(100vh-82px)] bg-gradient-to-b from-background to-surface/40 px-4 py-6 pb-36 sm:px-6 sm:py-8 sm:pb-36 lg:py-12 lg:pb-12">
-      <div className="max-w-[1240px] mx-auto">
+    <main
+      className={`min-h-[calc(100vh-82px)] overflow-x-clip bg-gradient-to-b from-background to-surface/40 px-3.5 py-4 sm:px-6 sm:py-8 lg:py-12 ${
+        step <= 2 ? "pb-32 sm:pb-36 lg:pb-12" : "pb-10 lg:pb-12"
+      }`}
+    >
+      <div className="max-w-[1240px] mx-auto w-full min-w-0">
         {/* Cabecera + Stepper de 4 pasos */}
-        <header className="mb-8 rounded-[24px] sm:rounded-[28px] border bg-white px-4 py-5 sm:mb-10 sm:px-6 sm:py-6 border-border shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-5 sm:gap-6">
-            <div className="max-w-2xl">
-              <p className="text-[10px] uppercase mb-2 tracking-[0.2em] text-subtle">
+        <header className="mb-5 sm:mb-8 rounded-[20px] sm:rounded-[28px] border bg-white px-4 py-4 sm:px-6 sm:py-6 border-border shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3.5 sm:gap-6">
+            <div className="max-w-2xl min-w-0">
+              <p className="text-[10px] uppercase mb-1.5 tracking-[0.18em] text-subtle">
                 Compra rápida · Promo FitAndes
               </p>
-              <h1 className="text-3xl font-serif text-foreground sm:text-4xl">
+              <h1 className="text-2xl sm:text-4xl font-serif text-foreground leading-tight">
                 {step === 1 && "Revisa tus prendas"}
                 {step === 2 && "¿Dónde enviamos tu pedido?"}
                 {step === 3 && "Paga con QR y sube tu comprobante"}
                 {step === 4 && "¡Pedido recibido con éxito!"}
               </h1>
-              <p className="mt-2.5 text-sm text-muted leading-relaxed">
+              <p className="mt-1.5 sm:mt-2.5 text-xs sm:text-sm text-muted leading-relaxed">
                 {step === 1 && "Verifica tallas, cantidades y descuentos aplicados antes de elegir tu ubicación."}
                 {step === 2 && "Indícanos si estás en La Paz u otro departamento y tu WhatsApp para coordinar la entrega."}
                 {step === 3 && "Tus prendas están reservadas por 10 minutos. Escanea el QR y sube la captura de pago."}
@@ -970,38 +974,72 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
             </div>
 
             {step <= 2 && (
-              <CheckoutAuthStatus
-                authenticated={authenticated}
-                user={session?.user}
-                loading={prefillLoading}
-                onLogin={goToLogin}
-              />
+              <>
+                {/* Barra compacta de sesión en móvil para no empujar el contenido abajo */}
+                <div className="sm:hidden flex items-center justify-between gap-2 rounded-xl border border-border/70 bg-surface/50 px-3 py-2 text-xs">
+                  {authenticated ? (
+                    <div className="min-w-0 flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-success shrink-0" />
+                      <span className="truncate font-medium text-foreground">
+                        {session?.user?.fullname ?? "Cuenta vinculada"}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="inline-flex items-center gap-1.5 text-[11px] text-muted min-w-0 truncate">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                        Comprando como invitado
+                      </span>
+                      <button
+                        type="button"
+                        onClick={goToLogin}
+                        className="shrink-0 text-[11px] font-semibold text-foreground underline underline-offset-2 cursor-pointer"
+                      >
+                        Iniciar sesión
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Tarjeta completa en tablet/desktop */}
+                <div className="hidden sm:block shrink-0">
+                  <CheckoutAuthStatus
+                    authenticated={authenticated}
+                    user={session?.user}
+                    loading={prefillLoading}
+                    onLogin={goToLogin}
+                  />
+                </div>
+              </>
             )}
           </div>
 
           <ol
             aria-label="Pasos del proceso de compra"
-            className="mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-border/70 grid grid-cols-4 gap-1.5 sm:gap-4"
+            className="mt-4 sm:mt-6 pt-3.5 sm:pt-5 border-t border-border/70 grid grid-cols-4 gap-1 sm:gap-4"
           >
             {stepItems.map((item) => {
               const isDone = step > item.num;
               const isActive = step === item.num;
               return (
-                <li key={item.num} className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                <li
+                  key={item.num}
+                  className="flex flex-col sm:flex-row items-center justify-center sm:justify-start text-center sm:text-left gap-1 sm:gap-2.5 min-w-0"
+                >
                   <span
-                    className={`flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold tracking-wider ${
+                    className={`flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold tracking-wider transition-colors ${
                       isDone
                         ? "bg-success text-white"
                         : isActive
-                          ? "bg-foreground text-background"
+                          ? "bg-foreground text-background shadow-xs"
                           : "border border-border bg-surface text-subtle"
                     }`}
                   >
                     {isDone ? "✓" : `0${item.num}`}
                   </span>
                   <span
-                    className={`text-[10px] sm:text-xs uppercase tracking-[0.04em] sm:tracking-[0.1em] truncate ${
-                      isDone || isActive ? "text-foreground font-medium" : "text-subtle"
+                    className={`text-[10px] sm:text-xs uppercase tracking-[0.02em] sm:tracking-[0.1em] leading-tight max-w-full truncate ${
+                      isDone || isActive ? "text-foreground font-semibold sm:font-medium" : "text-subtle"
                     }`}
                   >
                     <span className="sm:hidden">{item.short}</span>
@@ -1014,24 +1052,24 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
         </header>
 
         {systemWarning && (
-          <div className="rounded-[20px] border border-amber-200/90 bg-amber-50/80 p-4 text-amber-900 text-xs sm:text-sm mb-6">
+          <div className="rounded-[18px] border border-amber-200/90 bg-amber-50/80 p-3.5 sm:p-4 text-amber-900 text-xs sm:text-sm mb-5">
             <strong className="font-semibold text-amber-950">Aviso del sistema:</strong> {systemWarning}
           </div>
         )}
 
         {/* ==================== PASO 1: PRENDAS Y DESCUENTOS ==================== */}
         {step === 1 && (
-          <div className="grid gap-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="text-xs uppercase tracking-widest text-subtle font-semibold">
+          <div className="grid grid-cols-1 gap-5 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]">
+            <div className="min-w-0 space-y-3 sm:space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                <h2 className="text-[11px] sm:text-xs uppercase tracking-widest text-subtle font-semibold">
                   Prendas seleccionadas ({totalItems})
                 </h2>
                 <Link
                   href="/catalogo"
-                  className="text-xs text-foreground underline underline-offset-2 hover:opacity-75"
+                  className="text-xs text-foreground underline underline-offset-2 hover:opacity-75 whitespace-nowrap"
                 >
-                  Seguir viendo catálogo
+                  + Agregar más prendas
                 </Link>
               </div>
               <CheckoutCartSummary
@@ -1062,14 +1100,15 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
               onSubmit={handleContinueToStep2}
               authenticated={authenticated}
               submitLabel="Continuar"
+              mobileSubmitLabel="Continuar"
             />
           </div>
         )}
 
         {/* ==================== PASO 2: UBICACIÓN Y CONTACTO ==================== */}
         {step === 2 && (
-          <div className="grid gap-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
-            <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-5 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]">
+            <div className="min-w-0 space-y-4 sm:space-y-6">
               <button
                 type="button"
                 onClick={() => {
@@ -1082,16 +1121,16 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
               </button>
 
               {/* Selección La Paz vs Otro departamento */}
-              <Card className="rounded-[28px] space-y-5">
+              <Card padding="none" className="w-full min-w-0 rounded-[22px] sm:rounded-[28px] p-4 sm:p-6 space-y-4 sm:space-y-5">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.18em] text-subtle mb-1">Paso 2 · Ubicación</p>
-                  <h2 className="text-xl font-serif text-foreground">¿De qué departamento eres?</h2>
-                  <p className="text-xs text-muted mt-1">
+                  <h2 className="text-lg sm:text-xl font-serif text-foreground">¿De qué departamento eres?</h2>
+                  <p className="text-xs text-muted mt-1 leading-relaxed">
                     La entrega o agencia de envío la coordinaremos con calma por WhatsApp una vez confirmado tu pago.
                   </p>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
                   <button
                     type="button"
                     onClick={() => {
@@ -1099,24 +1138,26 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                       setSelectedDepartment("");
                       setError("");
                     }}
-                    className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+                    className={`min-w-0 rounded-2xl border p-3.5 sm:p-4 text-left transition-all cursor-pointer flex flex-col justify-between ${
                       isLaPaz
                         ? "border-foreground bg-foreground/[0.04] ring-1 ring-foreground"
                         : "border-border bg-white hover:border-foreground/40"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-surface text-foreground">
-                        <FaMapMarkerAlt className="h-4 w-4" />
+                    <div className="flex items-start justify-between gap-1.5">
+                      <span className="inline-flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-surface text-foreground">
+                        <FaMapMarkerAlt className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </span>
-                      <span className="rounded-full bg-success/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-success">
+                      <span className="rounded-full bg-success/15 px-2 py-0.5 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-wider text-success whitespace-nowrap">
                         Gratis
                       </span>
                     </div>
-                    <p className="mt-3 text-base font-medium text-foreground">Soy de La Paz</p>
-                    <p className="mt-1 text-xs text-muted leading-relaxed">
-                      Sin costo adicional de envío. Coordinamos punto de entrega por WhatsApp.
-                    </p>
+                    <div className="mt-3">
+                      <p className="text-sm sm:text-base font-medium text-foreground leading-snug">Soy de La Paz</p>
+                      <p className="mt-1 text-[11px] sm:text-xs text-muted leading-snug">
+                        Sin costo de envío. Coordinamos por WhatsApp.
+                      </p>
+                    </div>
                   </button>
 
                   <button
@@ -1125,39 +1166,41 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                       setLocationMode("OTHER");
                       setError("");
                     }}
-                    className={`rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+                    className={`min-w-0 rounded-2xl border p-3.5 sm:p-4 text-left transition-all cursor-pointer flex flex-col justify-between ${
                       !isLaPaz
                         ? "border-foreground bg-foreground/[0.04] ring-1 ring-foreground"
                         : "border-border bg-white hover:border-foreground/40"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-surface text-foreground">
-                        <FaTruck className="h-4 w-4" />
+                    <div className="flex items-start justify-between gap-1.5">
+                      <span className="inline-flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-surface text-foreground">
+                        <FaTruck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </span>
-                      <span className="rounded-full bg-foreground/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground">
+                      <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-wider text-foreground whitespace-nowrap">
                         +{formatPrice(nationalFlatFee)}
                       </span>
                     </div>
-                    <p className="mt-3 text-base font-medium text-foreground">Otro departamento</p>
-                    <p className="mt-1 text-xs text-muted leading-relaxed">
-                      Envío nacional con costo único de {formatPrice(nationalFlatFee)} a todo Bolivia.
-                    </p>
+                    <div className="mt-3">
+                      <p className="text-sm sm:text-base font-medium text-foreground leading-snug">Otro departamento</p>
+                      <p className="mt-1 text-[11px] sm:text-xs text-muted leading-snug">
+                        Envío nacional tarifa única a todo Bolivia.
+                      </p>
+                    </div>
                   </button>
                 </div>
 
                 {!isLaPaz && (
                   <div className="pt-3 border-t border-border/60 space-y-3">
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-1.5">
                       <p className="text-xs font-medium text-foreground">
                         Elige tu departamento <span className="text-danger">*</span>
                       </p>
                       <span className="text-[11px] text-muted">
-                        Costo de envío: <strong className="text-foreground">{formatPrice(nationalFlatFee)}</strong>
+                        Envío: <strong className="text-foreground">{formatPrice(nationalFlatFee)}</strong>
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {BOLIVIA_OTHER_DEPARTMENTS.map((dept) => {
                         const active = selectedDepartment === dept;
                         return (
@@ -1168,7 +1211,7 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                               setSelectedDepartment(dept);
                               setError("");
                             }}
-                            className={`rounded-xl border px-3 py-2.5 text-xs font-medium transition-all cursor-pointer ${
+                            className={`rounded-xl border px-2.5 py-2.5 text-xs font-medium transition-all cursor-pointer truncate ${
                               active
                                 ? "border-foreground bg-foreground text-background shadow-xs"
                                 : "border-border bg-white text-foreground hover:border-foreground/50 hover:bg-surface/40"
@@ -1184,18 +1227,18 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
               </Card>
 
               {/* Datos mínimos de contacto para WhatsApp */}
-              <Card className="rounded-[28px] space-y-4">
+              <Card padding="none" className="w-full min-w-0 rounded-[22px] sm:rounded-[28px] p-4 sm:p-6 space-y-4">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.18em] text-subtle mb-1">
                     Tus datos para coordinar entrega
                   </p>
-                  <h2 className="text-xl font-serif text-foreground">Nombre y celular WhatsApp</h2>
-                  <p className="text-xs text-muted mt-1">
+                  <h2 className="text-lg sm:text-xl font-serif text-foreground">Nombre y celular WhatsApp</h2>
+                  <p className="text-xs text-muted mt-1 leading-relaxed">
                     Usaremos estos datos para identificar tu comprobante y coordinar la entrega contigo por WhatsApp.
                   </p>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-4">
                   <Input
                     label="Nombre completo *"
                     value={customerName}
@@ -1221,8 +1264,8 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                 </div>
 
                 <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 text-[11px] text-amber-950 leading-relaxed">
-                  <strong>Importante:</strong> Al presionar <em>&ldquo;Reservar y pagar con QR&rdquo;</em> tus prendas
-                  quedarán apartadas por <strong>10 minutos</strong> para que realices el pago y subas tu comprobante.
+                  <strong>Importante:</strong> Al pasar al pago QR tus prendas quedarán apartadas por{" "}
+                  <strong>10 minutos</strong> para que realices la transferencia y subas tu comprobante.
                 </div>
               </Card>
             </div>
@@ -1246,16 +1289,17 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
               onSubmit={handleReserveAndProceedToQR}
               authenticated={authenticated}
               submitLabel={reserving ? "Reservando prendas..." : "Reservar y pagar con QR"}
+              mobileSubmitLabel={reserving ? "Reservando..." : "Pagar con QR"}
             />
           </div>
         )}
 
         {/* ==================== PASO 3: RESERVA 10 MIN + QR + COMPROBANTE ==================== */}
         {step === 3 && activeReservation && (
-          <div className="space-y-6 max-w-5xl mx-auto">
+          <div className="space-y-5 sm:space-y-6 max-w-5xl mx-auto min-w-0">
             {/* Banner de cuenta regresiva de 10 minutos */}
             <div
-              className={`rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs transition-colors ${
+              className={`rounded-[20px] border p-3.5 sm:p-5 space-y-2.5 sm:space-y-0 sm:flex sm:items-center sm:justify-between gap-4 shadow-xs transition-colors ${
                 isCriticalTime
                   ? "border-red-300 bg-red-50 text-red-950"
                   : isWarningTime
@@ -1263,32 +1307,53 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                     : "border-emerald-300 bg-emerald-50 text-emerald-950"
               }`}
             >
-              <div className="flex items-start gap-3">
-                <div
-                  className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                    isCriticalTime
-                      ? "bg-red-200 text-red-800 animate-pulse"
-                      : isWarningTime
-                        ? "bg-amber-200 text-amber-900"
-                        : "bg-emerald-200 text-emerald-900"
-                  }`}
-                >
-                  <FaClock className="h-4 w-4" />
+              <div className="flex items-start justify-between gap-3 sm:flex-1 min-w-0">
+                <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                  <div
+                    className={`mt-0.5 flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full ${
+                      isCriticalTime
+                        ? "bg-red-200 text-red-800 animate-pulse"
+                        : isWarningTime
+                          ? "bg-amber-200 text-amber-900"
+                          : "bg-emerald-200 text-emerald-900"
+                    }`}
+                  >
+                    <FaClock className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold leading-snug break-all">
+                      Prendas reservadas · {activeReservation.orderNumber}
+                    </p>
+                    <p className="hidden sm:block text-xs opacity-90 mt-0.5 leading-relaxed">
+                      {isCriticalTime
+                        ? "¡Últimos minutos! Sube tu comprobante antes de que llegue a 00:00 o las prendas se liberarán automáticamente."
+                        : "Tienes un máximo de 10 minutos para transferir por QR y subir tu comprobante. Si vence el tiempo, el stock se libera."}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold">
-                    Prendas reservadas · Pedido {activeReservation.orderNumber}
-                  </p>
-                  <p className="text-xs opacity-90 mt-0.5 leading-relaxed">
-                    {isCriticalTime
-                      ? "¡Últimos minutos! Sube tu comprobante antes de que llegue a 00:00 o las prendas se liberarán automáticamente."
-                      : "Tienes un máximo de 10 minutos para transferir por QR y subir tu comprobante. Si vence el tiempo, el stock se libera."}
+
+                {/* Contador compacto visible a la derecha en móvil */}
+                <div className="sm:hidden shrink-0 rounded-xl bg-white/80 px-2.5 py-1.5 text-right border border-current/15">
+                  <p className="text-[9px] uppercase tracking-wider opacity-75">Límite</p>
+                  <p
+                    className={`text-lg font-mono font-bold leading-none ${
+                      isCriticalTime ? "text-red-700 animate-pulse" : ""
+                    }`}
+                  >
+                    {formattedCountdown}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
-                <div className="text-left sm:text-right">
+              <p className="sm:hidden text-[11px] opacity-90 leading-relaxed">
+                {isCriticalTime
+                  ? "¡Últimos minutos! Sube tu comprobante antes de 00:00 o las prendas se liberarán."
+                  : "Tienes 10 minutos para transferir por QR y subir tu comprobante."}
+              </p>
+
+              {/* Contador en desktop */}
+              <div className="hidden sm:flex items-center shrink-0">
+                <div className="text-right">
                   <p className="text-[10px] uppercase tracking-wider opacity-75">Tiempo límite</p>
                   <p
                     className={`text-2xl font-mono font-bold tracking-wider ${
@@ -1307,37 +1372,40 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
               </p>
             )}
 
-            <div className="grid gap-6 sm:gap-8 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 sm:gap-8 lg:grid-cols-2">
               {/* Columna QR + Desglose detallado */}
-              <Card padding="none" className="p-5 sm:p-6 flex flex-col items-center text-center rounded-[28px]">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-2">
+              <Card
+                padding="none"
+                className="w-full min-w-0 p-4 sm:p-6 flex flex-col items-center text-center rounded-[22px] sm:rounded-[28px]"
+              >
+                <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-1.5">
                   Paso 3A · Escanea y transfiere
                 </p>
-                <h2 className="text-xl font-serif mb-5">Código QR BancoSol</h2>
+                <h2 className="text-lg sm:text-xl font-serif mb-4 sm:mb-5">Código QR BancoSol</h2>
 
-                <div className="relative w-full aspect-square max-w-[270px] sm:max-w-[300px] bg-white p-3 border border-border/60 rounded-2xl mb-5 shadow-xs">
+                <div className="relative w-full aspect-square max-w-[230px] sm:max-w-[280px] bg-white p-2.5 sm:p-3 border border-border/60 rounded-2xl mb-4 sm:mb-5 shadow-xs">
                   <Image src={qrImageUrl} alt="QR de Pago FitAndes" fill className="object-contain p-2" />
                 </div>
 
-                <Button variant="outline" size="sm" onClick={handleDownloadQR} className="w-full max-w-[320px] mb-5">
+                <Button variant="outline" size="sm" onClick={handleDownloadQR} className="w-full max-w-[340px] mb-4 sm:mb-5">
                   Descargar Código QR
                 </Button>
 
                 {/* Detalle completo del monto */}
-                <div className="w-full max-w-[340px] rounded-2xl border border-border/70 bg-surface/40 p-4 text-left text-xs space-y-2">
+                <div className="w-full sm:max-w-[360px] rounded-2xl border border-border/70 bg-surface/40 p-3.5 sm:p-4 text-left text-xs space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.16em] text-subtle font-semibold pb-1 border-b border-border/60">
                     Detalle a pagar ({activeReservation.items.reduce((acc, i) => acc + i.cantidad, 0)} prendas)
                   </p>
 
                   <div className="flex justify-between gap-2 text-muted">
-                    <span>Subtotal prendas</span>
-                    <span className="whitespace-nowrap">{formatPrice(activeReservation.subtotal)}</span>
+                    <span className="min-w-0">Subtotal prendas</span>
+                    <span className="shrink-0 whitespace-nowrap">{formatPrice(activeReservation.subtotal)}</span>
                   </div>
 
                   {activeReservation.descuentoCatalogo > 0 && (
                     <div className="flex justify-between gap-2 text-success">
-                      <span>Rebajas de catálogo</span>
-                      <span className="whitespace-nowrap font-medium">
+                      <span className="min-w-0">Rebajas de catálogo</span>
+                      <span className="shrink-0 whitespace-nowrap font-medium">
                         - {formatPrice(activeReservation.descuentoCatalogo)}
                       </span>
                     </div>
@@ -1345,10 +1413,10 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
 
                   {activeReservation.descuentoPromociones > 0 && (
                     <div className="flex justify-between gap-2 text-success">
-                      <span>
+                      <span className="min-w-0 break-words">
                         Promociones{activeReservation.cuponCodigo ? ` (${activeReservation.cuponCodigo})` : ""}
                       </span>
-                      <span className="whitespace-nowrap font-medium">
+                      <span className="shrink-0 whitespace-nowrap font-medium">
                         - {formatPrice(activeReservation.descuentoPromociones)}
                       </span>
                     </div>
@@ -1358,20 +1426,22 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                     activeReservation.descuentoCatalogo === 0 &&
                     activeReservation.descuentoPromociones === 0 && (
                       <div className="flex justify-between gap-2 text-success">
-                        <span>Descuento{activeReservation.cuponCodigo ? ` (${activeReservation.cuponCodigo})` : ""}</span>
-                        <span className="whitespace-nowrap font-medium">
+                        <span className="min-w-0 break-words">
+                          Descuento{activeReservation.cuponCodigo ? ` (${activeReservation.cuponCodigo})` : ""}
+                        </span>
+                        <span className="shrink-0 whitespace-nowrap font-medium">
                           - {formatPrice(Math.max(0, activeReservation.descuento - activeReservation.descuentoEnvio))}
                         </span>
                       </div>
                     )}
 
                   <div className="flex justify-between gap-2 text-muted">
-                    <span>
+                    <span className="min-w-0">
                       {activeReservation.isLaPaz
                         ? "Envío (La Paz)"
                         : `Envío nacional (${activeReservation.department})`}
                     </span>
-                    <span className="whitespace-nowrap font-medium">
+                    <span className="shrink-0 whitespace-nowrap font-medium">
                       {activeReservation.isLaPaz ? (
                         <span className="text-success">Gratis</span>
                       ) : activeReservation.descuentoEnvio > 0 &&
@@ -1393,36 +1463,41 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                   </div>
                 </div>
 
-                <div className="mt-4 w-full max-w-[340px] rounded-xl bg-surface/50 border border-border/60 p-3 text-left text-[11px] space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-muted">Banco:</span>
-                    <span className="font-medium text-foreground">BancoSol</span>
+                <div className="mt-3.5 w-full sm:max-w-[360px] rounded-xl bg-surface/50 border border-border/60 p-3 text-left text-[11px] space-y-1.5">
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted shrink-0">Banco:</span>
+                    <span className="font-medium text-foreground text-right">BancoSol</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted">Titular:</span>
-                    <span className="font-medium text-foreground">Fernando Leon Andrade Gutierrez</span>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted shrink-0">Titular:</span>
+                    <span className="font-medium text-foreground text-right break-words">
+                      Fernando Leon Andrade Gutierrez
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted">Moneda:</span>
-                    <span className="font-medium text-foreground">Bolivianos (BOB)</span>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted shrink-0">Moneda:</span>
+                    <span className="font-medium text-foreground text-right">Bolivianos (BOB)</span>
                   </div>
                 </div>
               </Card>
 
               {/* Columna Subida de Comprobante */}
-              <Card padding="none" className="p-5 sm:p-6 flex flex-col justify-between rounded-[28px]">
+              <Card
+                padding="none"
+                className="w-full min-w-0 p-4 sm:p-6 flex flex-col justify-between rounded-[22px] sm:rounded-[28px]"
+              >
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-2">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-subtle mb-1.5">
                     Paso 3B · Confirmar pago
                   </p>
-                  <h2 className="text-xl font-serif mb-2">Sube tu comprobante</h2>
-                  <p className="text-xs text-muted mb-6 leading-relaxed">
+                  <h2 className="text-lg sm:text-xl font-serif mb-2">Sube tu comprobante</h2>
+                  <p className="text-xs text-muted mb-5 leading-relaxed">
                     Una vez realizada la transferencia por exactamente{" "}
                     <strong className="text-foreground">{formatPrice(activeReservation.total)}</strong>, adjunta la
                     captura para asegurar tu pedido.
                   </p>
 
-                  <div className="border-2 border-dashed border-border rounded-2xl p-5 sm:p-7 text-center bg-surface/30 hover:border-foreground/40 transition-colors">
+                  <div className="border-2 border-dashed border-border rounded-2xl p-4 sm:p-7 text-center bg-surface/30 hover:border-foreground/40 transition-colors">
                     <input
                       type="file"
                       id="promo-receipt-upload"
@@ -1451,7 +1526,7 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                     <label htmlFor="promo-receipt-upload" className="cursor-pointer block">
                       {receiptPreviewUrl ? (
                         <div className="space-y-3">
-                          <div className="relative mx-auto h-44 w-full max-w-[240px] overflow-hidden rounded-xl border border-border bg-white">
+                          <div className="relative mx-auto h-40 sm:h-44 w-full max-w-[240px] overflow-hidden rounded-xl border border-border bg-white">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={receiptPreviewUrl}
@@ -1484,17 +1559,17 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                   </div>
 
                   {error && (
-                    <div className="mt-4 p-3 rounded-xl bg-danger/10 border border-danger/25 text-danger text-xs font-medium">
+                    <div className="mt-4 p-3 rounded-xl bg-danger/10 border border-danger/25 text-danger text-xs font-medium break-words">
                       {error}
                     </div>
                   )}
                 </div>
 
-                <div className="mt-8 space-y-3">
+                <div className="mt-6 sm:mt-8 space-y-3">
                   <Button
                     variant="primary"
                     size="lg"
-                    className="w-full"
+                    className="w-full tracking-[0.12em] sm:tracking-[0.18em]"
                     loading={uploading}
                     disabled={!receiptFile || uploading || cancelling}
                     onClick={handleUploadReceipt}
@@ -1518,36 +1593,36 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
 
         {/* ==================== PASO 4: CONFIRMACIÓN Y WHATSAPP 67113105 ==================== */}
         {step === 4 && confirmedOrder && (
-          <div className="max-w-2xl mx-auto">
-            <Card className="rounded-[28px] p-6 sm:p-8 space-y-6 bg-white border border-border shadow-sm">
-              <div className="text-center space-y-3">
-                <div className="w-16 h-16 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto">
-                  <FaCheckCircle className="w-9 h-9" />
+          <div className="max-w-2xl mx-auto min-w-0">
+            <Card padding="none" className="w-full min-w-0 rounded-[22px] sm:rounded-[28px] p-4 sm:p-8 space-y-5 sm:space-y-6 bg-white border border-border shadow-sm">
+              <div className="text-center space-y-2.5 sm:space-y-3">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto">
+                  <FaCheckCircle className="w-8 h-8 sm:w-9 sm:h-9" />
                 </div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-semibold">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10.5px] sm:text-[11px] font-semibold">
                   Comprobante enviado · Reserva extendida 48h
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-serif text-foreground">
+                <h2 className="text-xl sm:text-3xl font-serif text-foreground leading-snug">
                   ¡Último paso: coordina tu entrega por WhatsApp!
                 </h2>
-                <p className="text-sm text-muted leading-relaxed">
-                  Tu pedido <strong className="text-foreground font-mono">{confirmedOrder.orderNumber}</strong> ya está
-                  registrado y nuestro equipo está verificando tu comprobante. Presiona el botón de abajo para enviarnos
-                  el detalle a nuestro WhatsApp y coordinar tu entrega o envío con calma.
+                <p className="text-xs sm:text-sm text-muted leading-relaxed">
+                  Tu pedido <strong className="text-foreground font-mono break-all">{confirmedOrder.orderNumber}</strong> ya
+                  está registrado y nuestro equipo está verificando tu comprobante. Presiona el botón para enviarnos
+                  el detalle por WhatsApp y coordinar tu entrega con calma.
                 </p>
               </div>
 
               {/* Resumen del pedido confirmado */}
-              <div className="rounded-2xl border border-border/70 bg-surface/35 p-4 sm:p-5 space-y-3 text-xs">
-                <div className="flex flex-wrap justify-between gap-2 pb-2.5 border-b border-border/60">
-                  <div>
+              <div className="rounded-2xl border border-border/70 bg-surface/35 p-3.5 sm:p-5 space-y-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-3 border-b border-border/60">
+                  <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-subtle">Cliente</p>
-                    <p className="font-medium text-foreground text-sm">{confirmedOrder.customerName}</p>
+                    <p className="font-medium text-foreground text-sm break-words">{confirmedOrder.customerName}</p>
                     <p className="text-muted">WhatsApp: {confirmedOrder.customerPhone}</p>
                   </div>
-                  <div className="text-left sm:text-right">
+                  <div className="min-w-0 sm:text-right">
                     <p className="text-[10px] uppercase tracking-wider text-subtle">Ubicación</p>
-                    <p className="font-medium text-foreground text-sm">
+                    <p className="font-medium text-foreground text-sm break-words">
                       {confirmedOrder.isLaPaz ? "La Paz" : confirmedOrder.department}
                     </p>
                     <p className="text-muted">
@@ -1562,7 +1637,7 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                   <p className="text-[10px] uppercase tracking-wider text-subtle font-semibold">Prendas</p>
                   {confirmedOrder.items.map((item) => (
                     <div key={item.id} className="flex justify-between gap-3 text-foreground">
-                      <span className="min-w-0">
+                      <span className="min-w-0 break-words">
                         {item.cantidad}x {item.nombre} ({item.color} / {item.talla})
                       </span>
                       <span className="shrink-0 whitespace-nowrap font-medium">
@@ -1572,9 +1647,9 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                   ))}
                 </div>
 
-                <div className="pt-2.5 border-t border-border/60 flex justify-between items-baseline">
+                <div className="pt-2.5 border-t border-border/60 flex justify-between items-baseline gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Total pagado</span>
-                  <span className="text-lg font-serif font-bold text-foreground">
+                  <span className="text-lg font-serif font-bold text-foreground whitespace-nowrap">
                     {formatPrice(confirmedOrder.total)}
                   </span>
                 </div>
@@ -1599,17 +1674,17 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                   })}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-2.5 rounded-full py-4 px-6 text-xs sm:text-sm uppercase tracking-wider bg-[#25d366] text-white font-semibold hover:bg-[#1fb959] transition-all shadow-sm active:scale-[0.99]"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-full py-3.5 sm:py-4 px-5 sm:px-6 text-xs sm:text-sm uppercase tracking-wider bg-[#25d366] text-white font-semibold hover:bg-[#1fb959] transition-all shadow-sm active:scale-[0.99] text-center leading-snug"
                 >
                   <FaWhatsapp className="text-lg shrink-0" />
-                  Confirmar y coordinar por WhatsApp ({WHATSAPP_DISPLAY})
+                  <span>Confirmar por WhatsApp ({WHATSAPP_DISPLAY})</span>
                 </a>
 
-                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
                   {authenticated && (
                     <Link
                       href={`/pedidos/${confirmedOrder.orderId}`}
-                      className="inline-flex items-center justify-center rounded-full border border-border px-5 py-2.5 text-xs uppercase tracking-wider text-foreground hover:bg-surface transition-colors"
+                      className="inline-flex items-center justify-center rounded-full border border-border px-4 py-2 text-xs uppercase tracking-wider text-foreground hover:bg-surface transition-colors"
                     >
                       Ver mi pedido
                     </Link>
@@ -1617,7 +1692,7 @@ export default function PromoExpressCheckoutClient({ initialDeliveryConfig = nul
                   <Link
                     href="/catalogo"
                     onClick={() => saveConfirmedOrder(null)}
-                    className="inline-flex items-center justify-center rounded-full border border-border px-5 py-2.5 text-xs uppercase tracking-wider text-muted hover:text-foreground hover:bg-surface transition-colors"
+                    className="inline-flex items-center justify-center rounded-full border border-border px-4 py-2 text-xs uppercase tracking-wider text-muted hover:text-foreground hover:bg-surface transition-colors"
                   >
                     Volver al catálogo
                   </Link>

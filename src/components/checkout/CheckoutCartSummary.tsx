@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { FiX } from "react-icons/fi";
 import { formatPrice } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
 import type { EvaluatedLineItem } from "@/types/promociones";
@@ -41,10 +42,12 @@ function findEvaluatedLine(item: CartItem, evaluatedItems?: EvaluatedLineItem[])
 
 /**
  * Displays the list of items in the cart for review during checkout.
+ * Fully responsive: compact e-commerce cards on mobile (zero horizontal overflow)
+ * and structured table columns on desktop.
  */
 export function CheckoutCartSummary({ items, evaluatedItems, updateQuantity, removeItem }: Props) {
   return (
-    <Card padding="none" className="overflow-hidden rounded-[28px]">
+    <Card padding="none" className="w-full max-w-full min-w-0 overflow-hidden rounded-[22px] sm:rounded-[28px]">
       <div className="hidden border-b border-border/60 px-6 py-4 text-[10px] uppercase tracking-[0.14em] text-subtle md:grid md:grid-cols-[minmax(0,1fr)_120px_140px_88px] md:gap-4">
         <span>Producto</span>
         <span className="text-center">Cantidad</span>
@@ -52,7 +55,7 @@ export function CheckoutCartSummary({ items, evaluatedItems, updateQuantity, rem
         <span className="text-right">Acciones</span>
       </div>
 
-      <div className="divide-y divide-border/40">
+      <div className="divide-y divide-border/50">
         {items.map((item) => {
           const evaluated = findEvaluatedLine(item, evaluatedItems);
           const unitPrice = evaluated?.precioUnitario ?? item.precio;
@@ -69,75 +72,93 @@ export function CheckoutCartSummary({ items, evaluatedItems, updateQuantity, rem
           const linePromoDiscount = evaluated?.descuentoPromociones ?? 0;
 
           return (
-            <article key={item.id} className="grid gap-4 px-4 py-5 sm:px-6 md:grid-cols-[minmax(0,1fr)_120px_140px_88px] md:items-center">
-              <div className="flex gap-4 min-w-0">
-                <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-[18px] border border-border/50 bg-surface/30">
+            <article
+              key={item.id}
+              className="w-full min-w-0 px-3.5 py-4 sm:px-6 sm:py-5 md:grid md:grid-cols-[minmax(0,1fr)_120px_140px_88px] md:items-center md:gap-4"
+            >
+              {/* Foto + Info principal */}
+              <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                <div className="relative h-20 w-[68px] sm:h-24 sm:w-20 shrink-0 overflow-hidden rounded-[14px] sm:rounded-[18px] border border-border/50 bg-surface/30">
                   {item.imagen ? (
                     <Image src={item.imagen} alt={item.nombre} fill sizes="80px" className="object-cover" />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-[10px] uppercase text-subtle">
+                    <div className="flex h-full items-center justify-center text-[10px] uppercase text-subtle text-center px-1">
                       Sin foto
                     </div>
                   )}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium uppercase leading-snug text-foreground">
-                    {item.nombre}
-                  </p>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 flex-1 text-[13px] sm:text-sm font-medium uppercase leading-snug text-foreground break-words">
+                      {item.nombre}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.id)}
+                      className="md:hidden shrink-0 -mt-0.5 -mr-1 inline-flex h-7 w-7 items-center justify-center rounded-full text-subtle hover:bg-surface hover:text-danger transition-colors cursor-pointer"
+                      aria-label={`Quitar ${item.nombre}`}
+                    >
+                      <FiX className="h-4 w-4" />
+                    </button>
+                  </div>
+
                   {item.modelo && (
-                    <p className="mt-1 text-[10px] uppercase tracking-wider text-subtle">
+                    <p className="mt-0.5 text-[10px] uppercase tracking-wider text-subtle break-words">
                       {item.modelo}
                     </p>
                   )}
-                  <p className="mt-2 text-[11px] text-muted">
-                    Variante: {item.color} / {item.talla}
-                  </p>
-                  {item.stockDisponible !== undefined && (
-                    <p className="mt-1 text-[11px] text-muted">
-                      Stock disponible: {item.stockDisponible}
-                    </p>
-                  )}
+
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center rounded-full bg-surface/90 border border-border/60 px-2 py-0.5 text-[10.5px] font-medium text-foreground/90 max-w-full truncate">
+                      {item.color} · Talla {item.talla}
+                    </span>
+                    {item.stockDisponible !== undefined && (
+                      <span className="text-[10.5px] text-subtle whitespace-nowrap">
+                        Disp: {item.stockDisponible}
+                      </span>
+                    )}
+                  </div>
+
                   {linePromoDiscount > 0 && (
                     <span className="mt-1.5 inline-flex max-w-full rounded-full bg-success/10 px-2.5 py-0.5 text-[10px] font-medium leading-snug text-success">
-                      Promo aplicada: -{formatPrice(linePromoDiscount)}
+                      Promo: -{formatPrice(linePromoDiscount)}
                     </span>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-3 md:justify-center">
-                <span className="text-[10px] uppercase tracking-[0.14em] text-subtle md:hidden">Cantidad</span>
-                <div className="inline-flex items-center rounded-full border border-border bg-white">
-                  <button
-                    type="button"
-                    onClick={() => updateQuantity(item.id, item.cantidad - 1)}
-                    className="h-10 w-10 text-base hover:bg-surface transition-colors"
-                    aria-label={`Reducir cantidad de ${item.nombre}`}
-                  >
-                    -
-                  </button>
-                  <span className="flex h-10 min-w-10 items-center justify-center text-sm font-medium">
-                    {item.cantidad}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => updateQuantity(item.id, item.cantidad + 1)}
-                    className="h-10 w-10 text-base hover:bg-surface transition-colors"
-                    aria-label={`Aumentar cantidad de ${item.nombre}`}
-                  >
-                    +
-                  </button>
+              {/* Fila inferior en móvil (Cantidad + Precio en una sola línea limpia) / Columnas 2 y 3 en desktop */}
+              <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between gap-3 md:contents">
+                <div className="flex items-center md:justify-center shrink-0">
+                  <div className="inline-flex items-center rounded-full border border-border bg-white shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.id, item.cantidad - 1)}
+                      className="h-8 w-8 sm:h-9 sm:w-9 text-sm sm:text-base hover:bg-surface rounded-l-full transition-colors cursor-pointer"
+                      aria-label={`Reducir cantidad de ${item.nombre}`}
+                    >
+                      -
+                    </button>
+                    <span className="flex h-8 sm:h-9 min-w-8 items-center justify-center text-xs sm:text-sm font-semibold tabular-nums">
+                      {item.cantidad}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.id, item.cantidad + 1)}
+                      className="h-8 w-8 sm:h-9 sm:w-9 text-sm sm:text-base hover:bg-surface rounded-r-full transition-colors cursor-pointer"
+                      aria-label={`Aumentar cantidad de ${item.nombre}`}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-end justify-between gap-3 md:block md:text-right">
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.14em] text-subtle md:hidden">Precio</p>
-                  <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 md:mt-0 md:block">
+                <div className="min-w-0 text-right">
+                  <div className="flex flex-wrap items-baseline justify-end gap-x-2 gap-y-0.5 md:block">
                     <p
-                      className={`text-base font-serif whitespace-nowrap ${
-                        unitListPrice || lineFinal < lineBase ? "text-danger font-medium" : "text-foreground"
-                      }`}
+                      className={`text-[15px] sm:text-base font-serif font-semibold whitespace-nowrap ${unitListPrice || lineFinal < lineBase ? "text-danger" : "text-foreground"
+                        }`}
                     >
                       {formatPrice(lineFinal)}
                     </p>
@@ -151,25 +172,18 @@ export function CheckoutCartSummary({ items, evaluatedItems, updateQuantity, rem
                       </p>
                     ) : null}
                   </div>
-                  <p className="text-[11px] mt-0.5 text-subtle whitespace-nowrap">
+                  <p className="text-[10.5px] sm:text-[11px] mt-0.5 text-subtle whitespace-nowrap">
                     {formatPrice(unitPrice)} c/u
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="shrink-0 inline-flex items-center justify-center rounded-full border border-border px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-subtle transition-colors hover:bg-surface md:hidden"
-                  aria-label={`Quitar ${item.nombre}`}
-                >
-                  Quitar
-                </button>
               </div>
 
+              {/* Columna 4: Quitar en desktop */}
               <div className="hidden md:flex md:justify-end">
                 <button
                   type="button"
                   onClick={() => removeItem(item.id)}
-                  className="inline-flex items-center justify-center rounded-full border border-border px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-subtle transition-colors hover:bg-surface"
+                  className="inline-flex items-center justify-center rounded-full border border-border px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-subtle transition-colors hover:bg-surface hover:text-danger cursor-pointer"
                   aria-label={`Quitar ${item.nombre}`}
                 >
                   Quitar

@@ -755,8 +755,8 @@ export default function CheckoutPageClient() {
           </div>
         )}
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
-          <div className="space-y-6 sm:space-y-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]">
+          <div className="min-w-0 space-y-6 sm:space-y-8">
             {/* Formulario de Comprador Invitado */}
             {!authenticated && (
               <section>

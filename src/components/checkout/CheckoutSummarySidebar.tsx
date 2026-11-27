@@ -26,6 +26,7 @@ interface Props {
   onSubmit: () => void;
   authenticated: boolean;
   submitLabel?: string;
+  mobileSubmitLabel?: string;
   hideShippingRow?: boolean;
 }
 
@@ -77,6 +78,7 @@ export function CheckoutSummarySidebar({
   onSubmit,
   authenticated,
   submitLabel,
+  mobileSubmitLabel,
   hideShippingRow = false,
 }: Props) {
   const [couponInput, setCouponInput] = useState("");
@@ -257,8 +259,8 @@ export function CheckoutSummarySidebar({
   return (
     <>
       {/* Tarjeta de cupón y desglose visible en móvil antes de la barra fija */}
-      <div className="lg:hidden">
-        <Card padding="none" className="rounded-[24px] sm:rounded-[28px] p-4 sm:p-6 space-y-5">
+      <div className="lg:hidden min-w-0 w-full">
+        <Card padding="none" className="w-full min-w-0 rounded-[22px] sm:rounded-[28px] p-4 sm:p-6 space-y-5">
           <div>
             <p className="text-[10px] uppercase tracking-[0.16em] text-subtle mb-3.5 sm:mb-4">
               Resumen de compra
@@ -270,17 +272,17 @@ export function CheckoutSummarySidebar({
       </div>
 
       {/* Barra fija inferior en móvil */}
-      <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-md mobile-safe-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
-        <div className="mx-auto flex max-w-[1240px] flex-col gap-2 px-3.5 sm:px-4 pt-2.5 sm:pt-3 pb-2">
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-md mobile-safe-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+        <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-2 px-3.5 sm:px-4 pt-2.5 sm:pt-3 pb-2">
           {error ? (
-            <div className="rounded-[14px] border border-danger/30 bg-danger/10 px-3 py-2 text-[11px] sm:text-xs text-danger font-medium leading-snug">
+            <div className="rounded-[14px] border border-danger/30 bg-danger/10 px-3 py-2 text-[11px] sm:text-xs text-danger font-medium leading-snug break-words">
               {error}
             </div>
           ) : null}
 
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[9.5px] sm:text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.16em] text-subtle truncate">
+              <p className="text-[9.5px] sm:text-[10px] uppercase tracking-[0.12em] text-subtle truncate">
                 Total {netShipping > 0 ? "(con envío)" : ""}
               </p>
               <p className={`text-lg sm:text-xl font-serif font-bold leading-tight text-foreground whitespace-nowrap ${pricingLoading ? "opacity-60" : ""}`}>
@@ -289,25 +291,27 @@ export function CheckoutSummarySidebar({
               <p className={`text-[10.5px] sm:text-[11px] truncate ${totalSavings > 0 ? "text-success font-medium" : "text-muted"}`}>
                 {totalSavings > 0
                   ? `Ahorras ${formatPrice(totalSavings)} · ${totalItems} ${totalItems !== 1 ? "prendas" : "prenda"}`
-                  : `${totalItems} ${totalItems !== 1 ? "prendas" : "prenda"} · Envío: ${descuentoEnvio > 0 && netShipping === 0 ? "Gratis" : shippingLabel}`}
+                  : hideShippingRow
+                    ? `${totalItems} ${totalItems !== 1 ? "prendas" : "prenda"}`
+                    : `${totalItems} ${totalItems !== 1 ? "prendas" : "prenda"} · Envío: ${descuentoEnvio > 0 && netShipping === 0 ? "Gratis" : shippingLabel}`}
               </p>
             </div>
             <Button
               variant="primary"
               size="md"
-              className="min-w-[138px] sm:min-w-[170px] shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] tracking-[0.12em] sm:tracking-[0.16em] whitespace-nowrap"
+              className="min-w-[124px] sm:min-w-[164px] shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 text-[10.5px] sm:text-[11px] tracking-[0.08em] sm:tracking-[0.14em] whitespace-nowrap"
               loading={loading}
               disabled={disabled || loading}
               onClick={onSubmit}
             >
-              {submitLabel ?? (authenticated ? "Confirmar pedido" : "Finalizar compra")}
+              {mobileSubmitLabel ?? submitLabel ?? (authenticated ? "Confirmar" : "Finalizar")}
             </Button>
           </div>
         </div>
       </div>
 
       {/* Sidebar sticky en desktop */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block min-w-0">
         <Card className="sticky top-24 space-y-5">
           <div>
             <p className="text-[10px] uppercase tracking-[0.16em] text-subtle mb-4">
